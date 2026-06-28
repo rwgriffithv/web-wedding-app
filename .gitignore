@@ -58,3 +58,4 @@ venv/
 env/
 .devcontainer
 .opencode/skills
+.devcontainer/base
