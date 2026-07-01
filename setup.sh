@@ -5,7 +5,7 @@
 # One-shot convenience script to initialize all toolkit submodules and run
 # their setup-host and bootstrap scripts in dependency order.
 #
-# Usage: ./setup.sh [--force]
+# Usage: ./setup.sh [--force] [--deploy-only]
 #
 set -euo pipefail
 
@@ -37,6 +37,7 @@ section() { echo -e "\n${CYAN}━━━ $* ━━━${NC}"; }
 ########################################
 
 FORCE=false
+DEPLOY_ONLY=false
 FORCE_FLAG=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -45,13 +46,18 @@ while [[ $# -gt 0 ]]; do
             FORCE_FLAG="--force"
             shift
             ;;
+        --deploy-only)
+            DEPLOY_ONLY=true
+            shift
+            ;;
         --help|-h)
             cat <<EOF
 Usage: setup.sh [options]
 
 Options:
-  --force   Pass --force to all submodule scripts, overwriting existing configs
-  --help    Show this help message
+  --force         Pass --force to all submodule scripts, overwriting existing configs
+  --deploy-only   Only set up host and bootstrap for deployment (skip agent/dev setup)
+  --help          Show this help message
 EOF
             exit 0
             ;;
@@ -63,6 +69,9 @@ done
 
 if [[ "$FORCE" == true ]]; then
     info "Force mode enabled — will overwrite existing configurations."
+fi
+if [[ "$DEPLOY_ONLY" == true ]]; then
+    info "Deploy-only mode — skipping agent/dev environment setup."
 fi
 
 START_TIME=$(date +%s)
@@ -109,6 +118,12 @@ section "Step 2: Submodule Scripts"
 for entry in "${SUBMODULES[@]}"; do
     IFS="|" read -r path label <<< "$entry"
 
+    # In deploy-only mode, skip agent-dev-env
+    if [[ "$DEPLOY_ONLY" == true ]] && [[ "$path" == *"agent-dev-env"* ]]; then
+        info "Skipping $label ($path) — deploy-only mode."
+        continue
+    fi
+
     echo -e "\n${CYAN}--- $label ($path) ---${NC}"
 
     setup_script="$path/scripts/setup-host.sh"
@@ -141,4 +156,5 @@ section "Complete"
 success "All submodules initialized and bootstrapped in ${DURATION}s."
 printf "  %-20s %s\n" "Submodules:" "${#SUBMODULES[@]} processed"
 printf "  %-20s %s\n" "Force mode:" "$FORCE"
+printf "  %-20s %s\n" "Deploy-only:" "$DEPLOY_ONLY"
 echo ""
