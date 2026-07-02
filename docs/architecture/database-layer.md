@@ -132,16 +132,15 @@ const users = db.prepare("SELECT * FROM users ORDER BY created_at DESC").all() a
 const count = db.prepare("SELECT COUNT(*) as count FROM users").get() as { count: number };
 ```
 
-## Initialization and Seeding
+## Seeding
 
-Two scripts manage the database lifecycle:
+Tables are auto-created on first database connection by `getDb()` in `src/lib/db.ts`. Use the seed script to insert demo data:
 
 | Script | Command | Purpose |
 |---|---|---|
-| `scripts/db-init.ts` | `npm run db:init` | Creates tables (idempotent via `IF NOT EXISTS`) |
 | `scripts/db-seed.ts` | `npm run db:seed` | Inserts demo data (skips if users exist) |
 
-Both scripts are run via `tsx` or via `npm run db:init` / `npm run db:seed` and are fully idempotent.
+The seed script also creates tables if they don't exist, so it can be run standalone.
 
 ### Demo Data
 

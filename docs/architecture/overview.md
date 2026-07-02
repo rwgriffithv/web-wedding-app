@@ -131,11 +131,10 @@ npm run dev
 
 This starts Next.js on port 3000. The dev server supports hot module replacement and displays errors in-browser.
 
-Before first launch, initialize and seed the database:
+Before first launch, seed the database with demo data:
 
 ```bash
-npm run db:init   # Creates tables (idempotent)
-npm run db:seed   # Inserts demo data (skips if already populated)
+npm run db:seed   # Creates tables if needed, then inserts demo data (skips if already populated)
 ```
 
 ### 4. Run Tests
@@ -203,7 +202,6 @@ Host Machine                         Devcontainer (Docker)
 Open in VS Code → Reopen in Devcontainer
                                         │
                                         ▼
-                                    npm run db:init
                                     npm run db:seed
                                     npm run test       ← new
                                     npm run dev        ← iterate
@@ -224,7 +222,6 @@ Host Machine                         Devcontainer (Docker)
 Open in VS Code → Reopen in Devcontainer
                                         │
                                         ▼
-                                    npm run db:init
                                     npm run db:seed
                                     npm run dev        ← iterate
                                     npm run build      ← verify

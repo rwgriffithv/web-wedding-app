@@ -14,7 +14,7 @@ A production-ready Next.js starter web application with admin dashboard, SQLite 
 - `src/app/` — App Router pages and API routes
 - `src/lib/` — Shared utilities (db, auth)
 - `src/components/` — Reusable UI components
-- `scripts/` — Database init/seed scripts
+- `scripts/` — Utility scripts (e.g. database seeding)
 - `data/` — SQLite database (gitignored)
 - `Dockerfile` — Symlinked from web-deploy-env template (multi-stage build)
 - `.dockerignore` — Symlinked from web-deploy-env template (reduces build context)
@@ -40,7 +40,6 @@ A production-ready Next.js starter web application with admin dashboard, SQLite 
 - `npm run test:e2e:ui` — Run E2E tests with Playwright UI mode
 - `npm run typecheck` — Standalone TypeScript check
 - `npm run lint` — ESLint via next lint
-- `npm run db:init` — Initialize database tables
 - `npm run db:seed` — Seed with demo data
 - `./deploy.sh` — Docker deployment
 - `./down.sh` — Stop and tear down services

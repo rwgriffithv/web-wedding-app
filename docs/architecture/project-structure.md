@@ -13,7 +13,7 @@ web-starter-app/
 ├── web-deploy-env/         # Git submodule: deployment infrastructure (Docker, Caddy, cloudflared)
 ├── data/                   # Persistent storage: SQLite DB, backups (most is gitignored)
 ├── public/                 # Static assets served by Next.js
-├── scripts/                # Database init/seed scripts (db-init.ts, db-seed.ts)
+├── scripts/                # Database seed scripts
 ├── src/                    # Application source code (Next.js App Router)
 │   ├── app/                # Pages, layouts, API routes
 │   ├── components/         # Reusable UI components
@@ -47,7 +47,7 @@ web-starter-app/
 | `src/app/` | Next.js App Router pages and API routes (`layout.tsx`, `page.tsx`, `route.ts`) |
 | `src/components/` | Reusable client/server components with colocated `*.test.tsx` unit tests |
 | `src/lib/` | Server-only utilities (`db.ts`, `auth.ts`) with colocated unit tests |
-| `scripts/` | Database init/seed scripts (`db-init.ts`, `db-seed.ts`) run via `npm run db:init` / `npm run db:seed` |
+| `scripts/` | Database seed script (`db-seed.ts`) run via `npm run db:seed` |
 | `docs/architecture/` | ADRs and design records for architectural decisions |
 | `docs/features/` | Feature specifications (auth, admin, health, error handling) |
 | `e2e/` | Playwright E2E specs (`*.spec.ts`) |

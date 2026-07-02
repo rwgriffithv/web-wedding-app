@@ -32,7 +32,7 @@ Auth has two independent parts — the **password** (a shared secret) and the **
 
 ### The User Database: `db-seed`
 
-`npm run db:seed` (running `scripts/db-seed.ts`) inserts user **profiles** — email, name, and role — into the SQLite `users` table. It does **not** set passwords. The seed creates:
+Tables are auto-created by the app on first connection. `npm run db:seed` (running `scripts/db-seed.ts`) inserts user **profiles** — email, name, and role — into the SQLite `users` table. It does **not** set passwords. The seed creates:
 
 | Email | Name | Role |
 |---|---|---|

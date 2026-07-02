@@ -73,16 +73,15 @@ web-deploy-base         (prod base — lean, no dev deps)
 
 Development, compilation, and verification happen inside the devcontainer. The devcontainer provides Node.js 22, TypeScript, Playwright, SQLite CLI, and OpenCode.
 
-### Initialize Database
+### Seed Database
 
-Before running the app, create the SQLite schema and seed demo data:
+Tables are auto-created on first database connection. To insert demo data:
 
 ```bash
-npm run db:init   # npx tsx scripts/db-init.ts
 npm run db:seed   # npx tsx scripts/db-seed.ts
 ```
 
-Both scripts are idempotent. `db-init` uses `CREATE TABLE IF NOT EXISTS`. `db-seed` checks whether users already exist before inserting.
+The seed script is idempotent — it skips insertion if users already exist.
 
 ### Development Server
 
@@ -160,7 +159,7 @@ TUNNEL_TOKEN=eyJhIjoi... (your Cloudflare tunnel token)
 | 1. Validate env vars | Checks `DOMAIN` and `TUNNEL_TOKEN` are non-empty |
 | 2. Detect Compose | Prefers `docker compose` (v2), falls back to `docker-compose` (v1) |
 | 3. Build images | Runs `docker compose build --pull` with BuildKit inline cache |
-| 4. Init database | Creates `data/sqlite/prod.db` if missing |
+| 4. Start services | Runs `docker compose up -d` |
 | 5. Start services | Runs `docker compose up -d` (detached) |
 | 6. Health check | Waits 5 seconds, then checks each service status via `docker compose ps` |
 
@@ -381,7 +380,7 @@ tar -xzf data/backups/db_backup_20260629_120000.tar.gz -C data/sqlite/
 - [ ] `.env` file configured with `DOMAIN` and `TUNNEL_TOKEN`
 - [ ] Application builds in devcontainer (`npm run build`)
 - [ ] Type check passes (`npm run typecheck`)
-- [ ] Database initialized (`npm run db:init`)
+- [ ] Demo data seeded (`npm run db:seed`, optional)
 - [ ] Deploy from host (`./deploy.sh`)
 - [ ] Verify health endpoint
 - [ ] Verify domain resolves and TLS works

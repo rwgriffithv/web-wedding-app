@@ -33,7 +33,7 @@ web-starter-app/
 │   ├── components/           # Reusable UI components
 │   └── lib/                  # Shared utilities (db, auth)
 │
-├── scripts/                  # Database init/seed scripts
+├── scripts/                  # Utility scripts (e.g. database seeding)
 ├── docs/                     # Architecture and feature documentation
 ├── e2e/                      # Playwright end-to-end tests
 ├── data/                     # Persistent storage (SQLite, backups)
@@ -68,8 +68,7 @@ git submodule update --init --recursive
 ./web-deploy-env/scripts/bootstrap.sh
 
 # 3. Open in VS Code → Reopen in Dev Container
-# 4. Inside the devcontainer, init the database:
-npm run db:init
+# 4. Inside the devcontainer, seed the database:
 npm run db:seed
 
 # 5. Start developing
@@ -98,7 +97,6 @@ npm run test:e2e   # Playwright headless E2E tests
 | `npm run test:e2e` | Run E2E tests (Playwright, headless) |
 | `npm run typecheck` | TypeScript strict-mode check |
 | `npm run lint` | ESLint via next lint |
-| `npm run db:init` | Create database tables |
 | `npm run db:seed` | Insert demo data |
 | `./deploy.sh` | Build and deploy via Docker |
 | `./down.sh` | Stop all services |
