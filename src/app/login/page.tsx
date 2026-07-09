@@ -1,16 +1,26 @@
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { parseSession } from "@/lib/auth";
+import { getConfig } from "@/lib/repository/site-config";
 import { LoginForm } from "./login-form";
 
-export default function LoginPage() {
-  const user = getCurrentUser();
-  if (user) redirect("/admin");
+export default async function LoginPage() {
+  const session = await parseSession();
+  if (session) {
+    const redirectTo = session.type === "admin" ? "/admin" : session.type === "party" ? "/rsvp" : "/home";
+    redirect(redirectTo);
+  }
+
+  const title = getConfig("landing_title");
+  const background = getConfig("landing_background");
 
   return (
-    <div className="login-page">
-      <div className="login-card">
-        <h1>Sign In</h1>
-        <p>Sign in to your account.</p>
+    <div className="landing">
+      <div
+        className="landing-bg"
+        style={{ backgroundImage: background ? `url(${background})` : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}
+      />
+      <div className="landing-content">
+        <h1>{title}</h1>
         <LoginForm />
       </div>
     </div>

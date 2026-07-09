@@ -1,247 +1,150 @@
 # Architecture Overview
 
-- **Date:** 2026-06-29
-- **Scope:** Full-stack architecture of the web-starter-app project
+- **Date:** 2026-07-03
+- **Scope:** Full-stack architecture of the wedding webapp
 
 ## Design Philosophy
 
-The project follows a **server-first architecture** built on Next.js 14 App Router. Rendering, data fetching, and mutations are handled on the server by default. Client Components are used only where browser APIs or interactivity are required, and they are pushed to leaf nodes in the component tree.
+**Server-first architecture** built on Next.js 16 App Router (Turbopack). Rendering, data fetching, and mutations happen on the server by default. Client Components are used only where browser APIs or interactivity are required (forms, lightbox galleries), and are pushed to leaf nodes in the component tree.
 
-The deployment infrastructure separates application logic from infrastructure plumbing via two Git submodules:
+**Repository pattern** — All SQL queries are extracted into typed modules under `src/lib/repository/`. Each entity (guests, parties, RSVP, lodging, etc.) gets its own file. This keeps page components focused on rendering, makes queries testable in isolation, and centralizes schema changes.
 
-- `agent-dev-env/` — Agentic development toolkit (devcontainer, skills, shared rules)
-- `web-deploy-env/` — Deployment infrastructure (Docker, Caddy, deployment scripts)
-
-This separation means improvements to infrastructure or agent tooling propagate to all downstream projects via a submodule update, without touching application code.
+**Per-user password auth** — Replaced the original shared-password model with per-user username/password authentication. Admin credentials come from `.env`, party authentication uses access codes, and guest accounts are managed from the admin dashboard. Passwords are hashed with scrypt.
 
 ## System Architecture
 
 ```
-                    ┌─────────────────────┐
-                    │  Cloudflare Edge     │
-                    │  (TLS termination)   │
-                    └──────────┬──────────┘
-                               │
-                    ┌──────────▼──────────┐
-                    │  cloudflared         │
-                    │  (outbound tunnel)   │
-                    └──────────┬──────────┘
-                               │
-                    ┌──────────▼──────────┐
-                    │  Caddy               │
-                    │  (reverse proxy,     │
-                    │   TLS, rate limit,   │
-                    │   security headers)  │
-                    └──────────┬──────────┘
-                               │
-                    ┌──────────▼──────────┐
-                    │  Next.js App         │
-                    │  (port 3000)         │
-                    │  ┌────────────────┐  │
-                    │  │ Server Actions │  │
-                    │  │ Route Handlers │  │
-                    │  │ Server Comps   │  │
-                    │  └────────┬───────┘  │
-                    └──────────┬──────────┘
-                               │
-                    ┌──────────▼──────────┐
-                    │  SQLite              │
-                    │  (WAL mode,          │
-                    │   server-only)       │
-                    └─────────────────────┘
+                          ┌─────────────────────┐
+                          │  Cloudflare Edge     │
+                          │  (TLS termination)   │
+                          └──────────┬──────────┘
+                                     │
+                          ┌──────────▼──────────┐
+                          │  cloudflared         │
+                          │  (outbound tunnel)   │
+                          └──────────┬──────────┘
+                                     │
+                          ┌──────────▼──────────┐
+                          │  Caddy               │
+                          │  (reverse proxy,     │
+                          │   TLS, rate limit,   │
+                          │   security headers)  │
+                          └──────────┬──────────┘
+                                     │
+                          ┌──────────▼──────────┐
+                          │  Next.js App         │
+                          │  (port 3000)         │
+                          │  ┌────────────────┐  │
+                          │  │ Server Actions │  │
+                          │  │ Route Handlers │  │
+                          │  │ Server Comps   │  │
+                          │  └────────┬───────┘  │
+                          └──────────┬──────────┘
+                                     │
+                          ┌──────────▼──────────┐
+                          │  SQLite              │
+                          │  (WAL mode,          │
+                          │   server-only)       │
+                          └─────────────────────┘
 ```
 
-Three Docker services connected over isolated networks:
-- **tunnel** — outbound-only Cloudflare Tunnel connection (frontend network only)
-- **caddy** — reverse proxy, TLS termination, rate limiting (frontend + backend networks)
-- **webapp** — Next.js application server, SQLite database (backend network only)
-
-## Network Topology
+### Network Topology
 
 | Network | Accessibility | Services |
 |---|---|---|
 | `frontend` | External | tunnel, caddy |
 | `backend` | Internal (no external access) | webapp, caddy |
 
-The `tunnel` service has no access to `backend`, ensuring the database is never directly reachable from the Cloudflare edge.
+## Route Map
 
-## Key Architectural Decisions
+| Route | Type | Auth | Purpose |
+|---|---|---|---|
+| `/` | Dynamic | None | Wedding landing page with login form |
+| `/login` | Dynamic | None | Authentication form (credentials or party code) |
+| `/(main)/home` | Dynamic | Any session | Wedding home page with date, location, story |
+| `/(main)/lodging` | Dynamic | Any session | Hotel/resort recommendations |
+| `/(main)/dress-code` | Dynamic | Any session | Dress code mood board |
+| `/(main)/rsvp` | Dynamic | Party or guest | Party-based RSVP with per-member forms |
+| `/(main)/media` | Dynamic | Any session | Photo/video gallery |
+| `/admin` | Dynamic | Admin only | Dashboard with stats and recent RSVPs |
+| `/admin/site` | Dynamic | Admin only | Site configuration editor |
+| `/admin/parties` | Dynamic | Admin only | Party management with access codes |
+| `/admin/guests` | Dynamic | Admin only | Guest CRUD with party assignment |
+| `/admin/lodging` | Dynamic | Admin only | Lodging recommendations CRUD |
+| `/admin/dress-code` | Dynamic | Admin only | Dress code image management |
+| `/admin/rsvp` | Dynamic | Admin only | RSVP response viewer |
+| `/admin/media` | Dynamic | Admin only | Media gallery CRUD |
+| `/api/health` | Static | None | Database-backed health check |
 
-| Decision | Choice | Rationale |
+## Authentication & Authorization
+
+Three session types, each with different access:
+
+| Session Type | Created By | Access |
 |---|---|---|
-| Data fetching | Server Components | Eliminates client-server waterfall, reduces bundle size |
-| Mutations | Server Actions | Type-safe, colocated with routes, no API boilerplate |
-| Database | SQLite via better-sqlite3 | Zero-config, file-based, no external server process |
-| Auth | Cookie-based session (base64 JSON) | Simple demo auth; production should replace with OAuth/SAML |
-| Deployment | Multi-stage Docker | Dev dependencies stripped for lean production images |
-| TLS | Cloudflare Origin CA | Required when behind Cloudflare Tunnel (Let's Encrypt HTTP-01 cannot reach origin) |
+| `admin` | Username/password login | All routes |
+| `party` | Party code login | `/(main)/*` + RSVP for party members |
+| `guest` | Username/password login | `/(main)/*` only |
+
+All authenticated routes use layout-level guards. Unauthenticated access redirects to the landing page or login page.
 
 ## Technology Stack
 
 | Layer | Technology | Purpose |
 |---|---|---|
-| Framework | Next.js 14 (App Router) | Server-first React, file-based routing |
+| Framework | Next.js 16 (App Router, Turbopack) | Server-first React, file-based routing |
 | Language | TypeScript 5.4 (strict) | Type safety with no `any` |
-| Database | better-sqlite3 (WAL mode) | Synchronous SQLite with concurrent read performance |
-| Styling | Plain CSS (custom properties) | Zero-dependency, themeable via `:root` variables |
+| Database | better-sqlite3 (WAL mode) | Synchronous SQLite, zero-config |
+| Auth | HMAC-signed JSON cookie | Session tokens with scrypt password hashing |
+| Styling | Plain CSS (custom properties) | Zero-dependency, themeable via `:root` |
 | Proxy | Caddy 2.11 (alpine) | TLS, rate limiting, security headers |
 | Tunnel | cloudflared 2026.6.1 | Outbound-only Cloudflare Tunnel |
-| Development | OpenCode + Ollama | AI-assisted coding with reusable skills |
+| Testing | Vitest + Playwright | Unit tests (37) + E2E tests (17) |
+| Deployment | Docker Compose | Multi-stage build, isolated networks |
 
-## Development Workflow
+## Directory Layout
 
-### 1. Host Setup (one-time)
-
-Run the setup orchestrator from the project root. This initializes submodules, configures the host, and bootstraps both toolkits:
-
-```bash
-./setup.sh
+```
+src/
+├── app/                      # Next.js App Router
+│   ├── (main)/               # Authenticated guest pages
+│   │   ├── dress-code/page.tsx
+│   │   ├── home/page.tsx
+│   │   ├── lodging/page.tsx
+│   │   ├── media/page.tsx
+│   │   ├── rsvp/page.tsx       + rsvp-form.tsx, actions.ts
+│   │   └── layout.tsx          (auth guard + navigation)
+│   ├── admin/                 # Admin dashboard
+│   │   ├── dress-code/       # Image CRUD
+│   │   ├── guests/           # Guest CRUD with party assignment
+│   │   ├── lodging/          # Lodging CRUD
+│   │   ├── media/            # Media gallery CRUD
+│   │   ├── parties/          # Party CRUD with access codes
+│   │   ├── rsvp/             # Response viewer
+│   │   ├── site/             # Site config editor
+│   │   └── layout.tsx         (admin guard + sidebar)
+│   ├── api/health/route.ts   # Health check endpoint
+│   ├── login/                # Login page + actions
+│   └── (page.tsx, layout.tsx, error.tsx, not-found.tsx)
+├── components/               # Shared UI
+├── lib/                      # Server-only utilities
+│   ├── repository/           # Data access layer (7 files)
+│   ├── auth.ts               # Session + password
+│   ├── db.ts                 # Connection + migration + seed
+│   ├── schema.ts             # DDL
+│   └── config.ts             # Env validation
+├── app/globals.css           # Styles (490 lines)
 ```
 
-This delegates to each submodule's `setup-host.sh` and `bootstrap.sh` scripts in dependency order:
-1. **`web-deploy-env`** — Pulls Docker images (`caddy`, `cloudflared`), builds `web-deploy-base` image, symlinks templates and scripts
-2. **`agent-dev-env`** — Installs `curl`, `git`, `zstd`, installs Ollama, pulls `qwen2.5-coder` models, links devcontainer and skills
+## Key Architecture Decisions
 
-Both `setup-host.sh` scripts have a devcontainer guard — they abort if run inside a devcontainer, since host-level operations (Docker, Ollama) belong on the host.
-
-### 2. Open in Devcontainer
-
-After host setup, open the project in VS Code and reopen in the devcontainer. The devcontainer config is at `.devcontainer/base/devcontainer.json` (symlinked from `agent-dev-env/.devcontainer/base/`).
-
-The devcontainer:
-
-- Inherits from the `web-deploy-base` image (Node.js 22, system libs)
-- Installs additional packages: Playwright, SQLite CLI, browser dependencies
-- Installs OpenCode CLI globally (`opencode-ai`)
-- Runs `configure.sh` on creation to install OpenCode config and verify Ollama connectivity
-
-The `configure.sh` script validates:
-- Ollama is reachable at `host.docker.internal:11434`
-- `BRAVE_API_KEY` is set for web search
-- Skills symlink exists under `.opencode/skills`
-- Project rules and base env rules are present
-
-### 3. Start Development Server
-
-From inside the devcontainer:
-
-```bash
-npm run dev
-```
-
-This starts Next.js on port 3000. The dev server supports hot module replacement and displays errors in-browser.
-
-Before first launch, seed the database with demo data:
-
-```bash
-npm run db:seed   # Creates tables if needed, then inserts demo data (skips if already populated)
-```
-
-### 4. Run Tests
-
-The project includes both unit tests (Vitest) and end-to-end tests (Playwright).
-
-**Unit tests** cover library code and components:
-
-```bash
-npm test             # vitest run — single run
-npm run test:watch   # vitest — watch mode
-```
-
-Test files are colocated with source code using the `.test.ts` / `.test.tsx` naming convention. There are currently 9 unit tests across 3 files:
-
-| Test File | Tests | Coverage |
+| Decision | Choice | Rationale |
 |---|---|---|
-| `src/lib/db.test.ts` | 4 | Database schema, constraints, validation |
-| `src/lib/auth.test.ts` | 2 | Session creation and encoding |
-| `src/components/header.test.tsx` | 3 | Component rendering and props |
-
-**End-to-end tests** verify full-page flows in a headless Chromium browser:
-
-```bash
-npm run test:e2e      # playwright test — headless
-npm run test:e2e:ui   # playwright test --ui — interactive UI mode
-```
-
-E2E tests are in `e2e/` directory. The Playwright config automatically starts the dev server via `webServer` config. There are currently 8 E2E tests across 3 files:
-
-| Test File | Tests | Coverage |
-|---|---|---|
-| `e2e/home.spec.ts` | 3 | Page load, navigation links, header rendering |
-| `e2e/health.spec.ts` | 1 | API health endpoint response |
-| `e2e/admin-auth.spec.ts` | 4 | Auth redirect, login flow, credentials validation, dashboard rendering |
-
-Both test suites are designed to be run inside the devcontainer, which has Chromium pre-installed.
-
-### 5. Build and Type Check
-
-The production build can be run inside the devcontainer to verify compilation before deployment:
-
-```bash
-npm run build       # Next.js production build (compiles all routes)
-npm run typecheck   # npx tsc --noEmit — standalone type check
-npm run lint        # ESLint via next lint
-```
-
-The build pipeline compiles all routes, resolves imports, and generates the `.next` output directory. The typecheck step validates TypeScript strict mode independently of the Next.js build.
-
-### 6. Deploy (host only, not in devcontainer)
-
-Deployment must run on the host machine, not inside the devcontainer. The deploy script enforces this with a devcontainer guard.
-
-See [Deployment Pipeline](deployment-pipeline.md) for full details.
-
-### Development Cycle Summary
-
-```
-Host Machine                         Devcontainer (Docker)
-────────────                         ────────────────────
-./setup.sh (one-time)
-    │
-    ▼
-Open in VS Code → Reopen in Devcontainer
-                                        │
-                                        ▼
-                                    npm run db:seed
-                                    npm run test       ← new
-                                    npm run dev        ← iterate
-                                    npm run build      ← verify
-                                    npm run typecheck  ← verify
-                                    npm run test:e2e   ← verify
-                                        │
-                                        ▼
-Host: ./deploy.sh (production deploy)
-```
-
-```
-Host Machine                         Devcontainer (Docker)
-────────────                         ────────────────────
-./setup.sh (one-time)
-    │
-    ▼
-Open in VS Code → Reopen in Devcontainer
-                                        │
-                                        ▼
-                                    npm run db:seed
-                                    npm run dev        ← iterate
-                                    npm run build      ← verify
-                                    npm run typecheck  ← verify
-                                        │
-                                        ▼
-Host: ./deploy.sh (production deploy)
-```
-
-## Route Map
-
-| Route | Type | Purpose |
-|---|---|---|
-| `/` | Static | Landing page with feature cards |
-| `/features` | Static | Full feature listing |
-| `/about` | Static | Architecture and stack description |
-| `/login` | Dynamic | Authentication form |
-| `/admin` | Dynamic | Admin dashboard (protected) |
-| `/admin/users` | Dynamic | User management (protected) |
-| `/admin/settings` | Dynamic | App configuration display (protected) |
-| `/api/health` | Static | Database-backed health check |
-| `404` | Static | Custom not-found page |
-| `error` | Client | Error boundary with retry |
+| Data fetching | Server Components | No client-server waterfall, smaller bundles |
+| Mutations | Server Actions | Type-safe, colocated, no API boilerplate |
+| Database | SQLite | Zero-config, file-based, no server process needed |
+| Auth | HMAC-signed JSON cookie | Simple, secure (signed), replaceable |
+| Access control | Layout-level guards | Server-side redirects, never reaches client |
+| RSVP | Party model | Families RSVP once with a code (not per-person passwords) |
+| Styling | Plain CSS | Zero dependencies, themeable via custom properties |
+| Deployment | Docker Compose | Isolated networks, multi-stage builds, health checks |

@@ -1,173 +1,205 @@
-# Web Starter App
+# Wedding Web App
 
-A production-ready Next.js starter application demonstrating the integration of two infrastructure toolkits as Git submodules:
-
-- **[`agent-dev-env`](agent-dev-env/)** — Agentic development environment (Dev Container, skills, shared rules)
-- **[`web-deploy-env`](web-deploy-env/)** — Deployment infrastructure (Docker, Caddy, Cloudflare Tunnel, SQLite)
-
-Designed to be forked. The starter gives you a working Next.js 14 app with admin dashboard, SQLite database, authentication, and a complete Docker-based deployment pipeline out of the box.
-
----
-
-## What You Get
-
-| Layer | Technology | Provided By |
-|---|---|---|
-| **Application** | Next.js 14 (App Router), TypeScript strict | Parent project |
-| **Database** | SQLite via better-sqlite3 (WAL mode) | Parent project |
-| **Auth** | Cookie-based demo session (shared `ADMIN_PASSWORD`) | Parent project |
-| **Development** | Dev Container, Playwright, Vitest, agent skills | `agent-dev-env` |
-| **Deployment** | Docker Compose, Caddy, Cloudflare Tunnel, backups | `web-deploy-env` |
-
----
-
-## Directory Structure
+A production-ready wedding website built with Next.js 16, SQLite, and Docker. Features an admin dashboard for managing all content, guest authentication, party-based RSVP, and a full deployment pipeline via Caddy + Cloudflare Tunnel.
 
 ```text
-web-starter-app/
-├── agent-dev-env/            # Git submodule — agentic development toolkit
-├── web-deploy-env/           # Git submodule — deployment infrastructure
-│
-├── src/                      # Application source (Next.js App Router)
-│   ├── app/                  # Pages, layouts, API routes
-│   ├── components/           # Reusable UI components
-│   └── lib/                  # Shared utilities (db, auth)
-│
-├── scripts/                  # Utility scripts (e.g. database seeding)
-├── docs/                     # Architecture and feature documentation
-├── e2e/                      # Playwright end-to-end tests
-├── data/                     # Persistent storage (SQLite, backups)
-│
-├── .dockerignore             # Symlink → web-deploy-env/templates/
-├── Dockerfile                # Symlink → web-deploy-env/templates/
-├── docker-compose.yml        # Symlink → web-deploy-env/templates/
-├── Caddyfile                 # Symlink → web-deploy-env/templates/
-├── deploy.sh                 # Symlink → web-deploy-env/scripts/
-├── down.sh                   # Symlink → web-deploy-env/scripts/
-├── backup.sh                 # Symlink → web-deploy-env/scripts/
-│
-├── package.json
-├── AGENTS.md                 # Project-specific agent context
-├── rules/                    # Project-specific rules
-└── README.md
+┌─────────────────────────────────────────────────┐
+│                    Guests                        │
+│  ┌──────────┐  ┌──────────┐  ┌────────────────┐ │
+│  │ Landing  │  │  Login   │  │  Party Code    │ │
+│  │  Page    │  │(username │  │  (family login)│ │
+│  │          │  │ /password)│  │                │ │
+│  └──────────┘  └────┬─────┘  └───────┬────────┘ │
+│                     │                │          │
+│              ┌──────▼────────────────▼──────┐   │
+│              │      Authenticated Pages     │   │
+│              │  home | lodging | dress-code │   │
+│              │  rsvp | media                │   │
+│              └─────────────────────────────┘   │
+└─────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│                     Admin                        │
+│  site | parties | guests | lodging | dress-code │
+│  rsvp | media                                    │
+└─────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Setup
+## Features
+
+| Feature | Description |
+|---|---|
+| **Landing Page** | Configurable title and background image with login form |
+| **Home Page** | Wedding date, location, subtitle, optional background video |
+| **Lodging** | Curated hotel/resort recommendations with images and links |
+| **Dress Code** | Mood board with images and description text |
+| **RSVP** | Party-based group RSVP with per-member responses, plus ones |
+| **Media Gallery** | Photo and video sections (e.g. Engagement, Ceremony, Reception) |
+| **Admin Dashboard** | Full CRUD for all content, parties, guests, and RSVP viewer |
+| **Authentication** | Admin (username/password), Party (access code), Guest (shared view-only) |
+| **Health Check** | `/api/health` endpoint for Docker health checks and monitoring |
+
+---
+
+## Quick Start
 
 ```bash
-# 1. Clone with submodules
-git clone <repo-url> && cd web-starter-app
-git submodule update --init --recursive
+# Prerequisites: Node.js 22, npm
 
-# 2. Bootstrap both toolkits (run on host, not in devcontainer)
-./agent-dev-env/scripts/setup-host.sh
-./agent-dev-env/scripts/bootstrap.sh
-./web-deploy-env/scripts/setup-host.sh
-./web-deploy-env/scripts/bootstrap.sh
+# 1. Install dependencies
+npm install
 
-# 3. Open in VS Code → Reopen in Dev Container
-# 4. Inside the devcontainer, seed the database:
+# 2. Configure environment
+cp .env.example .env
+# Edit .env with your settings (required: ADMIN_USERNAME, ADMIN_PASSWORD, SESSION_SECRET)
+
+# 3. Seed the database with demo data
 npm run db:seed
 
-# 5. Start developing
+# 4. Start development server
 npm run dev
+# → http://localhost:3000
 ```
+
+### Demo Credentials
+
+| Role | Login Method | Credentials |
+|---|---|---|
+| **Admin** | Username & Password tab | `admin` / `admin` |
+| **Party** | Party Code tab | `DEMO-1234` |
+| **Guest** (view-only) | Username & Password tab | `guest` / `guest` |
 
 ---
 
-## Development
-
-### Quick Start
-
-```bash
-npm run dev        # Next.js dev server (port 3000, HMR)
-npm test           # Vitest unit tests
-npm run test:e2e   # Playwright headless E2E tests
-```
-
-### Key Commands
+## Key Commands
 
 | Command | Purpose |
 |---|---|
 | `npm run dev` | Start dev server with hot reload |
-| `npm run build` | Production build |
+| `npm run build` | Production build (verifies compilation) |
 | `npm test` | Run unit tests (Vitest) |
 | `npm run test:e2e` | Run E2E tests (Playwright, headless) |
 | `npm run typecheck` | TypeScript strict-mode check |
-| `npm run lint` | ESLint via next lint |
-| `npm run db:seed` | Insert demo data |
-| `./deploy.sh` | Build and deploy via Docker |
-| `./down.sh` | Stop all services |
-| `./backup.sh` | Backup database |
+| `npm run lint` | ESLint (flat config) |
+| `npm run db:seed` | Seed database with demo data |
+
+---
+
+## For Brides & Grooms: Launching Your Wedding Site
+
+### 1. Set Up Your Environment
+
+```bash
+cp .env.example .env
+```
+
+Required variables in `.env`:
+
+```env
+# Your chosen admin credentials
+ADMIN_USERNAME=your-name
+ADMIN_PASSWORD=your-password
+
+# Session encryption key (at least 32 characters, keep secret!)
+SESSION_SECRET=a-long-unique-string
+```
+
+### 2. Configure the Site
+
+After logging in as admin (`/admin`):
+
+| Page | What to do |
+|---|---|
+| **Site Config** | Set landing title, background image, home page text, date, location, dress code description |
+| **Parties** | Create party groups (households) with unique access codes |
+| **Guests** | Add guests, assign them to parties, set RSVP permissions and +1 ability |
+| **Lodging** | Add hotel/resort recommendations with photos and booking links |
+| **Dress Code** | Upload mood board images |
+| **Media** | Upload engagement photos, ceremony/reception galleries |
+| **RSVP** | View all submitted responses in one place |
+
+### 3. Share Access
+
+- **Party codes** — Print on invitations. Each party uses one code to RSVP for all members.
+- **Guest account** — A shared view-only account (`guest`/`guest`) for browsing without RSVP.
+- **Admin account** — Only you and your partner need this.
+
+### 4. Deploy
+
+See [docs/architecture/deployment-pipeline.md](docs/architecture/deployment-pipeline.md) for Docker + Cloudflare Tunnel deployment.
 
 ---
 
 ## Architecture
 
-### Application
+### Application Stack
 
-A standard Next.js 14 App Router project with a public site and an admin dashboard. Authentication uses a minimal cookie-based session with a shared `ADMIN_PASSWORD` env var — intentionally simple for demo purposes. See [docs/features/authentication.md](docs/features/authentication.md) for details and swap recommendations.
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 16 (App Router, Turbopack) |
+| Language | TypeScript 5.4 (strict, no `any`) |
+| Database | SQLite via better-sqlite3 (WAL mode) |
+| Auth | Cookie-based HMAC-signed JSON sessions |
+| Styling | Plain CSS with custom properties |
+
+### Directory Structure
+
+```text
+src/
+├── app/                    # Next.js App Router
+│   ├── (main)/             # Authenticated public pages (home, lodging, dress-code, rsvp, media)
+│   ├── admin/              # Admin dashboard (site, guests, parties, lodging, dress-code, rsvp, media)
+│   ├── api/health/         # Health check endpoint
+│   └── login/              # Login page and actions
+├── components/             # Shared UI (header, navigation, logout-button)
+├── lib/                    # Server-only utilities
+│   ├── repository/         # Data access layer (one file per entity)
+│   ├── auth.ts             # Session management, password hashing
+│   ├── db.ts               # Database connection, migration, seed
+│   ├── schema.ts           # DDL statements
+│   └── config.ts           # Environment validation
+├── app/globals.css         # Global styles (490 lines)
+```
+
+### Database
+
+7 tables: `parties`, `guests`, `site_config`, `lodging_options`, `dress_code_images`, `rsvp_responses`, `media_items`.
+
+See [docs/architecture/database-layer.md](docs/architecture/database-layer.md) for the full schema.
 
 ### Deployment
 
-Three Docker containers connected over two isolated networks:
+Three Docker containers over two isolated networks:
 
 ```
-                     Cloudflare Edge
-                           |
-                     Cloudflare Tunnel
-                           |
-                     ┌─────┘
-               [frontend network]
-                     |
-           Caddy (security gateway)
-                     |
-               [backend network] (internal, no internet)
-                     |
-          webapp (Next.js on :3000)
-                     |
-                SQLite (/app/data)
+Internet → Cloudflare Tunnel → Caddy (TLS) → webapp (Next.js) → SQLite
 ```
 
-- **tunnel** — Outbound-only Cloudflare connection (no public IP needed)
-- **caddy** — Reverse proxy, security headers, network isolation
-- **webapp** — Application server, isolated from the internet
-
-See [web-deploy-env/README.md](web-deploy-env/README.md) for the full deployment architecture.
+See [docs/architecture/deployment-pipeline.md](docs/architecture/deployment-pipeline.md).
 
 ---
 
-## Customizing for Production
+## Testing
 
-This starter is designed to be forked. To make it your own:
+| Suite | Command | Count |
+|---|---|---|
+| Unit tests | `npm test` | 37 tests (10 files) |
+| E2E tests | `npm run test:e2e` | 17 tests (6 specs) |
 
-1. **Replace the app** — Edit `src/` with your application code.
-2. **Set your domain** — Add `DOMAIN` and `TUNNEL_TOKEN` to `.env`.
-3. **Secure auth** — Replace the demo auth with Auth.js, Lucia, or signed JWTs.
-4. **Create a Cloudflare tunnel** — Point it to `http://caddy:80`.
-5. **Deploy** — Run `./deploy.sh` on your host machine.
-
-See the deployment checklist in [web-deploy-env/README.md](web-deploy-env/README.md#deployment-checklist).
-
----
-
-## Design Philosophy
-
-This project separates concerns across three layers:
-
-- **`web-starter-app`** — Owns the application code, business logic, and database schema.
-- **`agent-dev-env`** — Owns the development environment and reusable agent capabilities.
-- **`web-deploy-env`** — Owns the deployment infrastructure and operational runbooks.
-
-Improvements to the toolkits propagate to all downstream projects via `git submodule update --remote`. The parent project never modifies the submodules — it customizes through `rules/`, `AGENTS.md`, and its own `package.json`.
+- Unit tests cover: auth, db init, all repositories (guests, RSVP, lodging, dress code, media, site config), header, navigation.
+- E2E tests cover: landing page, home page, admin auth, admin CRUD (lodging, guests, media), RSVP flows (party code login, submission, plus ones, view-only guest, invalid code), health check.
 
 ---
 
 ## Documentation
 
-- [docs/architecture/](docs/architecture/) — Architecture decision records and design docs
-- [docs/features/](docs/features/) — Feature specifications
-- [agent-dev-env/README.md](agent-dev-env/README.md) — Development toolkit reference
-- [web-deploy-env/docs/](web-deploy-env/docs/) — Deployment guides and runbooks
+| Document | Contents |
+|---|---|
+| [Authentication](docs/features/authentication.md) | Three auth methods, session management, rate limiting |
+| [Admin Dashboard](docs/features/admin-dashboard.md) | All admin pages and CRUD operations |
+| [RSVP System](docs/features/rsvp.md) | Party-based RSVP, per-member submission |
+| [Database Layer](docs/architecture/database-layer.md) | Schema, connection, migration, seed |
+| [Architecture Overview](docs/architecture/overview.md) | Full system architecture and route map |
+| [Project Structure](docs/architecture/project-structure.md) | Directory tree with annotations |
+| [Deployment Pipeline](docs/architecture/deployment-pipeline.md) | Docker, Caddy, Cloudflare Tunnel |

@@ -50,14 +50,9 @@ node_modules/
 # =========================
 # Database & Data
 # =========================
-data/*.db
-data/**/*.db
-data/*.db-wal
-data/**/*.db-wal
-data/*.db-shm
-data/**/*.db-shm
-data/backups/
-data/sqlite/
+data/*
+!data/.gitkeep
+backups/
 
 # =========================
 # Build Artifacts

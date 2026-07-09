@@ -4,10 +4,11 @@
 A production-ready Next.js starter web application with admin dashboard, SQLite database, and Docker-based deployment via Cloudflare Tunnel + Caddy.
 
 ## Architecture
-- **Framework**: Next.js 14 (App Router) — server-first by default
+- **Framework**: Next.js 16 (App Router) — server-first by default
 - **Language**: TypeScript (strict mode), no `any` allowed
 - **Database**: SQLite via better-sqlite3 (WAL mode), server-only access
-- **Auth**: Cookie-based session (simple base64-encoded JSON for demo)
+- **Auth**: Cookie-based session (HMAC-signed JSON for demo)
+- **Lint**: ESLint 9 with flat config (`eslint.config.js`)
 - **Deployment**: Multi-stage Docker → Caddy reverse proxy → Cloudflare Tunnel
 
 ## Directory Structure
@@ -39,7 +40,7 @@ A production-ready Next.js starter web application with admin dashboard, SQLite 
 - `npm run test:e2e` — Run E2E tests (Playwright, headless)
 - `npm run test:e2e:ui` — Run E2E tests with Playwright UI mode
 - `npm run typecheck` — Standalone TypeScript check
-- `npm run lint` — ESLint via next lint
+- `npm run lint` — ESLint (flat config)
 - `npm run db:seed` — Seed with demo data
 - `./deploy.sh` — Docker deployment
 - `./down.sh` — Stop and tear down services

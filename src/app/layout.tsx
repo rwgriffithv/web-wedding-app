@@ -1,39 +1,29 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { config } from "@/lib/config";
+import { Playfair_Display, Great_Vibes } from "next/font/google";
 import "./globals.css";
 
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-heading",
+  display: "swap",
+});
+
+const greatVibes = Great_Vibes({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-script",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: config.siteName,
-  description: config.siteDescription,
+  title: process.env.APP_NAME || "Wedding",
+  description: "Our wedding website",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body>
-        <header className="site-header">
-          <div className="container">
-            <Link href="/" style={{ fontWeight: 700, fontSize: "1.125rem", color: "var(--color-text)" }}>
-              {config.siteName}
-            </Link>
-            <nav>
-              <Link href="/">Home</Link>
-              <Link href="/features">Features</Link>
-              <Link href="/about">About</Link>
-              <Link href="/login" className="btn btn-outline" style={{ textDecoration: "none" }}>
-                Sign In
-              </Link>
-            </nav>
-          </div>
-        </header>
-        {children}
-        <footer>
-          <div className="container">
-            &copy; {new Date().getFullYear()} {config.siteName}. All rights reserved.
-          </div>
-        </footer>
-      </body>
+    <html lang="en" className={`${playfair.variable} ${greatVibes.variable}`}>
+      <body>{children}</body>
     </html>
   );
 }

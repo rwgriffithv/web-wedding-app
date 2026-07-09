@@ -1,102 +1,187 @@
 # Admin Dashboard
 
-- **Date:** 2026-06-29
-- **Scope:** Admin panel routes, sidebar layout, and page descriptions
+- **Date:** 2026-07-03
+- **Scope:** Admin panel layout, all management pages
 
 ## Overview
 
-The admin dashboard is a set of protected routes under `/admin`. Access is controlled at the layout level — all routes within `/admin/*` require a valid admin session. Unauthenticated users are redirected to `/login`.
+The admin dashboard is a set of protected routes under `/admin`. Access is controlled at the layout level — all routes within `/admin/*` require an admin session (`isAdmin()` returns true). Unauthenticated users are redirected to `/login`.
 
 ## Layout
 
 The admin layout (`src/app/admin/layout.tsx`) provides:
 
 - **Guard** — Calls `isAdmin()`; redirects to `/login` if not authenticated
-- **Sidebar** — Dark-themed navigation panel with links to Dashboard, Users, Settings
+- **Sidebar** — Navigation panel with links to all management sections
 - **Back to Site** — Link to return to the public site
 
 ```
-┌─────────────────────────────────────────┐
-│  ┌──────────┐  ┌──────────────────────┐ │
-│  │          │  │                      │ │
-│  │  Admin   │  │  Dashboard           │ │
-│  │  Panel   │  │  Description text    │ │
-│  │          │  │                      │ │
-│  │  ►Dashboard│  │  [Stats Cards]       │ │
-│  │  Users   │  │                      │ │
-│  │  Settings│  │  Recent Users Table  │ │
-│  │          │  │                      │ │
-│  │  ← Site  │  │                      │ │
-│  └──────────┘  └──────────────────────┘ │
-└─────────────────────────────────────────┘
+┌────────────────────────────────────────────┐
+│  ┌────────────┐  ┌────────────────────────┐│
+│  │            │  │                        ││
+│  │  Admin     │  │  Dashboard             ││
+│  │  Panel     │  │  Description           ││
+│  │            │  │                        ││
+│  │  ►Dashboard│  │  [Stat Cards]          ││
+│  │  Site      │  │  [RSVP Summary Table]  ││
+│  │  Parties   │  │                        ││
+│  │  Guests    │  │                        ││
+│  │  Lodging   │  │                        ││
+│  │  Dress Code│  │                        ││
+│  │  RSVP      │  │                        ││
+│  │  Media     │  │                        ││
+│  │            │  │                        ││
+│  │  ← Back    │  │                        ││
+│  └────────────┘  └────────────────────────┘│
+└────────────────────────────────────────────┘
 ```
 
 ## Routes
 
 ### `/admin` — Dashboard Overview
 
-The main dashboard page (`src/app/admin/page.tsx`) renders:
+The main dashboard page renders:
 
-**Stats Cards** — Three summary metrics from the database:
+**Stats Cards** — Three summary metrics:
 
 | Metric | Query |
 |---|---|
-| Total Users | `SELECT COUNT(*) FROM users` |
-| Admins | `SELECT COUNT(*) FROM users WHERE role = 'admin'` |
-| Recent Signups | Count of last 5 users |
+| Total Guests | `SELECT COUNT(*) FROM guests` |
+| RSVP'd Yes | `SELECT COUNT(*) FROM rsvp_responses WHERE attending = 1` |
+| RSVP'd No | `SELECT COUNT(*) FROM rsvp_responses WHERE attending = 0` |
 
-**Recent Users Table** — The 5 most recently created users, showing:
+**Recent RSVP Table** — The 10 most recent responses, showing guest name, attendance, and plus one name.
 
-| Column | Data |
+### `/admin/site` — Site Configuration
+
+Editable settings via Server Actions with `revalidatePath`:
+
+| Field | Type | Description |
+|---|---|---|
+| Landing Title | Text | Main headline on the landing page |
+| Landing Background | URL | Full-page background image URL |
+| Home Title | Text | Welcome heading on `/home` |
+| Home Subtitle | Text | Subtitle text |
+| Home Date | Text | Wedding date (displayed prominently) |
+| Home Location | Text | Venue name and city |
+| Home Background Video | URL | Optional background video for home page |
+| Dress Code Text | Textarea | Dress code description displayed on `/dress-code` |
+
+All fields are persisted in the `site_config` table and fetched via `getConfig(key)`.
+
+### `/admin/parties` — Party Management
+
+Parties group guests into households for convenient RSVP. Each party has a unique access code.
+
+| Column | Description |
 |---|---|
-| Name | `user.name` |
-| Email | `user.email` |
-| Role | Badge with admin/user styling |
-| Joined | Formatted date from `user.created_at` |
+| Name | Party name (e.g. "The Smith Family") |
+| Code | Unique access code (e.g. "SMITH-A1B2"), printed on invitations |
+| Members | Number of guests assigned to this party |
 
-All data is fetched in the Server Component with direct SQL queries.
+**Inline member management** — Each party row shows its members with:
+- Display name, type, RSVP status for each member
+- Button to add new members
+- Button to generate a new access code
 
-### `/admin/users` — User Management
+### `/admin/guests` — Guest Management
 
-Full user list (`src/app/admin/users/page.tsx`) with all users ordered by creation date (descending). Shows the same columns as the dashboard table plus a monospace `ID` column.
+Full CRUD for guest accounts. Each guest has:
 
-### `/admin/settings` — Application Settings
+| Field | Description |
+|---|---|
+| Display Name | Shown on RSVP form and in admin |
+| Username | Used for login |
+| Password | Hashed with scrypt |
+| Type | `guest` or `guest_plus_one` (legacy distinction) |
+| Party | Optional party assignment (dropdown of all parties) |
+| Can RSVP? | Yes/No — View-only guests see an informational message instead of the RSVP form |
+| Can bring +1? | Yes/No — Controls whether the plus one field appears on the RSVP form |
 
-A read-only settings page (`src/app/admin/settings/page.tsx`) displaying:
+Inline editing — each guest row has editable fields and a "Save" button. Admin account is protected from editing.
 
-- **Application Name** — `config.siteName` (set via `APP_NAME` env var, defaults to `"WebStarter"`)
-- **Database** — `DATABASE_URL` or fallback path
-- **Build** — Next.js 14, TypeScript strict, App Router
+### `/admin/lodging` — Lodging Recommendations
 
-Designed as an extension point — settings can be made editable via Server Actions in a future iteration.
+CRUD for hotel/resort recommendations displayed on `/lodging`:
+
+| Field | Description |
+|---|---|
+| Title | Hotel or resort name |
+| Image URL | Photo URL |
+| URL | Booking or website link |
+| Sort Order | Display order |
+
+### `/admin/dress-code` — Dress Code Images
+
+Image uploads for the dress code mood board on `/dress-code`:
+
+| Field | Description |
+|---|---|
+| Image URL | Photo URL |
+| Sort Order | Display order |
+
+### `/admin/rsvp` — RSVP Response Viewer
+
+Read-only table of all RSVP responses:
+
+| Column | Description |
+|---|---|
+| Guest | Display name |
+| Attending | Yes / No |
+| Plus One | Plus one name (if any) |
+| Submitted | Timestamp |
+
+### `/admin/media` — Media Gallery
+
+CRUD for photo/video sections on `/media`:
+
+| Field | Description |
+|---|---|
+| Type | `image` or `video` |
+| URL | Media URL |
+| Thumbnail URL | Optional thumbnail for videos |
+| Title | Display title |
+| Section | Section heading (e.g. "Engagement", "Ceremony", "Reception") |
+| Sort Order | Display order |
+
+---
 
 ## Component Architecture
 
 ```
-admin/layout.tsx          ← Server Component (guard + sidebar)
-  ├── admin/page.tsx      ← Server Component (stats + recent users)
-  ├── admin/users/page.tsx ← Server Component (full user list)
-  └── admin/settings/page.tsx ← Server Component (read-only config)
+admin/layout.tsx              ← Server Component (guard + sidebar)
+  ├── admin/page.tsx           ← Server Component (stats + recent RSVPs)
+  ├── admin/site/
+  │   ├── page.tsx             ← Server Component
+  │   ├── actions.ts           ← Server Actions (updateConfig)
+  │   └── site-config-form.tsx ← Client Component
+  ├── admin/parties/
+  │   ├── page.tsx             ← Server Component
+  │   ├── actions.ts           ← Server Actions (CRUD + code gen)
+  │   ├── party-list.tsx       ← Client Component
+  │   └── party-form.tsx       ← Client Component
+  ├── admin/guests/
+  │   ├── page.tsx             ← Server Component
+  │   ├── actions.ts           ← Server Actions (addGuest, updateGuest)
+  │   ├── guest-list.tsx       ← Client Component
+  │   └── guest-form.tsx       ← Client Component
+  ├── admin/lodging/
+  │   ├── page.tsx             ← Server Component
+  │   ├── actions.ts           ← Server Actions (CRUD)
+  │   ├── lodging-list.tsx     ← Client Component
+  │   └── lodging-form.tsx     ← Client Component
+  ├── admin/dress-code/
+  │   ├── page.tsx             ← Server Component
+  │   ├── actions.ts           ← Server Actions (CRUD)
+  │   ├── image-list.tsx       ← Client Component
+  │   └── image-form.tsx       ← Client Component
+  ├── admin/rsvp/
+  │   └── page.tsx             ← Server Component (read-only)
+  └── admin/media/
+      ├── page.tsx             ← Server Component
+      ├── actions.ts           ← Server Actions (CRUD)
+      ├── media-list.tsx       ← Client Component
+      └── media-form.tsx       ← Client Component
 ```
 
-All admin pages are Server Components. No Client Components are used — the admin panel is fully server-rendered HTML with no client-side JavaScript for data fetching.
-
-## Styling
-
-The admin panel uses CSS custom properties scoped to the `.admin-layout` and `.admin-sidebar` classes in `globals.css`:
-
-| Variable | Value | Usage |
-|---|---|---|
-| `--color-sidebar` | `#1e293b` | Dark sidebar background |
-| `--color-sidebar-text` | `#cbd5e1` | Sidebar link text |
-| `--color-sidebar-active` | `#ffffff` | Active/hover link text |
-
-## Future Extensions
-
-| Feature | Approach |
-|---|---|
-| Editable settings | Server Action with `revalidatePath` |
-| User CRUD | Form + Server Action for create/update/delete |
-| Pagination | SQL `LIMIT/OFFSET` with page params |
-| Search | `WHERE name LIKE ? OR email LIKE ?` |
-| Chart visualizations | Client Component with chart library |
+All admin pages are Server Components. Forms are Client Components using `useActionState` for mutations with `revalidatePath()`.

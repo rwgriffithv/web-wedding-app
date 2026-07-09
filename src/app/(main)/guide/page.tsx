@@ -1,0 +1,113 @@
+import Link from "next/link";
+import Image from "next/image";
+import { getAll as getScheduleItems } from "@/lib/repository/schedule";
+import { getConfig } from "@/lib/repository/site-config";
+import { getImages } from "@/lib/repository/dress-code";
+import { getAll as getLodgingOptions } from "@/lib/repository/lodging";
+
+interface GuidePageProps {
+  searchParams: Promise<{ tab?: string }>;
+}
+
+const TABS = [
+  { id: "schedule", label: "Schedule" },
+  { id: "dress-code", label: "Dress Code" },
+  { id: "lodging", label: "Lodging" },
+] as const;
+
+type TabId = (typeof TABS)[number]["id"];
+
+function isValidTab(tab: string | undefined): tab is TabId {
+  return TABS.some((t) => t.id === tab);
+}
+
+export default async function GuidePage({ searchParams }: GuidePageProps) {
+  const params = await searchParams;
+  const activeTab: TabId = isValidTab(params.tab) ? params.tab : "schedule";
+
+  const scheduleItems = getScheduleItems();
+  const dressCodeText = getConfig("dress_code_text");
+  const dressCodeImages = getImages();
+  const lodgingOptions = getLodgingOptions();
+
+  return (
+    <div className="page-content">
+      <h1>Guide</h1>
+
+      <nav className="guide-tabs" role="tablist" aria-label="Guide sections">
+        {TABS.map((tab) => (
+          <Link
+            key={tab.id}
+            id={`guide-tab-${tab.id}`}
+            href={tab.id === "schedule" ? "/guide" : `/guide?tab=${tab.id}`}
+            className={`guide-tab${activeTab === tab.id ? " active" : ""}`}
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            aria-controls={`guide-panel-${tab.id}`}
+          >
+            {tab.label}
+          </Link>
+        ))}
+      </nav>
+
+      {activeTab === "schedule" && (
+        <div id="guide-panel-schedule" role="tabpanel" aria-labelledby="guide-tab-schedule">
+          {scheduleItems.length > 0 ? (
+            <div className="schedule-timeline">
+              {scheduleItems.map((item) => (
+                <div className="schedule-item" key={item.id}>
+                  <div className="schedule-time">{item.time}</div>
+                  <div className="schedule-dot" />
+                  <div className="schedule-label">{item.label}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="empty-state">Schedule coming soon.</p>
+          )}
+        </div>
+      )}
+
+      {activeTab === "dress-code" && (
+        <div id="guide-panel-dress-code" role="tabpanel" aria-labelledby="guide-tab-dress-code">
+          {!dressCodeText && dressCodeImages.length === 0 ? (
+            <p className="empty-state">Dress Code coming soon.</p>
+          ) : (
+            <>
+              <div className="dress-code-text">{dressCodeText}</div>
+              {dressCodeImages.length > 0 && (
+                <div className="mood-board">
+                  {dressCodeImages.map((img) => (
+                    <Image key={img.id} src={img.image_url} alt="Dress code inspiration" width={400} height={250} style={{ objectFit: "cover", borderRadius: "var(--radius)" }} />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {activeTab === "lodging" && (
+        <div id="guide-panel-lodging" role="tabpanel" aria-labelledby="guide-tab-lodging">
+          {lodgingOptions.length === 0 ? (
+            <p className="empty-state">Lodging options coming soon.</p>
+          ) : (
+            <div className="lodging-grid">
+              {lodgingOptions.map((option) => (
+                <div className="lodging-card" key={option.id}>
+                  <Image src={option.image_url} alt={option.title} width={600} height={200} style={{ objectFit: "cover", width: "100%", height: "200px" }} />
+                  <div className="lodging-card-body">
+                    <h3>{option.title}</h3>
+                    <a href={option.url} target="_blank" rel="noopener noreferrer">
+                      View Details &rarr;
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,135 +1,138 @@
 # Authentication
 
-- **Date:** 2026-06-30
-- **Scope:** Login flow, session management, and access control
+- **Date:** 2026-07-03
+- **Scope:** Three auth methods, session management, rate limiting
 
-## Design Decision: Minimal Auth
+## Overview
 
-Authentication uses a **cookie-based session** with a simple base64-encoded JSON payload. This is intentionally minimal — the project's primary purpose is to demonstrate a production-ready **deployment stack** (Docker + Caddy + Cloudflare Tunnel + SQLite), not auth patterns.
+The app has three authentication methods, each granting a different level of access:
 
-**Why not Auth.js (NextAuth)?**
-
-| Factor | Decision |
-|---|---|
-| Scope | The starter exists to demo the deploy pipeline, not auth. Auth is incidental. |
-| Vendor lock-in | 28 lines of custom code vs vendor-specific schemas and adapter config. Keeps the parent free to pick any auth library. |
-| Complexity | Auth.js adds OAuth config, callback routes, a database adapter, provider keys — all noise for a demo deployment. |
-| Replaceability | The current auth is trivial to swap. The code itself flags this with comments and the docs link to production alternatives. |
-
-**Important:** This is not cryptographically signed. For production, swap to Auth.js, Lucia, or signed JWTs via `jose`.
-
-## How Authentication Works
-
-Auth has two independent parts — the **password** (a shared secret) and the **user database** (per-user profiles with roles).
-
-### The Password: `ADMIN_PASSWORD`
-
-- Set via the `ADMIN_PASSWORD` environment variable.
-- **Default:** `"admin"` (if not set).
-- It is a **shared secret** — every admin user authenticates with the same password. There are no per-user passwords.
-- The password is compared in plaintext (`password !== ADMIN_PASSWORD`). No hashing.
-- For production, replace with hashed per-user passwords (bcrypt/argon2) or OAuth.
-
-### The User Database: `db-seed`
-
-Tables are auto-created by the app on first connection. `npm run db:seed` (running `scripts/db-seed.ts`) inserts user **profiles** — email, name, and role — into the SQLite `users` table. It does **not** set passwords. The seed creates:
-
-| Email | Name | Role |
+| Method | Session Type | Access |
 |---|---|---|
-| admin@example.com | Admin User | admin |
-| alice@example.com | Alice Johnson | user |
-| bob@example.com | Bob Smith | user |
-| charlie@example.com | Charlie Brown | user |
+| Username & Password (admin) | `admin` | Full admin dashboard |
+| Party Code | `party` | RSVP page — can submit for all party members |
+| Username & Password (guest) | `guest` | View-only public pages, no RSVP |
 
-Any user with role `admin` can log in using the shared `ADMIN_PASSWORD`.
+---
 
 ## Implementation
 
-### Session Creation (`src/lib/auth.ts`)
+### Session Token
+
+Sessions use HMAC-signed JSON tokens stored in an HTTP-only cookie:
 
 ```typescript
-function createSession(user: User): string {
-  const session = { userId: user.id, role: user.role };
-  return btoa(JSON.stringify(session));  // → base64 cookie value
+interface Session {
+  guestId?: number;   // Present for admin and guest sessions
+  partyId?: number;   // Present for party sessions
+  type: "admin" | "party" | "guest";
 }
 ```
 
-### Session Parsing
+The token is signed with HMAC-SHA256 using `SESSION_SECRET` (from `.env`):
+
+```
+payload={"guestId":1,"type":"admin"}.<hmac-signature>
+```
+
+### Password Hashing
+
+Passwords are hashed with `scrypt` (synchronous, memory-hard):
 
 ```typescript
-function parseSession(): Session | null {
-  const store = cookies();
-  const token = store.get("session")?.value;
-  if (!token) return null;
-  try {
-    return JSON.parse(atob(token)) as Session;
-  } catch {
-    return null;
-  }
+function hashPassword(password: string): string {
+  const salt = crypto.randomBytes(32).toString("base64");
+  const hash = crypto.scryptSync(password, salt, 64).toString("base64");
+  return `${salt}:${hash}`;
 }
 ```
 
-On each request, the session cookie is base64-decoded and parsed as JSON. If parsing fails (invalid format, tampered data), `null` is returned and the user is treated as unauthenticated.
-
-### Guard Functions
-
-Two functions provide access control:
+### Auth Functions
 
 | Function | Returns | Purpose |
 |---|---|---|
-| `getCurrentUser()` | `User \| null` | Fetch full user row from DB for the session |
-| `isAdmin()` | `boolean` | Check if session role is `"admin"` |
+| `parseSession()` | `Session \| null` | Read and verify session cookie |
+| `getCurrentGuest()` | `Guest \| null` | Fetch full guest row for session's `guestId` |
+| `getPartyId()` | `number \| null` | Get party ID from party session |
+| `isAdmin()` | `boolean` | Check if session type is `admin` |
+| `createSession(data)` | `string` | Create a signed session token |
+| `destroySession()` | `void` | Clear session cookie (logout) |
 
-## Login Flow
+---
+
+## Login Flows
+
+### Admin Login
 
 ```
-User visits /login
+User visits / or /login
   │
-  ├─ Already has valid session? → redirect /admin
+  ├─ Already has admin session? → redirect /admin
   │
-  └─ Shows LoginForm (Client Component)
+  └─ Shows LoginForm (defaults to "Username & Password" tab)
        │
-       User submits email + password
+       User submits username + password
        │
-        Server Action: login()
-          ├─ Query: SELECT * FROM users WHERE email = ?
-          ├─ Password check: ADMIN_PASSWORD env var (defaults to "admin")
-          │     (password !== ADMIN_PASSWORD) → return { error: "..." }
-          │
-          └─ Set cookie: session=<base64>
-               └─ redirect /admin
+       Server Action: login()
+         ├─ Query: guest by username
+         ├─ Verify: scrypt password hash
+         ├─ Check: guest.type === "admin"
+         └─ Set cookie: session={guestId, type:"admin"}
+              └─ Return { redirectTo: "/admin" } → client navigates
 ```
 
-### Files Involved
+### Party Code Login
 
-| File | Role |
-|---|---|
-| `src/app/login/page.tsx` | Login page — checks session, redirects if authenticated |
-| `src/app/login/login-form.tsx` | Client form using `useFormState` from `react-dom` |
-| `src/app/login/actions.ts` | Server Action — validates credentials, sets cookie |
-| `src/lib/auth.ts` | Session read/create utilities |
+```
+User visits / or /login
+  │
+  ├─ Already has party session? → redirect /rsvp
+  │
+  └─ Switches to "Party Code" tab
+       │
+       User enters party code (e.g. DEMO-1234)
+       │
+       Server Action: loginByPartyCode()
+         ├─ Query: party by code
+         ├─ Verify: party exists and has members
+         └─ Set cookie: session={partyId, type:"party"}
+              └─ Return { redirectTo: "/rsvp" } → client navigates
+```
 
-### Demo Credentials
+### Guest Login
 
-| Field | Value |
+```
+User visits / or /login
+  │
+  ├─ Already has guest session? → redirect /home
+  │
+  └─ Shows LoginForm
+       │
+       User submits username + password (e.g. guest / guest)
+       │
+       Server Action: login()
+         ├─ Query: guest by username
+         ├─ Verify: scrypt password hash
+         └─ Set cookie: session={guestId, type:"guest"}
+              └─ Return { redirectTo: "/home" } → client navigates
+```
+
+---
+
+## Rate Limiting
+
+Login attempts are rate-limited per-username and per-party-code:
+
+| Variable | Default | Description |
 |---|---|---|
-| Email | `admin@example.com` |
-| Password | `ADMIN_PASSWORD` env var (defaults to `"admin"`) |
+| `RATE_LIMIT_MAX` | 5 | Max failed attempts per window |
+| `RATE_LIMIT_WINDOW_MS` | 60000 | Window duration (60 seconds) |
 
-## Access Control
+The rate limiter is in-process memory (cleaned every 5 minutes). In production with multiple instances, replace with a Redis-backed rate limiter.
 
-Admin routes are protected at the layout level in `src/app/admin/layout.tsx`:
+---
 
-```typescript
-export default function AdminLayout({ children }) {
-  if (!isAdmin()) redirect("/login");
-  return <div className="admin-layout">...</div>;
-}
-```
-
-This is a **server-side redirect** — the client never receives admin page content if unauthorised. The redirect runs before any page component renders.
-
-## Session Cookie Attributes
+## Session Cookie
 
 | Attribute | Value |
 |---|---|
@@ -138,16 +141,21 @@ This is a **server-side redirect** — the client never receives admin page cont
 | Path | `/` |
 | Max-Age | 86400 (24 hours) |
 
-## Security Considerations
+---
 
-These are accepted as part of the [intentionally minimal auth design](#design-decision-minimal-auth). For production, each should be addressed:
+## Files
 
-| Issue | Current State | Recommendation |
+| File | Role |
+|---|---|
+| `src/lib/auth.ts` | Session create/parse/destroy, password hash/verify |
+| `src/lib/config.ts` | Environment variable validation (`ADMIN_USERNAME`, `ADMIN_PASSWORD`, `SESSION_SECRET`) |
+| `src/app/login/page.tsx` | Login page — redirects if already authenticated |
+| `src/app/login/login-form.tsx` | Client component — dual-tab form (credentials / party code) |
+| `src/app/login/actions.ts` | Server Actions — `login()`, `loginByPartyCode()`, `logout()` |
+
+## Access Control
+
+| Route | Guard | Redirect |
 |---|---|---|
-| Password model | Shared `ADMIN_PASSWORD` for all admin users | Per-user hashed passwords (bcrypt/argon2) or OAuth |
-| Session signing | Unsigned base64 JSON | Use `jose` or similar to sign tokens |
-| CSRF protection | None (Server Actions are same-origin by default) | Add CSRF token for state-changing operations |
-| Brute force | No rate limiting on login | Add exponential backoff or CAPTCHA |
-| Session invalidation | No logout mechanism | Add `destroySession()` and logout route |
-
-For a production-grade auth solution, consider [Auth.js](https://authjs.dev), [Lucia](https://lucia-auth.com), or signed JWTs via `jose`. The current implementation is designed to be swapped without changing the rest of the application.
+| `/admin/*` | `isAdmin()` | → `/login` |
+| `/(main)/*` | `parseSession()` | → `/` (landing page) |

@@ -1,49 +1,52 @@
-import { getDb, type User } from "@/lib/db";
+import { getAllGuests } from "@/lib/repository/guests";
+import { getAllResponses, getResponseCount } from "@/lib/repository/rsvp";
 import { Header } from "@/components/header";
 
 export default function AdminDashboardPage() {
-  const db = getDb();
-  const totalUsers = db.prepare("SELECT COUNT(*) as count FROM users").get() as { count: number };
-  const admins = db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'").get() as { count: number };
-  const recentUsers = db.prepare("SELECT * FROM users ORDER BY created_at DESC LIMIT 5").all() as User[];
+  const guests = getAllGuests();
+  const rsvpCount = getResponseCount();
+  const responses = getAllResponses();
 
   return (
     <>
-      <Header title="Dashboard" description="Overview of your application." />
+      <Header title="Dashboard" description="Overview of your wedding website." />
       <div className="stats">
         <div className="stat-card">
-          <div className="value">{totalUsers.count}</div>
-          <div className="label">Total Users</div>
+          <div className="value">{guests.length}</div>
+          <div className="label">Total Guests</div>
         </div>
         <div className="stat-card">
-          <div className="value">{admins.count}</div>
-          <div className="label">Admins</div>
+          <div className="value">{rsvpCount.total}</div>
+          <div className="label">RSVPs Received</div>
         </div>
         <div className="stat-card">
-          <div className="value">{recentUsers.length}</div>
-          <div className="label">Recent Signups</div>
+          <div className="value">{rsvpCount.attending}</div>
+          <div className="label">Attending</div>
         </div>
       </div>
 
-      <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.75rem" }}>Recent Users</h2>
+      <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.75rem" }}>Recent RSVPs</h2>
       <table>
         <thead>
           <tr>
             <th>Name</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Joined</th>
+            <th>Attending</th>
+            <th>Plus One</th>
+            <th>Submitted</th>
           </tr>
         </thead>
         <tbody>
-          {recentUsers.map((u) => (
-            <tr key={u.id}>
-              <td>{u.name}</td>
-              <td>{u.email}</td>
-              <td><span className={`badge badge-${u.role}`}>{u.role}</span></td>
-              <td>{new Date(u.created_at).toLocaleDateString()}</td>
+          {responses.slice(0, 10).map((r) => (
+            <tr key={r.id}>
+              <td>{r.guest_name}</td>
+              <td><span className={`badge ${r.attending ? "badge-yes" : "badge-no"}`}>{r.attending ? "Yes" : "No"}</span></td>
+              <td>{r.plus_one_name || "—"}</td>
+              <td>{new Date(r.created_at).toLocaleDateString()}</td>
             </tr>
           ))}
+          {responses.length === 0 && (
+            <tr><td colSpan={4} style={{ color: "var(--color-muted)", fontStyle: "italic" }}>No RSVPs yet.</td></tr>
+          )}
         </tbody>
       </table>
     </>

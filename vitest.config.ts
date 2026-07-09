@@ -9,6 +9,13 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
     globals: true,
+    env: {
+      ADMIN_USERNAME: "test-admin",
+      ADMIN_PASSWORD: "test-admin-pass",
+      SESSION_SECRET: "test-secret-key-not-for-production",
+      RATE_LIMIT_MAX: "100",
+      RATE_LIMIT_WINDOW_MS: "60000",
+    },
   },
   resolve: {
     alias: {

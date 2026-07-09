@@ -81,7 +81,7 @@ Tables are auto-created on first database connection. To insert demo data:
 npm run db:seed   # npx tsx scripts/db-seed.ts
 ```
 
-The seed script is idempotent — it skips insertion if users already exist.
+The seed script is idempotent — it skips insertion if the database already has data.
 
 ### Development Server
 
@@ -122,8 +122,8 @@ This catches type errors that the Next.js build might not surface (e.g., in `.ts
 Verify the database schema and seed data:
 
 ```bash
-sqlite3 data/dev.db ".tables"          # Should show: page_views  users
-sqlite3 data/dev.db "SELECT * FROM users;"  # Should show 4 demo users
+sqlite3 data/dev.db ".tables"          # Should show: parties, guests, site_config, lodging_options, dress_code_images, rsvp_responses, media_items
+sqlite3 data/dev.db "SELECT display_name, type FROM guests;"  # Should show demo users
 ```
 
 ---
@@ -135,8 +135,8 @@ Deployment runs on the host machine. The `deploy.sh` script (symlinked to `web-d
 ### Prerequisites
 
 | Requirement | Details |
-|---|---|
-| `.env` file | Must define `DOMAIN` and `TUNNEL_TOKEN` |
+|---|---|---|
+| `.env` file | Must define all required env vars (see below). Forwarded to the container automatically via `env_file: .env` in docker-compose.yml. |
 | Docker | Docker Engine + Compose plugin (v2) or standalone `docker-compose` (v1) |
 
 Example `.env`:
@@ -144,7 +144,13 @@ Example `.env`:
 ```env
 DOMAIN=app.yourdomain.com
 TUNNEL_TOKEN=eyJhIjoi... (your Cloudflare tunnel token)
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=your-admin-password
+SESSION_SECRET=your-random-secret-at-least-32-chars-long
+APP_NAME=Wedding
 ```
+
+> **Adding new env vars:** Just add them to `.env` — they're forwarded to the container automatically via `env_file`. No docker-compose.yml changes needed. Infrastructure paths (`DATABASE_URL`, `MEDIA_DIR`) are kept explicit in docker-compose.yml for production safety.
 
 ### Deploy Command
 
@@ -158,10 +164,11 @@ TUNNEL_TOKEN=eyJhIjoi... (your Cloudflare tunnel token)
 |---|---|
 | 1. Validate env vars | Checks `DOMAIN` and `TUNNEL_TOKEN` are non-empty |
 | 2. Detect Compose | Prefers `docker compose` (v2), falls back to `docker-compose` (v1) |
-| 3. Build images | Runs `docker compose build --pull` with BuildKit inline cache |
-| 4. Start services | Runs `docker compose up -d` |
-| 5. Start services | Runs `docker compose up -d` (detached) |
-| 6. Health check | Waits 5 seconds, then checks each service status via `docker compose ps` |
+| 3. Create data dirs | Creates `./data/sqlite/` and `./data/media/` |
+| 4. Build images | Runs `docker compose build --pull` with BuildKit inline cache |
+| 5. Start services | Runs `docker compose up -d` |
+| 6. Start services | Runs `docker compose up -d` (detached) |
+| 7. Health check | Waits 5 seconds, then checks each service status via `docker compose ps` |
 
 ### Docker Compose Services
 
@@ -181,6 +188,25 @@ docker compose down
 # Rebuild without cache
 docker compose build --no-cache
 ```
+
+### Persistent Volumes
+
+| Host Path | Container Path | Purpose |
+|---|---|---|---|
+| `./data/` | `/app/data` | SQLite database (sqlite/), uploaded media (media/) |
+| `./backups/` | — (host only) | Backup archives — outside Docker volume to survive `down -v` |
+
+A single volume mount covers the runtime data. Backups are stored outside the volume for safety:
+
+```
+project root/
+  data/         ← Docker volume (./data:/app/data)
+    sqlite/     ← SQLite database (prod.db)
+    media/      ← Uploaded images and videos
+  backups/      ← Backup archives (NOT in Docker volume — survives teardown)
+```
+
+The `deploy.sh` script creates `./data/sqlite/` and `./data/media/` automatically. Both `data/` and `backups/` are gitignored — they are runtime data, not source code.
 
 ### Health Check Verification
 
@@ -218,19 +244,18 @@ COPY . .
 RUN npm install && npm run build
 ```
 
-**Stage 2: prod** — Extracts only production artifacts:
+**Stage 2: prod** — Extracts only standalone production artifacts:
 
 ```dockerfile
 FROM local/web-deploy-base:latest AS prod
 WORKDIR /app
-COPY --from=dev-base /app/node_modules ./node_modules
-COPY --from=dev-base /app/.next ./.next
+COPY --from=dev-base /app/.next/standalone ./
+COPY --from=dev-base /app/.next/static ./.next/static
 COPY --from=dev-base /app/public ./public
-COPY --from=dev-base /app/package.json ./package.json
-CMD ["node", "node_modules/.bin/next", "start"]
+CMD ["node", "server.js"]
 ```
 
-The `dev-base` stage builds inside the `agent-dev-env` image (Node.js + dev tools). The `prod` stage starts fresh from `web-deploy-base` (only Node.js runtime) and copies only build artifacts — no source code, no `node_modules/.cache`, no dev dependencies.
+The `dev-base` stage builds inside the `agent-dev-env` image (Node.js + dev tools). The `prod` stage starts fresh from `web-deploy-base` (only Node.js runtime) and copies only the standalone build output — no source code, no `node_modules/.cache`, no dev dependencies. Next.js `output: "standalone"` bundles required dependencies into `.next/standalone`, eliminating the need to copy `node_modules` or `package.json`.
 
 ### Build Arguments
 
@@ -272,12 +297,20 @@ docker compose build --build-arg IMAGE_REGISTRY=ghcr.io/myorg
                           │
                        webapp
                           │
-                       SQLite
+                      ┌───┴───┐
+                      │ data/ │   ← Docker volume (./data:/app/data)
+                      └───┬───┘
+                     ╱─────╲
+                  sqlite   media
+
+                  backups/   ← Host only (outside Docker, survives down -v)
 ```
 
 - `tunnel` has outbound-only access to `frontend` — no access to `backend`
 - `caddy` bridges both networks — receives external traffic, proxies to `webapp:3000`
 - `webapp` is isolated on `backend` — no external network access
+- `data/` is a host-mounted Docker volume persisting SQLite and media
+- `backups/` is a host-only directory outside the Docker volume — safe from `docker compose down -v`
 
 ### Caddy Configuration
 
@@ -310,9 +343,10 @@ Caddy — security gateway (security headers, rate limiting)
     │  Reverse proxy: webapp:3000
     ▼
 webapp container (port 3000, backend network)
-    │
+    │    ╲
+    │     └── GET /api/media/<file> → reads from /app/data/media/
     ▼
-SQLite database (/app/data/prod.db)
+SQLite database (/app/data/sqlite/prod.db)
 ```
 
 ---
@@ -344,8 +378,8 @@ The `backup.sh` script (symlinked from `web-deploy-env/scripts/backup.sh`):
 # Dry run
 BACKUP_DRY_RUN=true ./backup.sh
 
-# Custom backup directory
-BACKUP_DIR=./my-backups ./backup.sh
+# Custom backup directory (e.g., separate mount point)
+BACKUP_DIR=/mnt/backups ./backup.sh
 
 # Custom rotation (keep 30 days)
 BACKUP_ROTATION_KEEP=30 ./backup.sh
@@ -353,7 +387,7 @@ BACKUP_ROTATION_KEEP=30 ./backup.sh
 
 ### Backup Steps
 
-1. Archive `data/sqlite/` → `data/backups/db_backup_YYYYMMDD_HHMMSS.tar.gz`
+1. Archive `data/` → `./backups/db_backup_YYYYMMDD_HHMMSS.tar.gz`
 2. Write SHA-256 checksum → `db_backup_YYYYMMDD_HHMMSS.tar.gz.sha256`
 3. Verify checksum immediately
 4. Delete backups older than `BACKUP_ROTATION_KEEP` days (default: 7)
@@ -362,14 +396,16 @@ BACKUP_ROTATION_KEEP=30 ./backup.sh
 
 ```bash
 # List available backups
-ls data/backups/db_backup_*.tar.gz
+ls backups/db_backup_*.tar.gz
 
 # Verify integrity
-sha256sum -c data/backups/db_backup_20260629_120000.tar.gz.sha256
+sha256sum -c backups/db_backup_20260629_120000.tar.gz.sha256
 
-# Extract to SQLite directory
-tar -xzf data/backups/db_backup_20260629_120000.tar.gz -C data/sqlite/
+# Extract — restores data/ directory
+tar -xzf backups/db_backup_20260629_120000.tar.gz -C .
 ```
+
+The backup archive contains `data/sqlite/`, `data/media/`, and any other `data/` subdirectories. Backups are stored in `./backups/` (outside the Docker volume) to survive `docker compose down -v`.
 
 ---
 
@@ -384,4 +420,7 @@ tar -xzf data/backups/db_backup_20260629_120000.tar.gz -C data/sqlite/
 - [ ] Deploy from host (`./deploy.sh`)
 - [ ] Verify health endpoint
 - [ ] Verify domain resolves and TLS works
+- [ ] Test media upload in admin (create a media entry with file upload)
+- [ ] Verify uploaded image is visible on `/media`
 - [ ] Configure automated backups (cron: `0 3 * * * /path/to/backup.sh`)
+- [ ] For production, set `BACKUP_DIR` to a separate mount point (e.g., `BACKUP_DIR=/mnt/backups`)
