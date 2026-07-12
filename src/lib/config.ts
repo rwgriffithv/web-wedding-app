@@ -16,7 +16,7 @@ let _config: {
   sessionSecret: string;
 } | null = null;
 
-export function getConfig() {
+export function getEnvConfig() {
   if (!_config) {
     _config = {
       siteName: process.env.APP_NAME || "Wedding",

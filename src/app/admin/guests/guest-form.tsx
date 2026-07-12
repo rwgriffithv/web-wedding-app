@@ -1,51 +1,82 @@
 "use client";
 
-import { useActionState } from "react";
-import { addGuest } from "./actions";
+import { useState, useActionState } from "react";
+import { SearchableSelect } from "@/components/searchable-select";
+import { addGuest, createPartyInline } from "./actions";
+import type { Party } from "@/lib/db";
+import type { GuestState } from "./actions";
 
-const initialState = null as { success?: boolean; error?: string } | null;
+interface GuestFormProps {
+  parties: Party[];
+}
 
-export function GuestForm() {
-  const [state, dispatch, isPending] = useActionState(addGuest, initialState);
+const initialState: GuestState = {};
+
+export function GuestForm({ parties }: GuestFormProps) {
+  const [partyOptions, setPartyOptions] = useState(parties.map(p => ({ value: p.id, label: p.name })));
+  const [selectedPartyId, setSelectedPartyId] = useState<number | null>(null);
+  const [guestState, guestDispatch, guestPending] = useActionState(addGuest, initialState);
+  const [partyError, setPartyError] = useState<string | null>(null);
+  const [creatingParty, setCreatingParty] = useState(false);
+
+  const handleCreateNewParty = async (name: string) => {
+    setCreatingParty(true);
+    setPartyError(null);
+    try {
+      const formData = new FormData();
+      formData.append("party_name", name);
+      const result = await createPartyInline(initialState, formData);
+
+      if (result.success && result.partyId) {
+        const { partyId } = result;
+        setPartyOptions(prev => [...prev, { value: partyId, label: name }]);
+        setSelectedPartyId(partyId);
+      } else if (result.error) {
+        setPartyError(result.error);
+      }
+    } finally {
+      setCreatingParty(false);
+    }
+  };
+
+  const handleSubmit = (formData: FormData) => {
+    if (selectedPartyId) {
+      formData.set("party_id", String(selectedPartyId));
+    }
+    guestDispatch(formData);
+  };
 
   return (
-    <form action={dispatch} className="admin-form">
+    <form action={handleSubmit} className="admin-form">
       <div className="form-group">
         <label htmlFor="display_name">Display Name</label>
         <input id="display_name" name="display_name" type="text" required />
       </div>
       <div className="form-group">
-        <label htmlFor="username">Username</label>
-        <input id="username" name="username" type="text" required />
-      </div>
-      <div className="form-group">
-        <label htmlFor="password">Password</label>
-        <input id="password" name="password" type="password" required />
-      </div>
-      <div className="form-group">
-        <label htmlFor="type">Guest Type</label>
-        <select id="type" name="type" required>
-          <option value="guest">Guest</option>
-          <option value="guest_plus_one">Guest +1</option>
-        </select>
-      </div>
-      <div className="form-group">
-        <label>Can RSVP?</label>
-        <select name="can_rsvp" defaultValue="1" style={{ padding: "0.375rem 0.5rem", border: "1px solid var(--color-border)", borderRadius: "var(--radius)", fontSize: "0.875rem", width: "100%", boxSizing: "border-box" }}>
-          <option value="1">Yes</option>
-          <option value="0">No (view only)</option>
-        </select>
+        <label>Party *</label>
+        <SearchableSelect
+          options={partyOptions}
+          value={selectedPartyId}
+          onChange={setSelectedPartyId}
+          onCreateNew={handleCreateNewParty}
+          placeholder="Select a party..."
+          required
+          disabled={creatingParty}
+        />
       </div>
       <div className="form-group">
         <label>Can bring plus one?</label>
-        <select name="can_bring_plus_one" defaultValue="0" style={{ padding: "0.375rem 0.5rem", border: "1px solid var(--color-border)", borderRadius: "var(--radius)", fontSize: "0.875rem", width: "100%", boxSizing: "border-box" }}>
+        <select name="can_bring_plus_one" defaultValue="0">
           <option value="0">No</option>
           <option value="1">Yes</option>
         </select>
       </div>
-      {state?.success && <p style={{ color: "#065f46", fontSize: "0.875rem", marginBottom: "1rem" }}>Guest added.</p>}
-      {state?.error && <p style={{ color: "var(--color-error)", fontSize: "0.875rem", marginBottom: "1rem" }}>{state.error}</p>}
-      <button type="submit" className="btn btn-primary" disabled={isPending}>{isPending ? "Adding..." : "Add Guest"}</button>
+      {guestState?.success && <p className="text-success text-sm mb-1" role="status">Guest added.</p>}
+      {guestState?.error && <p className="text-error text-sm mb-1" role="alert">{guestState.error}</p>}
+      {partyError && <p className="text-error text-sm mb-1" role="alert">{partyError}</p>}
+      <button type="submit" className="btn btn-primary" disabled={guestPending || creatingParty}>
+        {guestPending ? "Adding..." : "Add Guest"}
+      </button>
     </form>
   );
 }

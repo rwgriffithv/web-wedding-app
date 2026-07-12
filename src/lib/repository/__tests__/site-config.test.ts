@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import Database from "better-sqlite3";
-import { DDL } from "@/lib/schema";
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
+import { createTestDb, truncateAll } from "@/test/db-test-utils";
+import type Database from "better-sqlite3";
 
 let db: Database.Database;
 
@@ -8,14 +8,9 @@ vi.mock("@/lib/db", () => ({
   getDb: () => db,
 }));
 
-beforeAll(() => {
-  db = new Database(":memory:");
-  db.exec(DDL);
-});
-
-afterAll(() => {
-  db.close();
-});
+beforeAll(() => { db = createTestDb(); });
+beforeEach(() => { truncateAll(db); });
+afterAll(() => { db.close(); });
 
 describe("site-config repository", () => {
   it("returns empty string for missing key", async () => {

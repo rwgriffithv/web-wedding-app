@@ -1,69 +1,76 @@
 import { redirect } from "next/navigation";
-import { getCurrentGuest, getPartyId } from "@/lib/auth";
-import { getResponseByGuest } from "@/lib/repository/rsvp";
+import { parseSession } from "@/lib/auth";
+import { getResponsesByGuests } from "@/lib/repository/rsvp";
 import { getGuestsByPartyId } from "@/lib/repository/guests";
 import { getPartyById } from "@/lib/repository/party";
 import { RsvpForm } from "./rsvp-form";
 
 export default async function RsvpPage() {
-  const guest = await getCurrentGuest();
-  const partyId = await getPartyId();
+  const session = await parseSession();
+  if (!session) redirect("/");
 
-  if (!guest && !partyId) redirect("/");
-
-  if (guest && !guest.can_rsvp) {
+  if (session.type === "admin" || session.type === "viewer") {
     return (
       <div className="page-content">
         <h1>RSVP</h1>
-        <div style={{ padding: "2rem", background: "var(--color-surface)", borderRadius: "var(--radius)", textAlign: "center" }}>
-          <p style={{ color: "var(--color-muted)", marginBottom: "0.5rem" }}>
-            You&rsquo;re on the guest list, but no RSVP is required for you.
+        <div style={{ padding: "2rem", background: "var(--color-surface)", borderRadius: "var(--radius)" }} className="text-center">
+          <p className="text-muted mb-1">
+            RSVP is not available for user logins.
           </p>
-          <p style={{ color: "var(--color-muted)", fontSize: "0.9rem" }}>
-            If you have any questions, please contact us directly.
+          <p className="text-muted text-sm">
+            Please use your Party Code to RSVP.
           </p>
         </div>
       </div>
     );
   }
 
-  if (guest && !guest.party_id) {
+  const partyId = session.partyId;
+  if (!partyId) redirect("/");
+
+  const party = getPartyById(partyId);
+  const members = getGuestsByPartyId(partyId);
+
+  if (members.length === 0) {
     return (
       <div className="page-content">
         <h1>RSVP</h1>
-        <RsvpForm
-          memberId={guest.id}
-          displayName={guest.display_name}
-          canBringPlusOne={guest.can_bring_plus_one === 1}
-          existingResponse={getResponseByGuest(guest.id) ?? undefined}
-        />
+        <div style={{ padding: "2rem", background: "var(--color-surface)", borderRadius: "var(--radius)" }} className="text-center">
+          <p className="text-muted mb-1">
+            No party members found.
+          </p>
+          <p className="text-muted text-sm">
+            Please contact the administrator.
+          </p>
+        </div>
       </div>
     );
   }
 
-  const pid = partyId ?? guest!.party_id!;
-  const party = getPartyById(pid);
-  const members = getGuestsByPartyId(pid);
+  const responses = getResponsesByGuests(members.map(m => m.id));
+  const responsesByGuest = new Map(responses.map(r => [r.guest_id, r]));
 
   return (
     <div className="page-content">
       <h1>RSVP</h1>
-      {party && <p style={{ color: "var(--color-muted)", marginBottom: "1.5rem" }}>Party: {party.name}</p>}
-      <p style={{ color: "var(--color-muted)", fontSize: "0.9rem", marginBottom: "1rem" }}>
+      {party && <p className="text-muted" style={{ marginBottom: "1.5rem" }}>Party: {party.name}</p>}
+      <p className="text-muted text-sm mb-1">
         Please respond for each member of your party. Each member can be submitted individually.
       </p>
 
       {members.map((m) => {
-        const response = getResponseByGuest(m.id);
+        const response = responsesByGuest.get(m.id);
         return (
-          <div key={m.id} style={{ marginBottom: "1.5rem", padding: "1rem", background: "var(--color-surface)", borderRadius: "var(--radius)" }}>
-            <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.5rem" }}>{m.display_name}</h3>
-            {response && (
-              <p style={{ fontSize: "0.85rem", color: "var(--color-muted)", marginBottom: "0.75rem" }}>
-                Current response: {response.attending ? "Attending" : "Not attending"}
-                {response.plus_one_name && <> &middot; Plus one: {response.plus_one_name}</>}
-              </p>
-            )}
+          <div key={m.id} className="rsvp-member">
+            <div>
+              <div className="rsvp-member-name">{m.display_name}</div>
+              {response && (
+                <div className="rsvp-member-meta">
+                  {response.attending ? "Attending" : "Not attending"}
+                  {response.plus_one_name && <>, Plus-one: {response.plus_one_name}</>}
+                </div>
+              )}
+            </div>
             <RsvpForm
               memberId={m.id}
               displayName={m.display_name}

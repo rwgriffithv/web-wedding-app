@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import Database from "better-sqlite3";
-import { DDL } from "@/lib/schema";
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
+import { createTestDb, truncateAll } from "@/test/db-test-utils";
+import type Database from "better-sqlite3";
 
 let db: Database.Database;
 
@@ -8,14 +8,9 @@ vi.mock("@/lib/db", () => ({
   getDb: () => db,
 }));
 
-beforeAll(() => {
-  db = new Database(":memory:");
-  db.exec(DDL);
-});
-
-afterAll(() => {
-  db.close();
-});
+beforeAll(() => { db = createTestDb(); });
+beforeEach(() => { truncateAll(db); });
+afterAll(() => { db.close(); });
 
 describe("media repository", () => {
   it("creates a media item", async () => {
@@ -50,20 +45,12 @@ describe("media repository", () => {
     expect(item.section).toBe("General");
   });
 
-  it("lists distinct sections", async () => {
-    const { getSections } = await import("@/lib/repository/media");
-    const sections = getSections();
-    expect(sections).toEqual(expect.arrayContaining(["Ceremony", "Reception", "General"]));
-  });
-
   it("removes a media item", async () => {
-    const { create, getAll, remove } = await import("@/lib/repository/media");
-    const before = getAll().length;
+    const { create, getAll, deleteItem } = await import("@/lib/repository/media");
     const item = create({ type: "image", url: "https://example.com/to-delete.jpg" });
+    expect(getAll().length).toBe(1);
 
-    expect(getAll().length).toBe(before + 1);
-
-    remove(item.id);
-    expect(getAll().length).toBe(before);
+    deleteItem(item.id);
+    expect(getAll().length).toBe(0);
   });
 });

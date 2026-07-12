@@ -1,3 +1,5 @@
+const MAX_STORE_SIZE = 10_000;
+
 const stores = new Map<string, Map<string, { count: number; resetAt: number }>>();
 
 export function createRateLimiter(name: string, maxAttempts = 5, windowMs = 60_000) {
@@ -22,6 +24,10 @@ export function createRateLimiter(name: string, maxAttempts = 5, windowMs = 60_0
       const now = Date.now();
       const entry = store.get(key);
       if (!entry || now > entry.resetAt) {
+        if (store.size >= MAX_STORE_SIZE) {
+          const oldestKey = store.keys().next().value;
+          if (oldestKey !== undefined) store.delete(oldestKey);
+        }
         store.set(key, { count: 1, resetAt: now + windowMs });
         return true;
       }

@@ -6,18 +6,36 @@ import { LoginForm } from "./login-form";
 export default async function LoginPage() {
   const session = await parseSession();
   if (session) {
-    const redirectTo = session.type === "admin" ? "/admin" : session.type === "party" ? "/rsvp" : "/home";
+    const redirectTo = session.type === "admin" ? "/admin" : "/home";
     redirect(redirectTo);
   }
 
   const title = getConfig("landing_title");
   const background = getConfig("landing_background");
+  const FALLBACK = "var(--color-fallback-gradient)";
+  let safeBackground = FALLBACK;
+  if (background) {
+    if (background.startsWith("/api/media/")) {
+      safeBackground = "url(/api/login-background)";
+    } else {
+      try {
+        const parsed = new URL(background, "https://placeholder.com");
+        if (parsed.protocol === "https:" || parsed.protocol === "http:") {
+          if (!/[);{]/.test(background)) {
+            safeBackground = `url(${background})`;
+          }
+        }
+      } catch {
+        // invalid URL, keep fallback
+      }
+    }
+  }
 
   return (
     <div className="landing">
       <div
         className="landing-bg"
-        style={{ backgroundImage: background ? `url(${background})` : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}
+        style={{ backgroundImage: safeBackground }}
       />
       <div className="landing-content">
         <h1>{title}</h1>

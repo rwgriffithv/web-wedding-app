@@ -2,51 +2,47 @@
 
 import { revalidatePath } from "next/cache";
 import { isAdmin } from "@/lib/auth";
-import { createParty, deleteParty, updateParty, regeneratePartyCode } from "@/lib/repository/party";
-import { updateGuest } from "@/lib/repository/guests";
+import { getString, getInt } from "@/lib/form-data";
+import { updateParty as updatePartyRepo, deleteParty, getPartyById } from "@/lib/repository/party";
 
 interface PartyState { success?: boolean; error?: string }
 
-export async function addParty(prevState: PartyState | null, formData: FormData): Promise<PartyState> {
-  if (!(await isAdmin())) return { error: "Unauthorized" };
+export async function updateParty(prevState: PartyState | null, formData: FormData): Promise<PartyState> {
+  if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
 
-  const name = formData.get("name") as string;
-  if (!name || !name.trim()) return { error: "Party name is required." };
+  const id = getInt(formData, "party_id");
+  if (id === null) return { success: false, error: "Invalid party ID." };
+
+  const existing = getPartyById(id);
+  if (!existing) return { success: false, error: "Party not found." };
+
+  const name = getString(formData, "name");
+  const code = getString(formData, "code");
+
+  if (!name?.trim()) return { success: false, error: "Party name is required." };
+  if (!code?.trim()) return { success: false, error: "Party code is required." };
+
+  if (code.trim().length > 50) return { success: false, error: "Party code must be 50 characters or fewer." };
 
   try {
-    createParty(name.trim());
+    updatePartyRepo(id, { name: name.trim(), code: code.trim() });
     revalidatePath("/admin/parties");
+    revalidatePath("/admin/guests");
     return { success: true };
   } catch (error) {
     console.error(error);
-    return { success: false, error: "Failed to create party." };
-  }
-}
-
-export async function editParty(prevState: PartyState | null, formData: FormData): Promise<PartyState> {
-  if (!(await isAdmin())) return { error: "Unauthorized" };
-
-  const id = parseInt(formData.get("party_id") as string, 10);
-  if (isNaN(id) || id < 1) return { error: "Invalid party ID." };
-
-  const name = formData.get("name") as string;
-  if (!name || !name.trim()) return { error: "Party name is required." };
-
-  try {
-    updateParty(id, { name: name.trim() });
-    revalidatePath("/admin/parties");
-    return { success: true };
-  } catch (error) {
-    console.error(error);
-    return { success: false, error: "Failed to update party." };
+    return { success: false, error: "Failed to update party. Code may already exist." };
   }
 }
 
 export async function removeParty(prevState: PartyState | null, formData: FormData): Promise<PartyState> {
-  if (!(await isAdmin())) return { error: "Unauthorized" };
+  if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
 
-  const id = parseInt(formData.get("party_id") as string, 10);
-  if (isNaN(id) || id < 1) return { error: "Invalid party ID." };
+  const id = getInt(formData, "party_id");
+  if (id === null) return { success: false, error: "Invalid party ID." };
+
+  const existing = getPartyById(id);
+  if (!existing) return { success: false, error: "Party not found." };
 
   try {
     deleteParty(id);
@@ -56,43 +52,5 @@ export async function removeParty(prevState: PartyState | null, formData: FormDa
   } catch (error) {
     console.error(error);
     return { success: false, error: "Failed to delete party." };
-  }
-}
-
-export async function regenerateCode(prevState: PartyState | null, formData: FormData): Promise<PartyState> {
-  if (!(await isAdmin())) return { error: "Unauthorized" };
-
-  const id = parseInt(formData.get("party_id") as string, 10);
-  if (isNaN(id) || id < 1) return { error: "Invalid party ID." };
-
-  try {
-    regeneratePartyCode(id);
-    revalidatePath("/admin/parties");
-    return { success: true };
-  } catch (error) {
-    console.error(error);
-    return { success: false, error: "Failed to regenerate code." };
-  }
-}
-
-export async function assignToParty(prevState: PartyState | null, formData: FormData): Promise<PartyState> {
-  if (!(await isAdmin())) return { error: "Unauthorized" };
-
-  const guestId = parseInt(formData.get("guest_id") as string, 10);
-  const partyIdRaw = formData.get("party_id") as string;
-
-  if (isNaN(guestId) || guestId < 1) return { error: "Invalid guest ID." };
-
-  const partyId = partyIdRaw ? parseInt(partyIdRaw, 10) : null;
-  if (partyId !== null && (isNaN(partyId) || partyId < 1)) return { error: "Invalid party ID." };
-
-  try {
-    updateGuest(guestId, { party_id: partyId });
-    revalidatePath("/admin/parties");
-    revalidatePath("/admin/guests");
-    return { success: true };
-  } catch (error) {
-    console.error(error);
-    return { success: false, error: "Failed to assign guest to party." };
   }
 }

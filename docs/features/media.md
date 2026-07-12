@@ -1,6 +1,5 @@
 # Media
 
-- **Date:** 2026-07-03
 - **Scope:** Self-hosted media storage, file upload, admin management
 
 ## Overview
@@ -65,6 +64,10 @@ All uploaded files are served via the API route `GET /api/media/<filename>`. Thi
 - Returns the correct `Content-Type` header based on file extension
 - Sets `Cache-Control: public, max-age=31536000, immutable` (1 year)
 - Returns 404 if the file does not exist
+
+## Authentication
+
+Admin-only. Uses `isAdmin()` check in server actions.
 
 ## Backup
 

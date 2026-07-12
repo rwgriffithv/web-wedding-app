@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export default function AdminError({
   error,
   reset,
@@ -7,11 +9,12 @@ export default function AdminError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  console.error(error);
   return (
     <div className="admin-layout">
-      <aside className="admin-sidebar">
+      <aside className="admin-sidebar" aria-label="Admin navigation">
         <h2>Admin Panel</h2>
-        <a href="/admin" style={{ color: "var(--color-sidebar-text)" }}>Dashboard</a>
+        <Link href="/admin" style={{ color: "var(--color-sidebar-text)" }}>Dashboard</Link>
       </aside>
       <main className="admin-main" style={{ textAlign: "center", paddingTop: "4rem" }}>
         <h1>Something went wrong</h1>

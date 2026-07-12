@@ -1,52 +1,84 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createSession, destroySession, verifyPassword } from "@/lib/auth";
-import { getGuestByUsername, getGuestsByPartyId } from "@/lib/repository/guests";
+import { getUserByUsername, getUserByPartyId, recordLogin } from "@/lib/repository/users";
 import { getPartyByCode } from "@/lib/repository/party";
+import { getGuestsByPartyId } from "@/lib/repository/guests";
 import { createRateLimiter } from "@/lib/rate-limit";
 
 interface LoginState { error?: string }
 
+const rateLimiterMax = parseInt(process.env.RATE_LIMIT_MAX ?? "5", 10);
+const rateLimiterWindow = parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? "60000", 10);
 const rateLimiter = createRateLimiter(
   "login",
-  parseInt(process.env.RATE_LIMIT_MAX ?? "5", 10),
-  parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? "60000", 10),
+  Number.isFinite(rateLimiterMax) && rateLimiterMax > 0 ? rateLimiterMax : 5,
+  Number.isFinite(rateLimiterWindow) && rateLimiterWindow > 0 ? rateLimiterWindow : 60_000,
 );
 
-export async function login(prevState: LoginState | null, formData: FormData): Promise<LoginState> {
-  const username = formData.get("username") as string;
-  const password = formData.get("password") as string;
+async function getClientIp(): Promise<string> {
+  const h = await headers();
+  return h.get("x-forwarded-for")?.split(",")[0]?.trim()
+    ?? h.get("x-real-ip")
+    ?? "127.0.0.1";
+}
 
-  if (!rateLimiter.check(username)) {
-    return { error: "Too many attempts for this account. Please wait before trying again." };
+export async function login(prevState: LoginState | null, formData: FormData): Promise<LoginState> {
+  const rawUsername = formData.get("username");
+  const rawPassword = formData.get("password");
+  if (typeof rawUsername !== "string" || typeof rawPassword !== "string" || !rawUsername || !rawPassword) {
+    return { error: "Username and password are required." };
+  }
+  const username = rawUsername;
+  const password = rawPassword;
+
+  const ip = await getClientIp();
+  if (!rateLimiter.check(`${ip}:user:${username}`)) {
+    return { error: "Too many attempts. Please wait before trying again." };
   }
 
-  const guest = getGuestByUsername(username);
+  const user = getUserByUsername(username);
 
-  if (!guest || !verifyPassword(password, guest.password)) {
+  if (!user || !verifyPassword(password, user.password)) {
     return { error: "Invalid username or password." };
   }
 
-  const store = await cookies();
-  store.set("session", createSession({ guestId: guest.id, type: guest.type === "admin" ? "admin" : "guest" }), { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 });
+  recordLogin(user.id);
 
-  redirect(guest.type === "admin" ? "/admin" : "/home");
+  const store = await cookies();
+  const sessionData: { userId: number; partyId?: number; type: "admin" | "viewer" | "party" } = {
+    userId: user.id,
+    type: user.type,
+  };
+  if (user.type === "party" && user.party_id) {
+    sessionData.partyId = user.party_id;
+  }
+  store.set("session", createSession(sessionData), { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 });
+
+  redirect(user.type === "admin" ? "/admin" : "/home");
 }
 
 export async function loginByPartyCode(prevState: LoginState | null, formData: FormData): Promise<LoginState> {
-  const code = formData.get("code") as string;
+  const rawCode = formData.get("code");
+  if (typeof rawCode !== "string") {
+    return { error: "Please enter your party code." };
+  }
+  const code = rawCode;
 
   if (!code || !code.trim()) {
     return { error: "Please enter your party code." };
   }
 
-  if (!rateLimiter.check(code.trim())) {
+  const trimmedCode = code.trim().toUpperCase();
+
+  const ip = await getClientIp();
+  if (!rateLimiter.check(`${ip}:party:${trimmedCode}`)) {
     return { error: "Too many attempts. Please wait before trying again." };
   }
 
-  const party = getPartyByCode(code);
+  const party = getPartyByCode(trimmedCode);
   if (!party) {
     return { error: "Invalid party code. Please check your invitation." };
   }
@@ -56,10 +88,17 @@ export async function loginByPartyCode(prevState: LoginState | null, formData: F
     return { error: "This party code has no members assigned yet." };
   }
 
-  const store = await cookies();
-  store.set("session", createSession({ partyId: party.id, type: "party" }), { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 });
+  const partyUser = getUserByPartyId(party.id);
+  if (!partyUser) {
+    return { error: "Party login not configured. Please contact the administrator." };
+  }
 
-  redirect("/rsvp");
+  recordLogin(partyUser.id);
+
+  const store = await cookies();
+  store.set("session", createSession({ userId: partyUser.id, partyId: party.id, type: "party" }), { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 });
+
+  redirect("/home");
 }
 
 export async function logout(_prevState: unknown, _formData: FormData): Promise<null> {

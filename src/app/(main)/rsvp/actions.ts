@@ -1,54 +1,53 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { parseSession, getCurrentGuest } from "@/lib/auth";
+import { parseSession } from "@/lib/auth";
 import { getGuestById } from "@/lib/repository/guests";
 import { getPartyById } from "@/lib/repository/party";
 import { submitResponse } from "@/lib/repository/rsvp";
+import { getString } from "@/lib/form-data";
 
 interface RsvpState { success?: boolean; error?: string }
 
 export async function submitRsvp(prevState: RsvpState | null, formData: FormData): Promise<RsvpState> {
   const session = await parseSession();
-  if (!session) return { error: "Not authenticated." };
+  if (!session) return { success: false, error: "Not authenticated." };
 
-  const memberId = parseInt(formData.get("member_id") as string, 10);
-  if (isNaN(memberId) || memberId < 1) return { error: "Invalid member." };
-
-  const name = formData.get(`name_${memberId}`) as string;
-  const attending = formData.get(`attending_${memberId}`) as string;
-  if (!name || !attending) return { success: false, error: "Name and attendance are required." };
-
-  if (session.type === "admin") {
-    return rsvpMember(memberId, name, attending, formData);
+  if (session.type === "admin" || session.type === "viewer") {
+    return { success: false, error: "RSVP is not available for user logins. Please use your Party Code to RSVP." };
   }
 
-  if (session.type === "guest") {
-    const guest = await getCurrentGuest();
-    if (!guest || guest.id !== memberId) return { error: "You can only RSVP for yourself." };
-    return rsvpMember(memberId, name, attending, formData);
-  }
+  const memberIdRaw = getString(formData, "member_id");
+  if (!memberIdRaw) return { success: false, error: "Invalid member." };
+  const memberId = parseInt(memberIdRaw, 10);
+  if (isNaN(memberId) || memberId < 1) return { success: false, error: "Invalid member." };
+
+  const attending = getString(formData, `attending_${memberId}`);
+  if (!attending) return { success: false, error: "Attendance is required." };
+  if (attending !== "yes" && attending !== "no") return { success: false, error: "Invalid attendance value." };
 
   if (session.type === "party") {
-    if (!session.partyId) return { error: "Invalid party session." };
+    if (!session.partyId) return { success: false, error: "Invalid party session." };
     const party = getPartyById(session.partyId);
-    if (!party) return { error: "Party not found." };
+    if (!party) return { success: false, error: "Party not found." };
 
     const member = getGuestById(memberId);
     if (!member || member.party_id !== session.partyId) {
-      return { error: "You can only RSVP for members of your party." };
+      return { success: false, error: "You can only RSVP for members of your party." };
     }
-    return rsvpMember(memberId, name, attending, formData);
+    return rsvpMember(memberId, member.display_name, attending, formData);
   }
 
-  return { error: "Unknown session type." };
+  return { success: false, error: "Unknown session type." };
 }
 
 async function rsvpMember(memberId: number, name: string, attending: string, formData: FormData): Promise<RsvpState> {
-  const plusOne = formData.get(`plus_one_${memberId}`) as string;
+  const isAttending = attending === "yes";
+  const plusOneRaw = isAttending ? getString(formData, `plus_one_${memberId}`) : undefined;
+  const plusOne = plusOneRaw && plusOneRaw.length > 0 ? plusOneRaw.slice(0, 200) : undefined;
 
   try {
-    submitResponse(memberId, name, attending === "yes", plusOne || undefined);
+    submitResponse(memberId, name, isAttending, plusOne);
     revalidatePath("/rsvp");
     revalidatePath("/admin/rsvp");
     return { success: true };

@@ -1,6 +1,5 @@
 # RSVP System
 
-- **Date:** 2026-07-03
 - **Scope:** Party-based group RSVP, per-member submission, access control
 
 ## Overview
@@ -45,7 +44,7 @@ Each member's form can be submitted **independently** — you don't need to RSVP
 
 ### For Individual Guests (Username/Password)
 
-Guests who are not in a party (e.g. the shared `guest` account) have two possible states:
+Guests who are not in a party have two possible states based on their user type and RSVP capability:
 
 | `can_rsvp` | Behavior |
 |---|---|
@@ -124,12 +123,12 @@ This is useful for:
 
 ```sql
 CREATE TABLE rsvp_responses (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  guest_id    INTEGER NOT NULL UNIQUE REFERENCES guests(id) ON DELETE CASCADE,
-  guest_name  TEXT NOT NULL,
-  attending   INTEGER NOT NULL DEFAULT 0,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  guest_id INTEGER NOT NULL UNIQUE REFERENCES guests(id) ON DELETE CASCADE,
+  guest_name TEXT NOT NULL,
+  attending INTEGER NOT NULL DEFAULT 0,
   plus_one_name TEXT,
-  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 ```
 

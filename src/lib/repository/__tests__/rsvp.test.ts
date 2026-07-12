@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import Database from "better-sqlite3";
-import { DDL } from "@/lib/schema";
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
+import { createTestDb, truncateAll } from "@/test/db-test-utils";
+import type Database from "better-sqlite3";
 
 let db: Database.Database;
 
@@ -8,19 +8,14 @@ vi.mock("@/lib/db", () => ({
   getDb: () => db,
 }));
 
-beforeAll(() => {
-  db = new Database(":memory:");
-  db.exec(DDL);
-});
-
-afterAll(() => {
-  db.close();
-});
+beforeAll(() => { db = createTestDb(); });
+beforeEach(() => { truncateAll(db); });
+afterAll(() => { db.close(); });
 
 describe("rsvp repository", () => {
   it("submits and retrieves a response by guest id", async () => {
     const { submitResponse, getResponseByGuest } = await import("@/lib/repository/rsvp");
-    db.prepare("INSERT INTO guests (id, username, password, display_name, type) VALUES (1, 'guest1', 'hash', 'Guest 1', 'guest')").run();
+    db.prepare("INSERT INTO guests (id, display_name) VALUES (1, 'Guest 1')").run();
 
     const response = submitResponse(1, "Guest 1", true, "Plus One");
     expect(response.guest_id).toBe(1);
@@ -35,6 +30,7 @@ describe("rsvp repository", () => {
 
   it("updates an existing response", async () => {
     const { submitResponse, getResponseByGuest } = await import("@/lib/repository/rsvp");
+    db.prepare("INSERT INTO guests (id, display_name) VALUES (1, 'Guest 1')").run();
 
     submitResponse(1, "Guest 1", false);
     const updated = getResponseByGuest(1);
@@ -44,7 +40,9 @@ describe("rsvp repository", () => {
 
   it("lists all responses", async () => {
     const { getAllResponses, submitResponse } = await import("@/lib/repository/rsvp");
-    db.prepare("INSERT INTO guests (id, username, password, display_name, type) VALUES (2, 'guest2', 'hash', 'Guest 2', 'guest')").run();
+    db.prepare("INSERT INTO guests (id, display_name) VALUES (1, 'Guest 1')").run();
+    db.prepare("INSERT INTO guests (id, display_name) VALUES (2, 'Guest 2')").run();
+    submitResponse(1, "Guest 1", true);
     submitResponse(2, "Guest 2", true);
 
     const all = getAllResponses();
@@ -52,7 +50,12 @@ describe("rsvp repository", () => {
   });
 
   it("returns response count", async () => {
-    const { getResponseCount } = await import("@/lib/repository/rsvp");
+    const { getResponseCount, submitResponse } = await import("@/lib/repository/rsvp");
+    db.prepare("INSERT INTO guests (id, display_name) VALUES (1, 'Guest 1')").run();
+    db.prepare("INSERT INTO guests (id, display_name) VALUES (2, 'Guest 2')").run();
+    submitResponse(1, "Guest 1", true);
+    submitResponse(2, "Guest 2", false);
+
     const count = getResponseCount();
     expect(count.total).toBe(2);
     expect(count.attending).toBe(1);

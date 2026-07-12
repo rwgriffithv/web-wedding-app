@@ -1,6 +1,5 @@
 # Admin Dashboard
 
-- **Date:** 2026-07-03
 - **Scope:** Admin panel layout, all management pages
 
 ## Overview
@@ -46,7 +45,7 @@ The main dashboard page renders:
 
 | Metric | Query |
 |---|---|
-| Total Guests | `SELECT COUNT(*) FROM guests` |
+| Guests | `SELECT COUNT(*) FROM guests` |
 | RSVP'd Yes | `SELECT COUNT(*) FROM rsvp_responses WHERE attending = 1` |
 | RSVP'd No | `SELECT COUNT(*) FROM rsvp_responses WHERE attending = 0` |
 
@@ -86,19 +85,15 @@ Parties group guests into households for convenient RSVP. Each party has a uniqu
 
 ### `/admin/guests` — Guest Management
 
-Full CRUD for guest accounts. Each guest has:
+CRUD for guest entries. Each guest belongs to a party:
 
 | Field | Description |
 |---|---|
 | Display Name | Shown on RSVP form and in admin |
-| Username | Used for login |
-| Password | Hashed with scrypt |
-| Type | `guest` or `guest_plus_one` (legacy distinction) |
-| Party | Optional party assignment (dropdown of all parties) |
-| Can RSVP? | Yes/No — View-only guests see an informational message instead of the RSVP form |
-| Can bring +1? | Yes/No — Controls whether the plus one field appears on the RSVP form |
+| Party | Party assignment (SearchableSelect with inline creation) |
+| Can Bring Plus One | Yes/No — Controls plus one field on RSVP form |
 
-Inline editing — each guest row has editable fields and a "Save" button. Admin account is protected from editing.
+Inline editing — each guest row has editable fields and a "Save" button.
 
 ### `/admin/lodging` — Lodging Recommendations
 

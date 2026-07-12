@@ -2,7 +2,6 @@ import Database from "better-sqlite3";
 import path from "path";
 import { DDL } from "../src/lib/schema";
 import { hashPassword } from "../src/lib/auth";
-import { runMigrations } from "../src/lib/migrations";
 
 const dbPath = process.env.DATABASE_URL?.replace(/^file:/, "") || path.join(process.cwd(), "data", "dev.db");
 
@@ -14,7 +13,6 @@ const adminUsername = process.env.ADMIN_USERNAME || "admin";
 const adminPassword = process.env.ADMIN_PASSWORD || "admin";
 
 db.exec(DDL);
-runMigrations(db);
 
 const existingParty = db.prepare("SELECT COUNT(*) as count FROM parties WHERE code = ?").get("DEMO-1234") as { count: number };
 
@@ -24,13 +22,13 @@ if (existingParty.count === 0) {
     const partyResult = insertParty.run("Demo Family", "DEMO-1234");
     const partyId = partyResult.lastInsertRowid as number;
 
-    const insertMember = db.prepare("INSERT OR IGNORE INTO guests (username, password, display_name, type, party_id, can_rsvp, can_bring_plus_one) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    insertMember.run(adminUsername, hashPassword(adminPassword), "Admin", "admin", null, 1, 0);
-    insertMember.run("party_member", hashPassword("party_member"), "Jane Guest", "guest", partyId, 1, 1);
-    insertMember.run("party_member2", hashPassword("party_member2"), "John Guest", "guest", partyId, 1, 0);
+    const insertPartyUser = db.prepare("INSERT OR IGNORE INTO users (username, password, display_name, type, party_id) VALUES (?, ?, ?, ?, ?)");
+    insertPartyUser.run("DEMO-1234", hashPassword("DEMO-1234"), "Demo Family", "party", partyId);
 
-    const insertGuest = db.prepare("INSERT OR IGNORE INTO guests (username, password, display_name, type, party_id, can_rsvp, can_bring_plus_one) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    insertGuest.run("guest", hashPassword("guest"), "Website Guest", "guest", null, 0, 0);
+    const insertGuest = db.prepare("INSERT OR IGNORE INTO guests (display_name, party_id, can_bring_plus_one) VALUES (?, ?, ?)");
+    insertGuest.run("Jane Guest", partyId, 1);
+    insertGuest.run("John Guest", partyId, 0);
+    insertGuest.run("Website Guest", null, 0);
 
     const insertConfig = db.prepare("INSERT OR IGNORE INTO site_config (key, value) VALUES (?, ?)");
     insertConfig.run("landing_title", "We're Getting Married!");

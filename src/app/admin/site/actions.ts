@@ -2,28 +2,42 @@
 
 import { revalidatePath } from "next/cache";
 import { isAdmin } from "@/lib/auth";
+import { getString } from "@/lib/form-data";
 import { setConfig } from "@/lib/repository/site-config";
 
 interface SiteConfigState { success?: boolean; error?: string }
 
 const CONFIG_KEYS = [
   "landing_title", "landing_background",
-  "home_title", "home_subtitle", "home_date", "home_location", "home_background_video",
-  "dress_code_text",
+  "home_title", "home_subtitle", "home_date", "home_time", "home_location", "home_background_video",
 ];
 
+const MAX_LENGTHS: Record<string, number> = {
+  landing_title: 200,
+  home_title: 200,
+  home_subtitle: 500,
+  home_date: 50,
+  home_time: 50,
+  home_location: 500,
+  landing_background: 2000,
+  home_background_video: 2000,
+};
+
 export async function saveSiteConfig(prevState: SiteConfigState | null, formData: FormData): Promise<SiteConfigState> {
-  if (!(await isAdmin())) return { error: "Unauthorized" };
+  if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
 
   try {
     for (const key of CONFIG_KEYS) {
-      const value = formData.get(key);
-      setConfig(key, value?.toString() ?? "");
+      const value = getString(formData, key) ?? "";
+      const maxLen = MAX_LENGTHS[key] ?? 2000;
+      if (value.length > maxLen) {
+        return { success: false, error: `"${key}" must be ${maxLen} characters or fewer.` };
+      }
+      setConfig(key, value);
     }
     revalidatePath("/admin/site");
     revalidatePath("/");
     revalidatePath("/home");
-    revalidatePath("/dress-code");
     return { success: true };
   } catch (error) {
     console.error(error);

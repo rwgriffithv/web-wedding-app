@@ -1,64 +1,146 @@
 "use client";
 
-import { useActionState } from "react";
-import { updateGuest } from "./actions";
-import type { Guest } from "@/lib/db";
+import { useState, useEffect, useActionState } from "react";
+import { SearchableSelect } from "@/components/searchable-select";
+import { updateGuest, removeGuest, createPartyInline } from "./actions";
+import type { Guest, Party } from "@/lib/db";
+import type { GuestState } from "./actions";
 
-interface GuestListProps {
+interface GuestRowProps {
   guest: Guest;
-  partyName?: string;
+  parties: Party[];
 }
 
-const initialState = null as { success?: boolean; error?: string } | null;
+const initialState = null as GuestState | null;
 
-export function GuestList({ guest, partyName }: GuestListProps) {
-  const [state, dispatch, isPending] = useActionState(updateGuest, initialState);
+export function GuestRow({ guest, parties }: GuestRowProps) {
+  const [editing, setEditing] = useState(false);
+  const [formKey, setFormKey] = useState(0);
+  const [displayName, setDisplayName] = useState(guest.display_name);
+  const [canBringPlusOne, setCanBringPlusOne] = useState(guest.can_bring_plus_one);
+  const [partyOptions, setPartyOptions] = useState(parties.map(p => ({ value: p.id, label: p.name })));
+  const [selectedPartyId, setSelectedPartyId] = useState<number | null>(guest.party_id);
+  const [guestState, guestDispatch, guestPending] = useActionState(updateGuest, initialState);
+  const [partyError, setPartyError] = useState<string | null>(null);
+  const [creatingParty, setCreatingParty] = useState(false);
+  const [, deleteDispatch, deletePending] = useActionState(removeGuest, initialState);
 
-  const isAdminUser = guest.type === "admin";
+  useEffect(() => {
+    if (guestState?.success) {
+      setEditing(false);
+    }
+  }, [guestState?.success]);
+
+  const partyName = guest.party_id ? parties.find(p => p.id === guest.party_id)?.name : "\u2014";
+
+  const handleCreateNewParty = async (name: string) => {
+    setCreatingParty(true);
+    setPartyError(null);
+    try {
+      const formData = new FormData();
+      formData.append("party_name", name);
+      const result = await createPartyInline(initialState, formData);
+
+      if (result.success && result.partyId) {
+        const { partyId } = result;
+        setPartyOptions(prev => [...prev, { value: partyId, label: name }]);
+        setSelectedPartyId(partyId);
+      } else if (result.error) {
+        setPartyError(result.error);
+      }
+    } finally {
+      setCreatingParty(false);
+    }
+  };
+
+  const handleSave = () => {
+    const formData = new FormData();
+    formData.append("guest_id", String(guest.id));
+    formData.append("display_name", displayName);
+    formData.append("party_id", selectedPartyId !== null ? String(selectedPartyId) : "");
+    formData.append("can_bring_plus_one", String(canBringPlusOne));
+    guestDispatch(formData);
+  };
+
+  if (editing) {
+    return (
+      <tr key={formKey}>
+        <td>
+          <input
+            value={displayName}
+            onChange={e => setDisplayName(e.target.value)}
+            className="table-inline-input"
+          />
+        </td>
+        <td>
+          <SearchableSelect
+            options={partyOptions}
+            value={selectedPartyId}
+            onChange={setSelectedPartyId}
+            onCreateNew={handleCreateNewParty}
+            placeholder="Select party..."
+            required
+            disabled={creatingParty}
+          />
+        </td>
+        <td>
+          <select
+            value={canBringPlusOne}
+            onChange={e => setCanBringPlusOne(Number(e.target.value))}
+            className="table-inline-select"
+          >
+            <option value={0}>No</option>
+            <option value={1}>Yes</option>
+          </select>
+        </td>
+        <td className="table-actions">
+          <button
+            type="button"
+            className="btn btn-sm btn-primary"
+            onClick={handleSave}
+            disabled={guestPending || creatingParty}
+          >
+            {guestPending ? "Saving..." : "Save"}
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-ghost"
+            onClick={() => {
+              setEditing(false);
+              setDisplayName(guest.display_name);
+              setCanBringPlusOne(guest.can_bring_plus_one);
+              setSelectedPartyId(guest.party_id);
+            }}
+          >
+            Cancel
+          </button>
+          {guestState?.error && <span className="table-error">{guestState.error}</span>}
+          {partyError && <span className="table-error">{partyError}</span>}
+        </td>
+      </tr>
+    );
+  }
 
   return (
-    <div className="admin-list-item">
-      <div className="item-info">
-        <div className="item-title">{guest.display_name}</div>
-        <div className="item-meta">
-          Username: {guest.username} &middot; Type: {guest.type}
-          {partyName && <> &middot; Party: {partyName}</>}
-          {!guest.can_rsvp && <> &middot; <span style={{ color: "var(--color-muted)" }}>View only</span></>}
-          {guest.can_bring_plus_one ? <> &middot; +1</> : null}
-          {isAdminUser && " (configured via .env)"}
-        </div>
-      </div>
-      {!isAdminUser && (
-        <form action={dispatch} style={{ display: "flex", gap: "0.5rem", alignItems: "end", flexWrap: "wrap" }}>
+    <tr>
+      <td>{guest.display_name}</td>
+      <td>{partyName}</td>
+      <td>{guest.can_bring_plus_one ? "Yes" : "No"}</td>
+      <td className="table-actions">
+        <button type="button" className="btn btn-sm btn-ghost" onClick={() => { setEditing(true); setFormKey(k => k + 1); }}>
+          Edit
+        </button>
+        <form
+          action={deleteDispatch}
+          onSubmit={e => { if (!confirm("Delete this guest?")) e.preventDefault(); }}
+          style={{ display: "inline" }}
+        >
           <input type="hidden" name="guest_id" value={guest.id} />
-          <div>
-            <input name="username" defaultValue={guest.username} placeholder="Username" style={{ padding: "0.375rem 0.5rem", border: "1px solid var(--color-border)", borderRadius: "var(--radius)", fontSize: "0.8rem", width: "100px" }} />
-          </div>
-          <div>
-            <input name="password" placeholder="New password" type="password" minLength={1} style={{ padding: "0.375rem 0.5rem", border: "1px solid var(--color-border)", borderRadius: "var(--radius)", fontSize: "0.8rem", width: "100px" }} />
-          </div>
-          <div>
-            <select name="type" defaultValue={guest.type} style={{ padding: "0.375rem 0.5rem", border: "1px solid var(--color-border)", borderRadius: "var(--radius)", fontSize: "0.8rem" }}>
-              <option value="guest">Guest</option>
-              <option value="guest_plus_one">Guest +1</option>
-            </select>
-          </div>
-          <div>
-            <select name="can_rsvp" defaultValue={guest.can_rsvp} style={{ padding: "0.375rem 0.5rem", border: "1px solid var(--color-border)", borderRadius: "var(--radius)", fontSize: "0.8rem" }}>
-              <option value="1">Can RSVP</option>
-              <option value="0">View only</option>
-            </select>
-          </div>
-          <div>
-            <select name="can_bring_plus_one" defaultValue={guest.can_bring_plus_one} style={{ padding: "0.375rem 0.5rem", border: "1px solid var(--color-border)", borderRadius: "var(--radius)", fontSize: "0.8rem" }}>
-              <option value="0">No +1</option>
-              <option value="1">Has +1</option>
-            </select>
-          </div>
-          <button type="submit" className="btn btn-sm btn-primary" disabled={isPending}>{isPending ? "Saving..." : "Save"}</button>
+          <button type="submit" className="btn btn-sm btn-danger" disabled={deletePending}>
+            {deletePending ? "..." : "Delete"}
+          </button>
         </form>
-      )}
-      {state?.success && <span style={{ color: "#065f46", fontSize: "0.8rem" }}>Saved</span>}
-    </div>
+      </td>
+    </tr>
   );
 }

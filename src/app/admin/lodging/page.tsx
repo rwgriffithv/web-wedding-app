@@ -9,11 +9,18 @@ export default function AdminLodgingPage() {
   return (
     <>
       <Header title="Lodging" description="Manage lodging options." />
-      <LodgingList options={options} />
-      <div style={{ marginTop: "2rem" }}>
-        <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.75rem" }}>Add Lodging Option</h2>
-        <LodgingForm />
-      </div>
+      <details className="admin-section" open>
+        <summary>Add Lodging Option</summary>
+        <div className="admin-section-body">
+          <LodgingForm />
+        </div>
+      </details>
+      <details className="admin-section" open>
+        <summary>Lodging Options ({options.length})</summary>
+        <div className="admin-section-body">
+          <LodgingList options={options} />
+        </div>
+      </details>
     </>
   );
 }

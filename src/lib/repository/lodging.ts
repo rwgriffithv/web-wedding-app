@@ -1,18 +1,50 @@
 import { getDb, type LodgingOption } from "@/lib/db";
+import { deleteThumbnail } from "@/lib/media";
 
 export function getAll(): LodgingOption[] {
   const db = getDb();
   return db.prepare("SELECT * FROM lodging_options ORDER BY sort_order, id").all() as LodgingOption[];
 }
 
-export function create(title: string, imageUrl: string, url: string, sortOrder?: number): LodgingOption {
+export function create(data: { title: string; image_url: string; url: string; thumbnail_url?: string | null; sort_order?: number }): LodgingOption {
   const db = getDb();
-  const maxOrder = db.prepare("SELECT COALESCE(MAX(sort_order), -1) + 1 AS next FROM lodging_options").get() as { next: number };
-  const result = db.prepare("INSERT INTO lodging_options (title, image_url, url, sort_order) VALUES (?, ?, ?, ?)").run(title, imageUrl, url, sortOrder ?? maxOrder.next);
-  return db.prepare("SELECT * FROM lodging_options WHERE id = ?").get(result.lastInsertRowid) as LodgingOption;
+  const createTransaction = db.transaction(() => {
+    const maxOrder = db.prepare("SELECT COALESCE(MAX(sort_order), -1) + 1 AS next FROM lodging_options").get() as { next: number };
+    return db.prepare("INSERT INTO lodging_options (title, image_url, thumbnail_url, url, sort_order) VALUES (?, ?, ?, ?, ?) RETURNING *").get(
+      data.title, data.image_url, data.thumbnail_url ?? null, data.url, data.sort_order ?? maxOrder.next,
+    ) as LodgingOption;
+  });
+  return createTransaction();
 }
 
-export function remove(id: number): void {
+export function update(id: number, data: { title?: string; image_url?: string; thumbnail_url?: string | null; url?: string }): void {
   const db = getDb();
-  db.prepare("DELETE FROM lodging_options WHERE id = ?").run(id);
+  const fields: string[] = [];
+  const values: (string | number | null)[] = [];
+  if (data.title !== undefined) { fields.push("title = ?"); values.push(data.title); }
+  if (data.image_url !== undefined) { fields.push("image_url = ?"); values.push(data.image_url); }
+  if (data.thumbnail_url !== undefined) { fields.push("thumbnail_url = ?"); values.push(data.thumbnail_url); }
+  if (data.url !== undefined) { fields.push("url = ?"); values.push(data.url); }
+  if (fields.length === 0) throw new Error("No fields to update");
+  values.push(id);
+  const result = db.prepare(`UPDATE lodging_options SET ${fields.join(", ")} WHERE id = ?`).run(...values);
+  if (result.changes === 0) throw new Error(`Lodging option ${id} not found`);
+}
+
+export function swapSortOrder(idA: number, orderA: number, idB: number, orderB: number): void {
+  const db = getDb();
+  db.transaction(() => {
+    db.prepare("UPDATE lodging_options SET sort_order = ? WHERE id = ?").run(orderB, idA);
+    db.prepare("UPDATE lodging_options SET sort_order = ? WHERE id = ?").run(orderA, idB);
+  })();
+}
+
+export function deleteOption(id: number): void {
+  const db = getDb();
+  db.transaction(() => {
+    const item = db.prepare("SELECT thumbnail_url FROM lodging_options WHERE id = ?").get(id) as { thumbnail_url: string | null } | undefined;
+    if (!item) throw new Error(`Lodging option ${id} not found`);
+    deleteThumbnail(item.thumbnail_url);
+    db.prepare("DELETE FROM lodging_options WHERE id = ?").run(id);
+  })();
 }

@@ -4,6 +4,7 @@ import { getAll as getScheduleItems } from "@/lib/repository/schedule";
 import { getConfig } from "@/lib/repository/site-config";
 import { getImages } from "@/lib/repository/dress-code";
 import { getAll as getLodgingOptions } from "@/lib/repository/lodging";
+import { MoodBoard } from "./mood-board";
 
 interface GuidePageProps {
   searchParams: Promise<{ tab?: string }>;
@@ -34,13 +35,13 @@ export default async function GuidePage({ searchParams }: GuidePageProps) {
     <div className="page-content">
       <h1>Guide</h1>
 
-      <nav className="guide-tabs" role="tablist" aria-label="Guide sections">
+      <nav className="content-tabs" role="tablist" aria-label="Guide sections">
         {TABS.map((tab) => (
           <Link
             key={tab.id}
             id={`guide-tab-${tab.id}`}
             href={tab.id === "schedule" ? "/guide" : `/guide?tab=${tab.id}`}
-            className={`guide-tab${activeTab === tab.id ? " active" : ""}`}
+            className={`content-tab${activeTab === tab.id ? " active" : ""}`}
             role="tab"
             aria-selected={activeTab === tab.id}
             aria-controls={`guide-panel-${tab.id}`}
@@ -76,11 +77,7 @@ export default async function GuidePage({ searchParams }: GuidePageProps) {
             <>
               <div className="dress-code-text">{dressCodeText}</div>
               {dressCodeImages.length > 0 && (
-                <div className="mood-board">
-                  {dressCodeImages.map((img) => (
-                    <Image key={img.id} src={img.image_url} alt="Dress code inspiration" width={400} height={250} style={{ objectFit: "cover", borderRadius: "var(--radius)" }} />
-                  ))}
-                </div>
+                <MoodBoard images={dressCodeImages} />
               )}
             </>
           )}

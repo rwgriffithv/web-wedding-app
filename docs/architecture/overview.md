@@ -1,15 +1,14 @@
 # Architecture Overview
 
-- **Date:** 2026-07-03
-- **Scope:** Full-stack architecture of the wedding webapp
+Server-first Next.js 16 App Router application with SQLite, deployed via Docker + Cloudflare Tunnel.
 
 ## Design Philosophy
 
-**Server-first architecture** built on Next.js 16 App Router (Turbopack). Rendering, data fetching, and mutations happen on the server by default. Client Components are used only where browser APIs or interactivity are required (forms, lightbox galleries), and are pushed to leaf nodes in the component tree.
+**Server-first architecture** — Rendering, data fetching, and mutations happen on the server by default. Client Components are used only where browser APIs or interactivity are required (forms, lightbox galleries, timers), and are pushed to leaf nodes in the component tree.
 
-**Repository pattern** — All SQL queries are extracted into typed modules under `src/lib/repository/`. Each entity (guests, parties, RSVP, lodging, etc.) gets its own file. This keeps page components focused on rendering, makes queries testable in isolation, and centralizes schema changes.
+**Repository pattern** — All SQL queries are extracted into typed modules under `src/lib/repository/`. Each entity gets its own file. Page components focus on rendering, queries are testable in isolation, schema changes are centralized. See [conventions.md](conventions.md) for naming rules, return types, and transaction patterns.
 
-**Per-user password auth** — Replaced the original shared-password model with per-user username/password authentication. Admin credentials come from `.env`, party authentication uses access codes, and guest accounts are managed from the admin dashboard. Passwords are hashed with scrypt.
+**Separation of auth and RSVP** — Authentication (`users` table) is separate from RSVP entities (`guests` table). Admin credentials come from `.env`, party authentication uses access codes, viewer accounts are managed from the admin dashboard. Passwords are hashed with scrypt.
 
 ## System Architecture
 
@@ -29,11 +28,11 @@
                           │  (reverse proxy,     │
                           │   TLS, rate limit,   │
                           │   security headers)  │
-                          └──────────┬──────────┘
-                                     │
-                          ┌──────────▼──────────┐
-                          │  Next.js App         │
-                          │  (port 3000)         │
+                           └──────────┬──────────┘
+                                      │
+                           ┌──────────▼──────────┐
+                           │  Next.js App         │
+                           │  (port 3000)         │
                           │  ┌────────────────┐  │
                           │  │ Server Actions │  │
                           │  │ Route Handlers │  │
@@ -59,34 +58,40 @@
 
 | Route | Type | Auth | Purpose |
 |---|---|---|---|
-| `/` | Dynamic | None | Wedding landing page with login form |
-| `/login` | Dynamic | None | Authentication form (credentials or party code) |
-| `/(main)/home` | Dynamic | Any session | Wedding home page with date, location, story |
+| `/` | Dynamic | None | Landing page with login form |
+| `/login` | Dynamic | None | Authentication (credentials or party code) |
+| `/(main)/home` | Dynamic | Any session | Wedding home with countdown timer |
 | `/(main)/lodging` | Dynamic | Any session | Hotel/resort recommendations |
 | `/(main)/dress-code` | Dynamic | Any session | Dress code mood board |
-| `/(main)/rsvp` | Dynamic | Party or guest | Party-based RSVP with per-member forms |
-| `/(main)/media` | Dynamic | Any session | Photo/video gallery |
-| `/admin` | Dynamic | Admin only | Dashboard with stats and recent RSVPs |
-| `/admin/site` | Dynamic | Admin only | Site configuration editor |
-| `/admin/parties` | Dynamic | Admin only | Party management with access codes |
+| `/(main)/rsvp` | Dynamic | Party session | Party-based RSVP with per-member forms |
+| `/(main)/media` | Dynamic | Any session | Photo/video gallery with tab routing |
+| `/(main)/schedule` | Dynamic | Any session | Wedding day timeline |
+| `/admin` | Dynamic | Admin only | Dashboard with stats and RSVP table |
+| `/admin/users` | Dynamic | Admin only | User management (admin, viewer, party) |
 | `/admin/guests` | Dynamic | Admin only | Guest CRUD with party assignment |
+| `/admin/site` | Dynamic | Admin only | Site configuration editor |
 | `/admin/lodging` | Dynamic | Admin only | Lodging recommendations CRUD |
 | `/admin/dress-code` | Dynamic | Admin only | Dress code image management |
-| `/admin/rsvp` | Dynamic | Admin only | RSVP response viewer |
+| `/admin/rsvp` | Dynamic | Admin only | RSVP response viewer (sortable table) |
 | `/admin/media` | Dynamic | Admin only | Media gallery CRUD |
-| `/api/health` | Static | None | Database-backed health check |
+| `/admin/schedule` | Dynamic | Admin only | Wedding day schedule CRUD |
+| `/api/health` | Static | None | Health check endpoint |
+| `/api/upload` | Dynamic | Admin only | File upload (multipart) |
+| `/api/media/[...path]` | Dynamic | Session | File serving (any logged-in user) |
+| `/api/media/list` | Dynamic | Admin only | Directory listing for file browser |
+| `/api/login-background` | Static | None | Login background image (public) |
 
 ## Authentication & Authorization
 
-Three session types, each with different access:
+Three session types:
 
 | Session Type | Created By | Access |
 |---|---|---|
 | `admin` | Username/password login | All routes |
 | `party` | Party code login | `/(main)/*` + RSVP for party members |
-| `guest` | Username/password login | `/(main)/*` only |
+| `viewer` | Username/password login | `/(main)/*` only |
 
-All authenticated routes use layout-level guards. Unauthenticated access redirects to the landing page or login page.
+Auth is enforced at the layout level (`isAdmin()` guard) and in every Server Action. `SafeUser` type (`Omit<User, "password">`) is returned by all repository functions except `getUserByUsername`.
 
 ## Technology Stack
 
@@ -99,41 +104,68 @@ All authenticated routes use layout-level guards. Unauthenticated access redirec
 | Styling | Plain CSS (custom properties) | Zero-dependency, themeable via `:root` |
 | Proxy | Caddy 2.11 (alpine) | TLS, rate limiting, security headers |
 | Tunnel | cloudflared 2026.6.1 | Outbound-only Cloudflare Tunnel |
-| Testing | Vitest + Playwright | Unit tests (37) + E2E tests (17) |
+| Testing | Vitest + Playwright | 66 unit tests + E2E specs |
 | Deployment | Docker Compose | Multi-stage build, isolated networks |
 
 ## Directory Layout
 
 ```
 src/
-├── app/                      # Next.js App Router
-│   ├── (main)/               # Authenticated guest pages
-│   │   ├── dress-code/page.tsx
-│   │   ├── home/page.tsx
-│   │   ├── lodging/page.tsx
-│   │   ├── media/page.tsx
-│   │   ├── rsvp/page.tsx       + rsvp-form.tsx, actions.ts
-│   │   └── layout.tsx          (auth guard + navigation)
-│   ├── admin/                 # Admin dashboard
-│   │   ├── dress-code/       # Image CRUD
-│   │   ├── guests/           # Guest CRUD with party assignment
-│   │   ├── lodging/          # Lodging CRUD
-│   │   ├── media/            # Media gallery CRUD
-│   │   ├── parties/          # Party CRUD with access codes
-│   │   ├── rsvp/             # Response viewer
-│   │   ├── site/             # Site config editor
-│   │   └── layout.tsx         (admin guard + sidebar)
-│   ├── api/health/route.ts   # Health check endpoint
-│   ├── login/                # Login page + actions
+├── app/                          # Next.js App Router
+│   ├── (main)/                   # Authenticated public pages
+│   │   ├── home/page.tsx         # Countdown timer, date, location
+│   │   ├── lodging/page.tsx      # Hotel recommendations
+│   │   ├── dress-code/page.tsx   # Mood board
+│   │   ├── rsvp/                 # Party-based RSVP
+│   │   │   ├── page.tsx
+│   │   │   ├── rsvp-form.tsx     # Per-member form (client)
+│   │   │   └── actions.ts
+│   │   ├── media/                # Photo/video gallery (tab routing)
+│   │   │   ├── page.tsx
+│   │   │   └── media-gallery.tsx # Grid + lightbox (client)
+│   │   ├── schedule/page.tsx     # Wedding day timeline
+│   │   └── layout.tsx            # Auth guard + bottom nav
+│   ├── admin/                    # Admin dashboard
+│   │   ├── users/                # User management
+│   │   ├── guests/               # Guest CRUD + party assignment
+│   │   ├── site/                 # Site config editor
+│   │   ├── lodging/              # Lodging CRUD
+│   │   ├── dress-code/           # Dress code images
+│   │   ├── rsvp/                 # RSVP sortable table
+│   │   ├── media/                # Media gallery CRUD
+│   │   │   ├── page.tsx
+│   │   │   ├── media-form.tsx    # Add form with SearchableSelect for tabs
+│   │   │   ├── media-list.tsx    # Grouped by tab, inline title editing
+│   │   │   └── actions.ts        # addItem, deleteItem, updateItem, createTabInline, renameTab, deleteTab
+│   │   ├── schedule/             # Schedule CRUD
+│   │   └── layout.tsx            # Admin guard + responsive sidebar
+│   ├── login/                    # Login page + actions
+│   ├── api/health/route.ts       # Health check
+│   ├── api/upload/route.ts       # File upload (admin)
+│   ├── api/media/[...path]/      # File serving (session auth)
+│   ├── api/media/list/route.ts   # Directory listing (admin)
+│   ├── api/login-background/     # Login bg image (public)
 │   └── (page.tsx, layout.tsx, error.tsx, not-found.tsx)
-├── components/               # Shared UI
-├── lib/                      # Server-only utilities
-│   ├── repository/           # Data access layer (7 files)
-│   ├── auth.ts               # Session + password
-│   ├── db.ts                 # Connection + migration + seed
-│   ├── schema.ts             # DDL
-│   └── config.ts             # Env validation
-├── app/globals.css           # Styles (490 lines)
+├── components/                   # Shared UI (5 client components)
+│   ├── searchable-select.tsx     # WAI-ARIA combobox
+│   ├── countdown-timer.tsx       # T-XYZ / T+XYZ timer
+│   ├── file-upload.tsx           # Drag-and-drop upload
+│   ├── file-browser.tsx          # Text-based file explorer
+│   └── logout-button.tsx         # Logout form wrapper
+├── lib/                          # Server-only utilities
+│   ├── repository/               # Data access (9 entity files)
+│   ├── types.ts                  # All interfaces + SafeUser
+│   ├── auth.ts                   # Session + password hashing
+│   ├── db.ts                     # Connection + DDL + seed
+│   ├── schema.ts                 # DDL (10 tables)
+│   ├── config.ts                 # Env validation
+│   ├── form-data.ts              # Safe FormData extraction + validateMediaUrl
+│   ├── media.ts                  # Media directory config
+│   └── rate-limit.ts             # LRU eviction rate limiter
+├── test/                         # Test utilities
+│   ├── test-utils.ts             # Shared test helpers
+│   └── db-test-utils.ts          # createTestDb() + truncateAll()
+└── app/globals.css               # Styles + utility classes
 ```
 
 ## Key Architecture Decisions
@@ -144,7 +176,18 @@ src/
 | Mutations | Server Actions | Type-safe, colocated, no API boilerplate |
 | Database | SQLite | Zero-config, file-based, no server process needed |
 | Auth | HMAC-signed JSON cookie | Simple, secure (signed), replaceable |
-| Access control | Layout-level guards | Server-side redirects, never reaches client |
+| Access control | Layout-level guards + server actions | Every admin page and action validates `isAdmin()` server-side |
 | RSVP | Party model | Families RSVP once with a code (not per-person passwords) |
 | Styling | Plain CSS | Zero dependencies, themeable via custom properties |
 | Deployment | Docker Compose | Isolated networks, multi-stage builds, health checks |
+| Error handling | Per-route error.tsx | Granular error boundaries per route segment |
+| Media auth | Session-based (not admin) | Any logged-in user can view media; login bg gets dedicated public endpoint |
+| Media tabs | Database-driven + URL routing | Reuses guide `?tab=` pattern for consistency; slug-based loose coupling |
+
+## Known Issues & Limitations
+
+| Issue | Impact | Status |
+|---|---|---|
+| `prebuild-install@7.1.3` deprecated | Cosmetic npm warning during `npm install`. Transitive dependency of `better-sqlite3` — no action needed on our side. | Awaiting upstream migration in `better-sqlite3` |
+| `postcss < 8.5.10` XSS vulnerability | Moderate severity — unescaped `</style>` in CSS Stringify output. Transitive dependency of `next@16.2.10`. Not exploitable in our deployment (no user-submitted CSS). | Awaiting Next.js upgrade to a version bundling postcss 8.5.10+. `npm audit fix --force` would downgrade to Next.js 9.x which is not viable. |
+| Turbopack NFT trace warning during build | `media.ts` and `db.ts` use `process.cwd()` at module scope for `MEDIA_DIR` and `DB_PATH`. Turbopack's NFT trace cannot narrow the dependency set, producing a harmless warning. Build succeeds and output is correct. | **Do NOT "fix" this.** Previous attempts to use lazy getters (`getMediaDir()`) or `turbopackIgnore` comments did not resolve the warning and added unnecessary complexity. The warning is cosmetic — leave it as-is. |

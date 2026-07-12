@@ -1,18 +1,17 @@
 import { cookies } from "next/headers";
 import crypto from "crypto";
-import { getDb, type Guest } from "./db";
-import { getConfig } from "./config";
+import { getEnvConfig } from "./config";
 
 const SESSION_COOKIE = "session";
 
 interface Session {
-  guestId?: number;
+  userId?: number;
   partyId?: number;
-  type: "admin" | "party" | "guest";
+  type: "admin" | "viewer" | "party";
 }
 
 function getSessionSecret(): string {
-  return getConfig().sessionSecret;
+  return getEnvConfig().sessionSecret;
 }
 
 function signSession(payload: string): string {
@@ -28,7 +27,9 @@ function verifySession(token: string): Session | null {
   const signature = token.slice(lastDot + 1);
   const secret = getSessionSecret();
   const hmac = crypto.createHmac("sha256", secret).update(payload).digest("hex");
-  if (!crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(signature))) return null;
+  const hmacBuf = Buffer.from(hmac);
+  const sigBuf = Buffer.from(signature);
+  if (hmacBuf.length !== sigBuf.length || !crypto.timingSafeEqual(hmacBuf, sigBuf)) return null;
   try {
     return JSON.parse(payload) as Session;
   } catch {
@@ -43,25 +44,12 @@ export async function parseSession(): Promise<Session | null> {
   return verifySession(token);
 }
 
-export async function getCurrentGuest(): Promise<Guest | null> {
-  const session = await parseSession();
-  if (!session?.guestId) return null;
-  const db = getDb();
-  const guest = db.prepare("SELECT * FROM guests WHERE id = ?").get(session.guestId) as Guest | undefined;
-  return guest ?? null;
-}
-
 export async function isAdmin(): Promise<boolean> {
   const session = await parseSession();
   return session?.type === "admin";
 }
 
-export async function getPartyId(): Promise<number | null> {
-  const session = await parseSession();
-  return session?.partyId ?? null;
-}
-
-export function createSession(data: { guestId?: number; partyId?: number; type: "admin" | "party" | "guest" }): string {
+export function createSession(data: { userId?: number; partyId?: number; type: "admin" | "viewer" | "party" }): string {
   return signSession(JSON.stringify(data));
 }
 
@@ -85,5 +73,8 @@ export function verifyPassword(password: string, stored: string): boolean {
   const salt = stored.slice(0, colon);
   const expected = stored.slice(colon + 1);
   const actual = crypto.scryptSync(password, salt, KEY_LENGTH).toString("base64");
-  return crypto.timingSafeEqual(Buffer.from(actual), Buffer.from(expected));
+  const actualBuf = Buffer.from(actual);
+  const expectedBuf = Buffer.from(expected);
+  if (actualBuf.length !== expectedBuf.length) return false;
+  return crypto.timingSafeEqual(actualBuf, expectedBuf);
 }

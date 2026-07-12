@@ -7,6 +7,7 @@ export default function MainError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  console.error(error);
   return (
     <div className="page-content" style={{ textAlign: "center", paddingTop: "4rem" }}>
       <h1>Something went wrong</h1>

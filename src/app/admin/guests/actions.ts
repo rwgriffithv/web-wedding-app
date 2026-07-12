@@ -2,44 +2,64 @@
 
 import { revalidatePath } from "next/cache";
 import { isAdmin } from "@/lib/auth";
-import { updateGuest as updateGuestRepo, createGuest, getGuestById } from "@/lib/repository/guests";
+import { getString, getInt } from "@/lib/form-data";
+import { getDb } from "@/lib/db";
+import { updateGuest as updateGuestRepo, createGuest, deleteGuest, getGuestById } from "@/lib/repository/guests";
+import { createParty, deleteEmptyParty } from "@/lib/repository/party";
 
-interface GuestState { success?: boolean; error?: string }
+export interface GuestState { success?: boolean; error?: string; partyId?: number }
 
-const ALLOWED_TYPES = ["guest", "guest_plus_one"] as const;
+export async function createPartyInline(prevState: GuestState | null, formData: FormData): Promise<GuestState> {
+  if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
 
-export async function updateGuest(prevState: GuestState | null, formData: FormData): Promise<GuestState> {
-  if (!(await isAdmin())) return { error: "Unauthorized" };
-
-  const id = parseInt(formData.get("guest_id") as string, 10);
-  if (isNaN(id) || id < 1) return { error: "Invalid guest ID." };
-
-  const existing = getGuestById(id);
-  if (!existing) return { error: "Guest not found." };
-  if (existing.type === "admin") return { error: "Cannot modify admin account." };
-
-  const username = formData.get("username") as string;
-  const password = formData.get("password") as string;
-  const type = formData.get("type") as string;
-
-  const canRsvpRaw = formData.get("can_rsvp") as string;
-  const canBringPlusOneRaw = formData.get("can_bring_plus_one") as string;
-
-  if (password && password.trim().length === 0) {
-    return { error: "Password cannot be empty." };
-  }
-
-  const canRsvp = canRsvpRaw === "1" ? 1 : 0;
-  const canBringPlusOne = canBringPlusOneRaw === "1" ? 1 : 0;
+  const name = getString(formData, "party_name");
+  if (!name?.trim()) return { success: false, error: "Party name is required." };
 
   try {
-    updateGuestRepo(id, {
-      ...(username ? { username } : {}),
-      ...(password && password.trim() ? { password: password.trim() } : {}),
-      ...(type && ALLOWED_TYPES.includes(type as "guest" | "guest_plus_one") ? { type } : {}),
-      can_rsvp: canRsvp,
-      can_bring_plus_one: canBringPlusOne,
-    });
+    const party = createParty(name.trim());
+    revalidatePath("/admin/guests");
+    return { success: true, partyId: party.id };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: "Failed to create party." };
+  }
+}
+
+export async function updateGuest(prevState: GuestState | null, formData: FormData): Promise<GuestState> {
+  if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+
+  const id = getInt(formData, "guest_id");
+  if (id === null) return { success: false, error: "Invalid guest ID." };
+
+  const existing = getGuestById(id);
+  if (!existing) return { success: false, error: "Guest not found." };
+
+  const displayName = getString(formData, "display_name");
+  const partyIdRaw = getString(formData, "party_id");
+  const canBringPlusOneRaw = getString(formData, "can_bring_plus_one");
+
+  if (!displayName?.trim()) return { success: false, error: "Display name is required." };
+
+  const partyId = partyIdRaw ? parseInt(partyIdRaw, 10) : null;
+  if (partyId !== null && (isNaN(partyId) || partyId < 1)) return { success: false, error: "Invalid party ID." };
+
+  const canBringPlusOne = canBringPlusOneRaw === "1" ? 1 : 0;
+  const oldPartyId = existing.party_id;
+
+  try {
+    const db = getDb();
+    db.transaction(() => {
+      updateGuestRepo(id, {
+        display_name: displayName,
+        party_id: partyId,
+        can_bring_plus_one: canBringPlusOne,
+      });
+
+      if (oldPartyId !== null && oldPartyId !== partyId) {
+        deleteEmptyParty(oldPartyId);
+      }
+    })();
+
     revalidatePath("/admin/guests");
     return { success: true };
   } catch (error) {
@@ -49,36 +69,55 @@ export async function updateGuest(prevState: GuestState | null, formData: FormDa
 }
 
 export async function addGuest(prevState: GuestState | null, formData: FormData): Promise<GuestState> {
-  if (!(await isAdmin())) return { error: "Unauthorized" };
+  if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
 
-  const displayName = formData.get("display_name") as string;
-  const username = formData.get("username") as string;
-  const password = formData.get("password") as string;
-  const type = formData.get("type") as string;
-  const canRsvpRaw = formData.get("can_rsvp") as string;
-  const canBringPlusOneRaw = formData.get("can_bring_plus_one") as string;
+  const displayName = getString(formData, "display_name");
+  const partyIdRaw = getString(formData, "party_id");
+  const canBringPlusOneRaw = getString(formData, "can_bring_plus_one");
 
-  if (!displayName || !username || !password) {
-    return { success: false, error: "All fields are required." };
+  if (!displayName?.trim()) {
+    return { success: false, error: "Display name is required." };
   }
 
-  if (!ALLOWED_TYPES.includes(type as "guest" | "guest_plus_one")) {
-    return { error: "Invalid guest type." };
-  }
+  const partyId = partyIdRaw ? parseInt(partyIdRaw, 10) : null;
+  if (!partyId || isNaN(partyId) || partyId < 1) return { success: false, error: "Party is required." };
 
-  if (password.trim().length === 0) {
-    return { error: "Password cannot be empty." };
-  }
-
-  const canRsvp = canRsvpRaw === "1" ? 1 : 0;
   const canBringPlusOne = canBringPlusOneRaw === "1" ? 1 : 0;
 
   try {
-    createGuest(username, password, displayName, type as "guest" | "guest_plus_one", null, canRsvp, canBringPlusOne);
+    createGuest(displayName.trim(), partyId, canBringPlusOne);
     revalidatePath("/admin/guests");
     return { success: true };
   } catch (error) {
     console.error(error);
-    return { success: false, error: "Failed to create guest. Username may already exist." };
+    return { success: false, error: "Failed to create guest." };
+  }
+}
+
+export async function removeGuest(prevState: GuestState | null, formData: FormData): Promise<GuestState> {
+  if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+
+  const id = getInt(formData, "guest_id");
+  if (id === null) return { success: false, error: "Invalid guest ID." };
+
+  const existing = getGuestById(id);
+  if (!existing) return { success: false, error: "Guest not found." };
+
+  const oldPartyId = existing.party_id;
+
+  try {
+    const db = getDb();
+    db.transaction(() => {
+      deleteGuest(id);
+      if (oldPartyId !== null) {
+        deleteEmptyParty(oldPartyId);
+      }
+    })();
+
+    revalidatePath("/admin/guests");
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: "Failed to delete guest." };
   }
 }

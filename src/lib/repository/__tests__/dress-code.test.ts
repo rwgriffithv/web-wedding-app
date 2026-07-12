@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import Database from "better-sqlite3";
-import { DDL } from "@/lib/schema";
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
+import { createTestDb, truncateAll } from "@/test/db-test-utils";
+import type Database from "better-sqlite3";
 
 let db: Database.Database;
 
@@ -8,19 +8,14 @@ vi.mock("@/lib/db", () => ({
   getDb: () => db,
 }));
 
-beforeAll(() => {
-  db = new Database(":memory:");
-  db.exec(DDL);
-});
-
-afterAll(() => {
-  db.close();
-});
+beforeAll(() => { db = createTestDb(); });
+beforeEach(() => { truncateAll(db); });
+afterAll(() => { db.close(); });
 
 describe("dress-code repository", () => {
   it("adds and retrieves images", async () => {
-    const { addImage, getImages } = await import("@/lib/repository/dress-code");
-    const img = addImage("https://example.com/dress1.jpg");
+    const { createImage, getImages } = await import("@/lib/repository/dress-code");
+    const img = createImage("https://example.com/dress1.jpg");
 
     expect(img.image_url).toBe("https://example.com/dress1.jpg");
     expect(img.id).toBeGreaterThan(0);
@@ -31,9 +26,10 @@ describe("dress-code repository", () => {
   });
 
   it("adds multiple images in order", async () => {
-    const { addImage, getImages } = await import("@/lib/repository/dress-code");
-    addImage("https://example.com/dress2.jpg");
-    addImage("https://example.com/dress3.jpg");
+    const { createImage, getImages } = await import("@/lib/repository/dress-code");
+    createImage("https://example.com/dress1.jpg");
+    createImage("https://example.com/dress2.jpg");
+    createImage("https://example.com/dress3.jpg");
 
     const all = getImages();
     expect(all.length).toBe(3);
@@ -45,13 +41,11 @@ describe("dress-code repository", () => {
   });
 
   it("removes an image", async () => {
-    const { addImage, getImages, removeImage } = await import("@/lib/repository/dress-code");
-    const before = getImages().length;
-    const img = addImage("https://example.com/to-remove.jpg");
+    const { createImage, getImages, deleteImage } = await import("@/lib/repository/dress-code");
+    const img = createImage("https://example.com/to-remove.jpg");
+    expect(getImages().length).toBe(1);
 
-    expect(getImages().length).toBe(before + 1);
-
-    removeImage(img.id);
-    expect(getImages().length).toBe(before);
+    deleteImage(img.id);
+    expect(getImages().length).toBe(0);
   });
 });

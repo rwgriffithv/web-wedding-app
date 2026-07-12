@@ -9,11 +9,18 @@ export default function AdminSchedulePage() {
   return (
     <>
       <Header title="Schedule" description="Manage the event schedule." />
-      <ScheduleList items={items} />
-      <div style={{ marginTop: "2rem" }}>
-        <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.75rem" }}>Add Schedule Item</h2>
-        <ScheduleForm />
-      </div>
+      <details className="admin-section" open>
+        <summary>Add Schedule Item</summary>
+        <div className="admin-section-body">
+          <ScheduleForm />
+        </div>
+      </details>
+      <details className="admin-section" open>
+        <summary>Schedule Items ({items.length})</summary>
+        <div className="admin-section-body">
+          <ScheduleList items={items} />
+        </div>
+      </details>
     </>
   );
 }

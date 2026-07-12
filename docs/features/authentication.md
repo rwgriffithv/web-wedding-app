@@ -1,6 +1,5 @@
 # Authentication
 
-- **Date:** 2026-07-03
 - **Scope:** Three auth methods, session management, rate limiting
 
 ## Overview

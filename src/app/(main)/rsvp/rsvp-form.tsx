@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useState, useActionState } from "react";
 import { submitRsvp } from "./actions";
 
 interface RsvpFormProps {
@@ -14,51 +14,85 @@ const initialState = null as { success?: boolean; error?: string } | null;
 
 export function RsvpForm({ memberId, displayName, canBringPlusOne, existingResponse }: RsvpFormProps) {
   const [state, dispatch, isPending] = useActionState(submitRsvp, initialState);
+  const [attending, setAttending] = useState(existingResponse?.attending === 1 ? "yes" : existingResponse ? "no" : "");
+  const [bringPlusOne, setBringPlusOne] = useState(
+    existingResponse?.plus_one_name ? "yes" : "no"
+  );
 
   const hasResponse = !!existingResponse;
 
   return (
-    <form action={dispatch} className="rsvp-form admin-form">
+    <form action={dispatch} className="rsvp-form">
       <input type="hidden" name="member_id" value={memberId} />
+      <input type="hidden" name={`name_${memberId}`} value={displayName} />
 
-      <div className="form-group">
-        <label htmlFor={`name_${memberId}`}>Name</label>
-        <input id={`name_${memberId}`} name={`name_${memberId}`} type="text" defaultValue={existingResponse?.guest_name ?? displayName} required style={{ maxWidth: "300px" }} />
-      </div>
-
-      <div className="form-group">
-        <label>Attending?</label>
-        <div className="radio-group">
-          <label>
-            <input type="radio" name={`attending_${memberId}`} value="yes" defaultChecked={existingResponse?.attending === 1} required />
-            Yes
-          </label>
-          <label>
-            <input type="radio" name={`attending_${memberId}`} value="no" defaultChecked={existingResponse?.attending === 0 && hasResponse} />
-            Regretfully decline
-          </label>
-        </div>
-      </div>
-
-      {canBringPlusOne && (
+      <div className="form-row">
         <div className="form-group">
-          <label htmlFor={`plus_one_${memberId}`}>Plus One Name (optional)</label>
-          <input id={`plus_one_${memberId}`} name={`plus_one_${memberId}`} type="text" defaultValue={existingResponse?.plus_one_name ?? ""} placeholder="Guest's name" style={{ maxWidth: "300px" }} />
-          <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", marginTop: "0.25rem" }}>
-            Leave blank if attending alone.
-          </p>
+          <label id={`attending-label-${memberId}`}>Attending?</label>
+          <div className="radio-group" role="radiogroup" aria-labelledby={`attending-label-${memberId}`}>
+            <label>
+              <input type="radio" name={`attending_${memberId}`} value="yes" checked={attending === "yes"} onChange={() => setAttending("yes")} required />
+              Yes
+            </label>
+            <label>
+              <input type="radio" name={`attending_${memberId}`} value="no" checked={attending === "no"} onChange={() => setAttending("no")} />
+              No
+            </label>
+          </div>
+        </div>
+
+        {canBringPlusOne && (
+          <div className="form-group">
+            <label id={`plusone-label-${memberId}`}>Plus-one?</label>
+            <div className="radio-group" role="radiogroup" aria-labelledby={`plusone-label-${memberId}`}>
+              <label>
+                <input
+                  type="radio"
+                  name={`bring_plus_one_${memberId}`}
+                  value="yes"
+                  checked={bringPlusOne === "yes"}
+                  onChange={() => setBringPlusOne("yes")}
+                />
+                Yes
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name={`bring_plus_one_${memberId}`}
+                  value="no"
+                  checked={bringPlusOne === "no"}
+                  onChange={() => setBringPlusOne("no")}
+                />
+                No
+              </label>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {canBringPlusOne && bringPlusOne === "yes" && (
+        <div className="form-group mt-1">
+          <label htmlFor={`plus_one_${memberId}`}>Plus-one name</label>
+          <input
+            id={`plus_one_${memberId}`}
+            name={`plus_one_${memberId}`}
+            type="text"
+            defaultValue={existingResponse?.plus_one_name ?? ""}
+            placeholder="Guest's name"
+            style={{ maxWidth: "300px" }}
+          />
         </div>
       )}
 
       {state?.success && (
-        <p style={{ color: "#065f46", fontSize: "0.875rem", marginBottom: "0.75rem" }}>
+        <p className="text-success text-sm mt-1" role="status">
           {hasResponse ? "Response updated." : "Response submitted."}
         </p>
       )}
       {state?.error && (
-        <p style={{ color: "var(--color-error)", fontSize: "0.8rem", marginBottom: "0.75rem" }}>{state.error}</p>
+        <p className="text-error text-sm mt-1" role="alert">{state.error}</p>
       )}
-      <button type="submit" className="btn btn-primary btn-sm" disabled={isPending}>
+      <button type="submit" className="btn btn-primary btn-sm mt-1" disabled={isPending}>
         {isPending ? "Saving..." : hasResponse ? "Update" : "Submit"}
       </button>
     </form>

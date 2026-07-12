@@ -1,32 +1,31 @@
-import { getAllParties, getPartyWithMembers } from "@/lib/repository/party";
-import { getAllGuests } from "@/lib/repository/guests";
+import { getAll } from "@/lib/repository/party";
+import { getGuestsByPartyId } from "@/lib/repository/guests";
 import { Header } from "@/components/header";
-import { PartyList } from "./party-list";
-import { PartyForm } from "./party-form";
+import { PartyRow } from "./party-row";
 
 export default function AdminPartiesPage() {
-  const parties = getAllParties();
-  const allGuests = getAllGuests();
+  const parties = getAll();
 
-  const partiesWithMembers = parties.map(p => {
-    const full = getPartyWithMembers(p.id);
-    return { party: p, members: full?.members ?? [] };
-  });
+  const partiesWithGuests = parties.map(party => ({
+    party,
+    guests: getGuestsByPartyId(party.id),
+  }));
 
   return (
     <>
-      <Header title="Parties" description="Group guests into parties for easy family RSVP." />
-      <PartyForm />
-      <div className="admin-list">
-        {partiesWithMembers.length === 0 && (
-          <p style={{ color: "var(--color-muted)", fontStyle: "italic", textAlign: "center", padding: "2rem" }}>
-            No parties yet. Create one above.
-          </p>
-        )}
-        {partiesWithMembers.map(({ party, members }) => (
-          <PartyList key={party.id} party={party} members={members} allGuests={allGuests} />
-        ))}
-      </div>
+      <Header title="Parties" description="Manage party codes and view members." />
+      <details className="admin-section" open>
+        <summary>Parties ({parties.length})</summary>
+        <div className="admin-section-body">
+          {parties.length === 0 ? (
+            <p className="empty-state">No parties yet. Create one from the Guests page.</p>
+          ) : (
+            partiesWithGuests.map(({ party, guests }) => (
+              <PartyRow key={party.id} party={party} guests={guests} />
+            ))
+          )}
+        </div>
+      </details>
     </>
   );
 }

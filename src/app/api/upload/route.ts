@@ -1,14 +1,9 @@
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
-import { MEDIA_DIR, ensureMediaDir } from "@/lib/media";
+import { MEDIA_DIR, ensureMediaDir, ALLOWED_EXTENSIONS, IMAGE_EXTENSIONS, VIDEO_EXTENSIONS } from "@/lib/media";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-
-const ALLOWED_EXTENSIONS = new Set([
-  ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg",
-  ".mp4", ".webm", ".mov",
-]);
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
@@ -30,12 +25,13 @@ export async function POST(request: Request) {
   }
 
   if (file.size > MAX_FILE_SIZE) {
-    return NextResponse.json({ error: "File exceeds 50 MB limit." }, { status: 400 });
+    return NextResponse.json({ error: "File exceeds 50 MB limit." }, { status: 413 });
   }
 
   ensureMediaDir();
 
-  const filename = `${randomUUID()}${ext}`;
+  const uuid = randomUUID();
+  const filename = `${uuid}${ext}`;
   const filepath = path.join(MEDIA_DIR, filename);
   const buffer = Buffer.from(await file.arrayBuffer());
 
@@ -46,5 +42,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to save file." }, { status: 500 });
   }
 
-  return NextResponse.json({ url: `/api/media/${filename}` });
+  const isImage = IMAGE_EXTENSIONS.has(ext) && ext !== ".svg";
+  const isVideo = VIDEO_EXTENSIONS.has(ext);
+  const type = isImage ? "image" : isVideo ? "video" : "image";
+
+  return NextResponse.json({
+    url: `/api/media/${filename}`,
+    type,
+  });
 }

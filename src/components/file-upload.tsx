@@ -2,8 +2,13 @@
 
 import { useRef, useState } from "react";
 
+interface UploadResult {
+  url: string;
+  type?: "image" | "video";
+}
+
 interface FileUploadProps {
-  onUpload: (url: string) => void;
+  onUpload: (result: UploadResult) => void;
   accept?: string;
   label?: string;
 }
@@ -32,7 +37,7 @@ export function FileUpload({ onUpload, accept, label }: FileUploadProps) {
         return;
       }
 
-      onUpload(data.url);
+      onUpload(data);
     } catch {
       setError("Upload failed.");
     } finally {
@@ -43,11 +48,11 @@ export function FileUpload({ onUpload, accept, label }: FileUploadProps) {
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-      <input ref={inputRef} type="file" accept={accept} onChange={handleChange} style={{ display: "none" }} />
+      <input ref={inputRef} type="file" accept={accept} onChange={handleChange} className="sr-only" />
       <button type="button" className="btn btn-ghost" onClick={() => inputRef.current?.click()} disabled={uploading}>
         {uploading ? "Uploading..." : (label || "Upload")}
       </button>
-      {error && <span style={{ color: "var(--color-error)", fontSize: "0.8rem" }}>{error}</span>}
+      {error && <span className="text-error text-xs" role="alert">{error}</span>}
     </div>
   );
 }

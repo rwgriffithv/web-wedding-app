@@ -1,7 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useRef, useState, useActionState } from "react";
 import { saveSiteConfig } from "./actions";
+import { FileUpload } from "@/components/file-upload";
+import { FileBrowser } from "@/components/file-browser";
 
 interface SiteConfigFormProps {
   config: Record<string, string>;
@@ -11,16 +13,35 @@ const initialState = null as { success?: boolean; error?: string } | null;
 
 export function SiteConfigForm({ config }: SiteConfigFormProps) {
   const [state, dispatch, isPending] = useActionState(saveSiteConfig, initialState);
+  const landingBgRef = useRef<HTMLInputElement>(null);
+  const homeBgRef = useRef<HTMLInputElement>(null);
+  const [showBrowser, setShowBrowser] = useState<"landing" | "home" | null>(null);
 
   return (
     <form action={dispatch} className="admin-form">
+      {showBrowser === "landing" && (
+        <FileBrowser
+          onSelect={(url) => { if (landingBgRef.current) landingBgRef.current.value = url; }}
+          onClose={() => setShowBrowser(null)}
+        />
+      )}
+      {showBrowser === "home" && (
+        <FileBrowser
+          onSelect={(url) => { if (homeBgRef.current) homeBgRef.current.value = url; }}
+          onClose={() => setShowBrowser(null)}
+        />
+      )}
       <div className="form-group">
         <label htmlFor="landing_title">Landing Page Title</label>
         <input id="landing_title" name="landing_title" type="text" defaultValue={config.landing_title} />
       </div>
       <div className="form-group">
         <label htmlFor="landing_background">Landing Background Image URL</label>
-        <input id="landing_background" name="landing_background" type="text" defaultValue={config.landing_background} placeholder="https://example.com/image.jpg" />
+        <div className="flex-row items-center gap-1">
+          <input ref={landingBgRef} id="landing_background" name="landing_background" type="text" defaultValue={config.landing_background} placeholder="https://example.com/image.jpg or /api/media/file.jpg" className="flex-1" />
+          <FileUpload onUpload={(result) => { if (landingBgRef.current) landingBgRef.current.value = result.url; }} accept="image/*" label="Upload" />
+          <button type="button" className="btn btn-sm" onClick={() => setShowBrowser("landing")}>Local</button>
+        </div>
       </div>
       <div className="form-group">
         <label htmlFor="home_title">Home Page Title</label>
@@ -32,7 +53,11 @@ export function SiteConfigForm({ config }: SiteConfigFormProps) {
       </div>
       <div className="form-group">
         <label htmlFor="home_date">Wedding Date</label>
-        <input id="home_date" name="home_date" type="text" defaultValue={config.home_date} placeholder="August 15, 2026" />
+        <input id="home_date" name="home_date" type="date" defaultValue={config.home_date} />
+      </div>
+      <div className="form-group">
+        <label htmlFor="home_time">Wedding Time</label>
+        <input id="home_time" name="home_time" type="time" defaultValue={config.home_time} />
       </div>
       <div className="form-group">
         <label htmlFor="home_location">Wedding Location</label>
@@ -40,14 +65,14 @@ export function SiteConfigForm({ config }: SiteConfigFormProps) {
       </div>
       <div className="form-group">
         <label htmlFor="home_background_video">Home Background Video URL</label>
-        <input id="home_background_video" name="home_background_video" type="text" defaultValue={config.home_background_video} placeholder="https://example.com/video.mp4" />
+        <div className="flex-row items-center gap-1">
+          <input ref={homeBgRef} id="home_background_video" name="home_background_video" type="text" defaultValue={config.home_background_video} placeholder="https://example.com/video.mp4 or /api/media/video.mp4" className="flex-1" />
+          <FileUpload onUpload={(result) => { if (homeBgRef.current) homeBgRef.current.value = result.url; }} accept="video/*" label="Upload" />
+          <button type="button" className="btn btn-sm" onClick={() => setShowBrowser("home")}>Local</button>
+        </div>
       </div>
-      <div className="form-group">
-        <label htmlFor="dress_code_text">Dress Code Description</label>
-        <textarea id="dress_code_text" name="dress_code_text" defaultValue={config.dress_code_text} />
-      </div>
-      {state?.success && <p style={{ color: "#065f46", fontSize: "0.875rem", marginBottom: "1rem" }}>Saved successfully.</p>}
-      {state?.error && <p style={{ color: "var(--color-error)", fontSize: "0.8rem", marginBottom: "0.75rem" }}>{state.error}</p>}
+      {state?.success && <p className="text-success text-sm mb-1" role="status">Saved successfully.</p>}
+      {state?.error && <p className="text-error text-sm mb-1" role="alert">{state.error}</p>}
       <button type="submit" className="btn btn-primary" disabled={isPending}>{isPending ? "Saving..." : "Save Changes"}</button>
     </form>
   );

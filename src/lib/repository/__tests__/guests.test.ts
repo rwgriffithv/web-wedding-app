@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import Database from "better-sqlite3";
-import { DDL } from "@/lib/schema";
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
+import { createTestDb, truncateAll } from "@/test/db-test-utils";
+import type Database from "better-sqlite3";
 
 let db: Database.Database;
 
@@ -8,61 +8,45 @@ vi.mock("@/lib/db", () => ({
   getDb: () => db,
 }));
 
-beforeAll(() => {
-  db = new Database(":memory:");
-  db.exec(DDL);
-});
-
-afterAll(() => {
-  db.close();
-});
+beforeAll(() => { db = createTestDb(); });
+beforeEach(() => { truncateAll(db); });
+afterAll(() => { db.close(); });
 
 describe("guests repository", () => {
-  it("creates and retrieves a guest by id and username", async () => {
-    const { createGuest, getGuestById, getGuestByUsername } = await import("@/lib/repository/guests");
-    const created = createGuest("alice", "secret", "Alice", "guest");
+  it("creates and retrieves a guest by id", async () => {
+    const { createGuest, getGuestById } = await import("@/lib/repository/guests");
+    const created = createGuest("Alice");
 
-    expect(created.username).toBe("alice");
     expect(created.display_name).toBe("Alice");
-    expect(created.type).toBe("guest");
     expect(created.id).toBeGreaterThan(0);
 
     const byId = getGuestById(created.id);
     expect(byId).toBeDefined();
-    expect(byId!.username).toBe("alice");
-
-    const byUsername = getGuestByUsername("alice");
-    expect(byUsername).toBeDefined();
-    expect(byUsername!.id).toBe(created.id);
+    expect(byId!.display_name).toBe("Alice");
   });
 
   it("returns all guests", async () => {
-    const { createGuest, getAllGuests } = await import("@/lib/repository/guests");
-    createGuest("bob", "pass", "Bob", "guest_plus_one");
+    const { createGuest, getAll } = await import("@/lib/repository/guests");
+    createGuest("Alice");
+    createGuest("Bob");
 
-    const all = getAllGuests();
+    const all = getAll();
     expect(all.length).toBe(2);
-    expect(all.map(g => g.username)).toEqual(expect.arrayContaining(["alice", "bob"]));
+    expect(all.map(g => g.display_name)).toEqual(expect.arrayContaining(["Alice", "Bob"]));
   });
 
   it("updates guest fields", async () => {
     const { createGuest, getGuestById, updateGuest } = await import("@/lib/repository/guests");
-    const created = createGuest("charlie", "oldpass", "Charlie", "guest");
+    const created = createGuest("Charlie");
 
-    updateGuest(created.id, { display_name: "Charlie Updated", type: "guest_plus_one" });
+    updateGuest(created.id, { display_name: "Charlie Updated", can_bring_plus_one: 1 });
     const updated = getGuestById(created.id);
     expect(updated!.display_name).toBe("Charlie Updated");
-    expect(updated!.type).toBe("guest_plus_one");
-    expect(updated!.username).toBe("charlie");
+    expect(updated!.can_bring_plus_one).toBe(1);
   });
 
   it("returns undefined for unknown id", async () => {
     const { getGuestById } = await import("@/lib/repository/guests");
     expect(getGuestById(999)).toBeUndefined();
-  });
-
-  it("returns undefined for unknown username", async () => {
-    const { getGuestByUsername } = await import("@/lib/repository/guests");
-    expect(getGuestByUsername("nobody")).toBeUndefined();
   });
 });

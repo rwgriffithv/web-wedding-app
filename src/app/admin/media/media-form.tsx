@@ -1,48 +1,137 @@
 "use client";
 
-import { useActionState } from "react";
-import { addItem } from "./actions";
+import { useRef, useState, useEffect, useActionState } from "react";
+import { addItem, createTabInline } from "./actions";
+import { SearchableSelect } from "@/components/searchable-select";
 import { FileUpload } from "@/components/file-upload";
+import { FileBrowser } from "@/components/file-browser";
+import type { MediaTab } from "@/lib/db";
 
-const initialState = null as { success?: boolean; error?: string } | null;
+const initialState = null as { success?: boolean; error?: string; tabId?: number; slug?: string } | null;
 
-export function MediaForm() {
+const VIDEO_EXTS = [".mp4", ".webm", ".mov"];
+
+function detectType(url: string): "image" | "video" {
+  const ext = url.split(".").pop()?.split("?")[0]?.toLowerCase();
+  if (ext && VIDEO_EXTS.includes(`.${ext}`)) return "video";
+  return "image";
+}
+
+export function MediaForm({ tabs }: { tabs: MediaTab[] }) {
   const [state, dispatch, isPending] = useActionState(addItem, initialState);
+  const urlRef = useRef<HTMLInputElement>(null);
+  const typeInputRef = useRef<HTMLInputElement>(null);
+  const [showBrowser, setShowBrowser] = useState(false);
+
+  const [tabOptions, setTabOptions] = useState(tabs.map(t => ({ value: t.id, label: t.label })));
+  const [tabSlugMap, setTabSlugMap] = useState<Map<number, string>>(new Map(tabs.map(t => [t.id, t.slug])));
+  const [selectedTabId, setSelectedTabId] = useState<number | null>(null);
+  const [tabError, setTabError] = useState<string | null>(null);
+  const [creatingTab, setCreatingTab] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (state?.success) {
+      setSelectedTabId(null);
+      formRef.current?.reset();
+    }
+  }, [state?.success]);
+
+  const handleCreateNewTab = async (name: string) => {
+    setCreatingTab(true);
+    setTabError(null);
+    try {
+      const formData = new FormData();
+      formData.append("tab_name", name);
+      const result = await createTabInline(initialState, formData);
+
+      if (result.success && result.tabId && result.slug) {
+        const { tabId, slug } = result;
+        setTabOptions(prev => [...prev, { value: tabId, label: name }]);
+        setTabSlugMap(prev => new Map(prev).set(tabId, slug));
+        setSelectedTabId(tabId);
+      } else if (result.error) {
+        setTabError(result.error);
+      }
+    } finally {
+      setCreatingTab(false);
+    }
+  };
+
+  const setUrlAndDetectType = (url: string) => {
+    if (urlRef.current) urlRef.current.value = url;
+    if (typeInputRef.current) typeInputRef.current.value = detectType(url);
+  };
+
+  const handleSubmit = (formData: FormData) => {
+    if (selectedTabId !== null) {
+      const slug = tabSlugMap.get(selectedTabId);
+      if (slug) formData.set("section", slug);
+    }
+    if (typeInputRef.current && urlRef.current?.value) {
+      typeInputRef.current.value = detectType(urlRef.current.value);
+    }
+    if (typeInputRef.current) formData.set("type", typeInputRef.current.value);
+    dispatch(formData);
+  };
 
   return (
-    <form action={dispatch} className="admin-form">
-      <div className="form-group">
-        <label htmlFor="type">Type</label>
-        <select id="type" name="type" required>
-          <option value="image">Image</option>
-          <option value="video">Video</option>
-        </select>
-      </div>
+    <form ref={formRef} action={handleSubmit} className="admin-form">
+      {showBrowser && (
+        <FileBrowser
+          onSelect={(url) => setUrlAndDetectType(url)}
+          onClose={() => setShowBrowser(false)}
+        />
+      )}
+      <input type="hidden" name="type" ref={typeInputRef} defaultValue="image" />
       <div className="form-group">
         <label htmlFor="url">URL</label>
-        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-          <input id="url" name="url" type="text" required placeholder="https://example.com/photo.jpg" style={{ flex: 1 }} />
-          <FileUpload onUpload={(url) => { const input = document.getElementById("url") as HTMLInputElement; input.value = url; }} accept="image/*,video/*" label="Browse" />
-        </div>
-      </div>
-      <div className="form-group">
-        <label htmlFor="thumbnail_url">Thumbnail URL (optional, for videos)</label>
-        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-          <input id="thumbnail_url" name="thumbnail_url" type="text" placeholder="https://example.com/thumb.jpg" style={{ flex: 1 }} />
-          <FileUpload onUpload={(url) => { const input = document.getElementById("thumbnail_url") as HTMLInputElement; input.value = url; }} accept="image/*" label="Browse" />
+        <div className="flex-row items-center gap-1">
+          <input
+            ref={urlRef}
+            id="url"
+            name="url"
+            type="text"
+            required
+            placeholder="https://example.com/photo.jpg or /api/media/file.jpg"
+            className="flex-1"
+            onBlur={(e) => {
+              if (typeInputRef.current && e.target.value) {
+                typeInputRef.current.value = detectType(e.target.value);
+              }
+            }}
+          />
+          <FileUpload
+            onUpload={(result) => {
+              if (urlRef.current) urlRef.current.value = result.url;
+              if (typeInputRef.current && result.type) typeInputRef.current.value = result.type;
+            }}
+            accept="image/*,video/*"
+            label="Upload"
+          />
+          <button type="button" className="btn btn-sm" onClick={() => setShowBrowser(true)}>Local</button>
         </div>
       </div>
       <div className="form-group">
         <label htmlFor="title">Title</label>
-        <input id="title" name="title" type="text" placeholder="Photo description" />
+        <input id="title" name="title" type="text" placeholder="Media description" />
       </div>
       <div className="form-group">
-        <label htmlFor="section">Section</label>
-        <input id="section" name="section" type="text" placeholder="e.g. Ceremony, Reception" defaultValue="General" />
+        <label>Tab</label>
+        <SearchableSelect
+          options={tabOptions}
+          value={selectedTabId}
+          onChange={setSelectedTabId}
+          onCreateNew={handleCreateNewTab}
+          placeholder="Select a tab..."
+          disabled={creatingTab}
+          required
+        />
       </div>
-      {state?.success && <p style={{ color: "#065f46", fontSize: "0.875rem", marginBottom: "1rem" }}>Media added.</p>}
-      {state?.error && <p style={{ color: "var(--color-error)", fontSize: "0.875rem", marginBottom: "1rem" }}>{state.error}</p>}
-      <button type="submit" className="btn btn-primary" disabled={isPending}>{isPending ? "Adding..." : "Add Media"}</button>
+      {state?.success && <p className="text-success text-sm mb-1" role="status">Media added.</p>}
+      {state?.error && <p className="text-error text-sm mb-1" role="alert">{state.error}</p>}
+      {tabError && <p className="text-error text-sm mb-1" role="alert">{tabError}</p>}
+      <button type="submit" className="btn btn-primary" disabled={isPending || creatingTab}>{isPending ? "Adding..." : "Add Media"}</button>
     </form>
   );
 }

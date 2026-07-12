@@ -17,9 +17,9 @@ function CredentialsForm() {
         <input id="password" name="password" type="password" required placeholder="Enter password" />
       </div>
       {state?.error && (
-        <p style={{ color: "var(--color-error)", fontSize: "0.8rem", marginBottom: "0.75rem" }}>{state.error}</p>
+        <p className="text-error text-xs mb-1" role="alert">{state.error}</p>
       )}
-      <button type="submit" className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }} disabled={isPending}>
+      <button type="submit" className="btn btn-primary w-full justify-center" disabled={isPending}>
         {isPending ? "Signing in..." : "Sign In"}
       </button>
     </form>
@@ -34,14 +34,14 @@ function PartyCodeForm() {
       <div className="form-group">
         <label htmlFor="code">Party Code</label>
         <input id="code" name="code" type="text" required placeholder="e.g. SMITH-A1B2" style={{ textTransform: "uppercase" }} />
-        <p style={{ fontSize: "0.8rem", color: "var(--color-muted)", marginTop: "0.25rem" }}>
+        <p className="text-xs text-muted mt-1">
           Found on your invitation
         </p>
       </div>
       {state?.error && (
-        <p style={{ color: "var(--color-error)", fontSize: "0.8rem", marginBottom: "0.75rem" }}>{state.error}</p>
+        <p className="text-error text-xs mb-1" role="alert">{state.error}</p>
       )}
-      <button type="submit" className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }} disabled={isPending}>
+      <button type="submit" className="btn btn-primary w-full justify-center" disabled={isPending}>
         {isPending ? "Looking up..." : "Continue with Party Code"}
       </button>
     </form>
@@ -55,7 +55,7 @@ export function LoginForm() {
     <div className="login-card">
       {mode === "party" ? <PartyCodeForm /> : <CredentialsForm />}
 
-      <div style={{ marginTop: "1rem", textAlign: "center" }}>
+      <div className="mt-1 text-center">
         {mode === "party" ? (
           <button
             type="button"

@@ -1,15 +1,14 @@
 # Database Layer
 
-- **Date:** 2026-07-03
-- **Scope:** SQLite schema, connection management, repository pattern, seed data
+SQLite via better-sqlite3 (WAL mode), server-only access through the repository pattern.
 
 ## Technology
 
-**better-sqlite3** — A synchronous SQLite3 driver for Node.js. Synchronous operations simplify the codebase by eliminating callback chains for database access. Acceptable for a single-server application with low concurrency.
+**better-sqlite3** — Synchronous SQLite3 driver. Synchronous operations simplify the codebase. Acceptable for a single-server application with low concurrency.
 
 ## Connection Management
 
-The database connection is a **singleton** managed by `src/lib/db.ts`:
+Singleton in `src/lib/db.ts`:
 
 ```typescript
 let db: Database.Database | null = null;
@@ -21,70 +20,79 @@ export function getDb(): Database.Database {
     db.pragma("journal_mode = WAL");
     db.pragma("foreign_keys = ON");
     db.exec(DDL);
-    runMigrations(db);
     seedDefaults(db);
   }
   return db;
 }
 ```
 
-- **Lazy initialization** — Connection created on first access, not at module load time
-- **WAL mode** — Write-Ahead Logging allows concurrent reads during writes
-- **Foreign keys** — Enforced at the database level
-- **Auto-migration** — `runMigrations()` adds columns for schema evolution
-- **Auto-seed** — `seedDefaults()` inserts default data on first run (admin account, demo party)
+- **Lazy initialization** — Created on first access
+- **WAL mode** — Concurrent reads during writes
+- **Foreign keys** — Enforced at database level
+- **Auto-seed** — `seedDefaults()` inserts admin account + demo party on first run
 
 ## Database Path
 
 ```
-DATABASE_URL=file:/app/data/sqlite/prod.db    # Production (Docker volume — sqlite/ subdir inside data/ mount)
-DATABASE_URL=file:./data/dev.db               # Development (optional — relative to project root)
+DATABASE_URL=file:/app/data/sqlite/prod.db    # Production (Docker volume)
+DATABASE_URL=file:./data/dev.db               # Development (optional)
 Falls back to:          data/dev.db           # No env var set
 ```
 
-## Schema (7 Tables)
+## Schema (10 Tables)
+
+### `users`
+
+Authentication entities — admin, viewer, and party roles.
+
+```sql
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT NOT NULL UNIQUE,
+  password TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  type TEXT NOT NULL CHECK(type IN ('admin', 'viewer', 'party')),
+  party_id INTEGER,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (party_id) REFERENCES parties(id) ON DELETE SET NULL
+);
+```
+
+| Column | Description |
+|---|---|
+| `username` | Login identifier (unique) |
+| `password` | scrypt hash (`salt:hash` format) |
+| `display_name` | Shown in admin UI |
+| `type` | `admin` (from .env), `viewer` (view-only), `party` (RSVP access) |
+| `party_id` | Links party users to their party |
 
 ### `parties`
 
-Groups of guests for convenient RSVP.
+Groups of guests for family/household RSVP.
 
 ```sql
 CREATE TABLE IF NOT EXISTS parties (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  name       TEXT NOT NULL,
-  code       TEXT NOT NULL UNIQUE,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  code TEXT NOT NULL UNIQUE,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 ```
 
 ### `guests`
 
-All user accounts — admin, party members, and standalone guests.
+RSVP-able people. No auth fields — authentication is in `users`.
 
 ```sql
 CREATE TABLE IF NOT EXISTS guests (
-  id                INTEGER PRIMARY KEY AUTOINCREMENT,
-  username          TEXT NOT NULL UNIQUE,
-  password          TEXT NOT NULL,
-  display_name      TEXT NOT NULL,
-  type              TEXT NOT NULL DEFAULT 'guest'
-                    CHECK(type IN ('admin', 'guest', 'guest_plus_one')),
-  party_id          INTEGER REFERENCES parties(id) ON DELETE SET NULL,
-  can_rsvp          INTEGER NOT NULL DEFAULT 1,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  display_name TEXT NOT NULL,
+  party_id INTEGER,
   can_bring_plus_one INTEGER NOT NULL DEFAULT 0,
-  created_at        TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (party_id) REFERENCES parties(id) ON DELETE SET NULL
 );
 ```
-
-| Column | Description |
-|---|---|
-| `username` | Login identifier |
-| `password` | scrypt hash (`salt:hash` format) |
-| `display_name` | Shown on RSVP form and in admin |
-| `type` | `admin` (from .env), `guest` (most users), `guest_plus_one` (legacy) |
-| `party_id` | Optional party membership |
-| `can_rsvp` | `1` = can submit RSVP, `0` = view-only |
-| `can_bring_plus_one` | `1` = plus one field shown on RSVP form |
 
 ### `site_config`
 
@@ -92,12 +100,12 @@ Key-value store for all configurable site content.
 
 ```sql
 CREATE TABLE IF NOT EXISTS site_config (
-  key   TEXT PRIMARY KEY,
+  key TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
 ```
 
-Common keys: `landing_title`, `landing_background`, `home_title`, `home_subtitle`, `home_date`, `home_location`, `home_background_video`, `dress_code_text`.
+Common keys: `landing_title`, `landing_background`, `home_title`, `home_subtitle`, `home_date`, `home_time`, `home_location`, `home_background_video`, `dress_code_text`.
 
 ### `lodging_options`
 
@@ -105,10 +113,10 @@ Hotel/resort recommendations.
 
 ```sql
 CREATE TABLE IF NOT EXISTS lodging_options (
-  id        INTEGER PRIMARY KEY AUTOINCREMENT,
-  title     TEXT NOT NULL,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
   image_url TEXT NOT NULL,
-  url       TEXT,
+  url TEXT NOT NULL,
   sort_order INTEGER NOT NULL DEFAULT 0
 );
 ```
@@ -119,8 +127,8 @@ Mood board images for the dress code page.
 
 ```sql
 CREATE TABLE IF NOT EXISTS dress_code_images (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  image_url  TEXT NOT NULL,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  image_url TEXT NOT NULL,
   sort_order INTEGER NOT NULL DEFAULT 0
 );
 ```
@@ -131,12 +139,13 @@ RSVP submissions — one per guest (unique constraint on `guest_id`).
 
 ```sql
 CREATE TABLE IF NOT EXISTS rsvp_responses (
-  id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  guest_id     INTEGER NOT NULL UNIQUE REFERENCES guests(id) ON DELETE CASCADE,
-  guest_name   TEXT NOT NULL,
-  attending    INTEGER NOT NULL DEFAULT 0,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  guest_id INTEGER NOT NULL UNIQUE,
+  guest_name TEXT NOT NULL,
+  attending INTEGER NOT NULL DEFAULT 0,
   plus_one_name TEXT,
-  created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (guest_id) REFERENCES guests(id) ON DELETE CASCADE
 );
 ```
 
@@ -146,67 +155,130 @@ Photo and video gallery items.
 
 ```sql
 CREATE TABLE IF NOT EXISTS media_items (
-  id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  type         TEXT NOT NULL CHECK(type IN ('image', 'video')),
-  url          TEXT NOT NULL,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  type TEXT NOT NULL CHECK(type IN ('image', 'video')),
+  url TEXT NOT NULL,
   thumbnail_url TEXT,
-  title        TEXT NOT NULL,
-  section      TEXT,
-  sort_order   INTEGER NOT NULL DEFAULT 0
+  title TEXT,
+  section TEXT NOT NULL DEFAULT 'General',
+  sort_order INTEGER NOT NULL DEFAULT 0
 );
 ```
 
+### `schedule_items`
+
+Wedding day schedule/timeline events.
+
+```sql
+CREATE TABLE IF NOT EXISTS schedule_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  time TEXT NOT NULL,
+  label TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+```
+
+### `media_tabs`
+
+Configurable tabs for the media gallery page.
+
+```sql
+CREATE TABLE IF NOT EXISTS media_tabs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  slug TEXT NOT NULL UNIQUE,
+  label TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+```
+
+| Column | Description |
+|---|---|
+| `slug` | URL-safe identifier (unique), used in `?tab=` param and as `section` values on `media_items` |
+| `label` | Display name shown in tab navigation |
+| `sort_order` | Tab ordering |
+
+Tab deletion cascades to `media_items` via application logic (transaction deletes matching `media_items` where `section = slug`, then deletes the tab). Files on disk are never touched.
+
+### Indexes
+
+```sql
+CREATE INDEX IF NOT EXISTS idx_guests_party_id ON guests(party_id);
+CREATE INDEX IF NOT EXISTS idx_users_party_id ON users(party_id);
+CREATE INDEX IF NOT EXISTS idx_users_type ON users(type);
+CREATE INDEX IF NOT EXISTS idx_rsvp_attending ON rsvp_responses(attending);
+CREATE INDEX IF NOT EXISTS idx_media_section ON media_items(section);
+CREATE INDEX IF NOT EXISTS idx_media_sort_order ON media_items(sort_order);
+CREATE INDEX IF NOT EXISTS idx_lodging_sort_order ON lodging_options(sort_order);
+CREATE INDEX IF NOT EXISTS idx_schedule_sort_order ON schedule_items(sort_order);
+CREATE INDEX IF NOT EXISTS idx_dress_code_sort_order ON dress_code_images(sort_order);
+CREATE INDEX IF NOT EXISTS idx_media_tabs_sort_order ON media_tabs(sort_order);
+```
+
+## Types
+
+All interfaces defined in `src/lib/types.ts`, re-exported from `src/lib/db.ts`:
+
+| Type | Description |
+|---|---|
+| `User` | Full user record (includes password) |
+| `SafeUser` | `Omit<User, "password">` — returned by all repo functions except `getUserByUsername` |
+| `Guest` | RSVP-able person (no auth fields) |
+| `Party` | Group with access code |
+| `SiteConfig` | Key-value config entry |
+| `LodgingOption` | Hotel recommendation |
+| `DressCodeImage` | Mood board image |
+| `RsvpResponse` | RSVP submission |
+| `MediaItem` | Gallery photo/video |
+| `MediaTab` | Gallery tab (slug, label, sort_order) |
+| `ScheduleItem` | Timeline event |
+
 ## Repository Pattern
 
-All SQL queries are extracted into typed modules under `src/lib/repository/`. Each entity gets its own file:
+All SQL queries live in typed modules under `src/lib/repository/`. See [conventions.md](conventions.md) for naming rules, return types, and transaction patterns.
 
-| File | Functions |
+| File | Key Functions |
 |---|---|
-| `party.ts` | `getAllParties()`, `getPartyById()`, `getPartyByCode()`, `createParty()`, `updateParty()`, `deleteParty()`, `regenerateCode()` |
-| `guests.ts` | `getAllGuests()`, `getGuestById()`, `getGuestByUsername()`, `getGuestsByPartyId()`, `createGuest()`, `updateGuest()` |
-| `rsvp.ts` | `getResponseByGuest()`, `getAllResponses()`, `submitResponse()` |
-| `site-config.ts` | `getConfig()`, `setConfig()`, `getAllConfig()` |
-| `lodging.ts` | `getAllLodging()`, `createLodging()`, `deleteLodging()` |
-| `dress-code.ts` | `getAllImages()`, `addImage()`, `deleteImage()` |
-| `media.ts` | `getAllMedia()`, `getMediaBySection()`, `addMedia()`, `deleteMedia()` |
+| `users.ts` | `getUserByUsername()`, `getUserById()`, `getAllUsers()`, `createUser()`, `updateUser()`, `deleteUser()`, `createPartyUser()`, `deleteUsersByPartyId()`, `recordLogin()`, `incrementPageViews()`, `getPartyActivity()` |
+| `party.ts` | `getAllParties()`, `getPartyById()`, `getPartyByCode()`, `createParty()`, `updateParty()`, `deleteParty()`, `deleteEmptyParty()` |
+| `guests.ts` | `getGuestById()`, `getAllGuests()`, `getGuestsByPartyId()`, `createGuest()`, `updateGuest()`, `deleteGuest()` |
+| `rsvp.ts` | `getResponseByGuest()`, `getAllResponses()`, `getRecentResponses()`, `getResponsesByGuests()`, `getAllGuestsRsvpStatus()`, `submitResponse()`, `getResponseCount()` |
+| `site-config.ts` | `getConfig()`, `getAllConfig()`, `setConfig()` |
+| `lodging.ts` | `getAll()`, `create()`, `update()`, `deleteOption()`, `swapSortOrder()` |
+| `dress-code.ts` | `getImages()`, `createImage()`, `deleteImage()` |
+| `media.ts` | `getAll()`, `getBySection()`, `create()`, `update()`, `deleteItem()`, `swapItemSortOrder()`, `getAllTabs()`, `createTab()`, `updateTab()`, `deleteTab()`, `swapTabSortOrder()` |
+| `schedule.ts` | `getAll()`, `create()`, `deleteItem()` |
 
-All functions return typed interfaces (no `any`). All queries use parameterized statements.
+All functions return typed interfaces. All queries use parameterized statements. Repository functions use CRUD verbs (`create`, `update`, `delete`). Server Actions use domain verbs (`add`, `save`, `move`) — see [conventions.md](conventions.md).
 
-## Seed Data
+## Thumbnail Generation
 
-The seed script (`scripts/db-seed.ts`) creates:
+Three tables store `thumbnail_url` (nullable): `media_items`, `lodging_options`, `dress_code_images`. Thumbnails are auto-generated server-side — no manual inputs, no admin intervention.
 
-```
-Admin (type=admin, username=admin)
-  └── Demo Family (code=DEMO-1234)
-        ├── party_member (guest, can_rsvp=1, can_bring_plus_one=1)
-        └── party_member2 (guest, can_rsvp=1, can_bring_plus_one=0)
+**Pipeline:** Server Action → `ensureThumbnail(url)` (`src/lib/thumbnail.ts`) → resolves URL to local disk path → generates 400×400 WebP → returns `/api/media/thumbnails/{uuid}_400x400.webp` or `null`.
 
-Guest (type=guest, username=guest, can_rsvp=0)  ← view-only, no party
-```
+| Input | Source | Thumbnail? |
+|---|---|---|
+| File upload | `FileUpload` → `/api/upload` | Yes (local file) |
+| Local file browser | `FileBrowser` → `/api/media/{path}` | Yes (local file) |
+| Manual URL paste | Text input | Local: Yes. Remote: No (returns null) |
 
-Plus demo content for: site config, lodging, dress code images, and media items.
+**Generation:** `sharp` for images (~50ms). `child_process.execFile` + `ffmpeg-static` for first-frame extraction → temp JPG → `sharp` for WebP conversion (~500ms–2s). SVGs excluded.
 
-Run with: `npm run db:seed`
+**Fallback:** All consumers use `thumbnail_url || url`. Generation failure never blocks the save.
 
-## Migration Strategy
+**Cleanup:** Thumbnail files are deleted inside the same transaction as the parent record (see [conventions.md](conventions.md) — transaction patterns). The `deleteThumbnail()` helper only removes files under `/api/media/thumbnails/`.
 
-The `runMigrations()` function in `db.ts` checks for new columns and adds them if missing:
+**Dependencies:** `sharp` (image processing), `ffmpeg-static` (video frame extraction). Both configured in `serverExternalPackages` in `next.config.mjs`.
+
+## Schema Management
+
+DDL in `src/lib/schema.ts` handles all table creation via `CREATE TABLE IF NOT EXISTS`. No migration system — fresh databases only. Schema changes require recreating the database.
 
 ```typescript
-function runMigrations(database: Database.Database): void {
-  const columns = database.prepare("PRAGMA table_info(guests)").all() as { name: string }[];
-  const colNames = columns.map(c => c.name);
-  if (!colNames.includes("party_id"))
-    database.exec("ALTER TABLE guests ADD COLUMN party_id INTEGER REFERENCES parties(id) ON DELETE SET NULL");
-  if (!colNames.includes("can_rsvp"))
-    database.exec("ALTER TABLE guests ADD COLUMN can_rsvp INTEGER NOT NULL DEFAULT 1");
-  if (!colNames.includes("can_bring_plus_one"))
-    database.exec("ALTER TABLE guests ADD COLUMN can_bring_plus_one INTEGER NOT NULL DEFAULT 0");
-}
+// db.ts — DDL runs on every startup
+db.exec(DDL);
+seedDefaults(db);
 ```
-
-This makes the schema forward-compatible — new columns are added to existing databases without data loss.
 
 ## Access Rules
 

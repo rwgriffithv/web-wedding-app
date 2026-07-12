@@ -18,8 +18,8 @@ export function ScheduleForm() {
         <label htmlFor="label">Label</label>
         <input id="label" name="label" type="text" required placeholder="e.g. Ceremony" />
       </div>
-      {state?.success && <p style={{ color: "var(--color-success)", fontSize: "0.875rem", marginBottom: "1rem" }}>Item added.</p>}
-      {state?.error && <p style={{ color: "var(--color-error)", fontSize: "0.875rem", marginBottom: "1rem" }}>{state.error}</p>}
+      {state?.success && <p className="text-success text-sm mb-1" role="status">Item added.</p>}
+      {state?.error && <p className="text-error text-sm mb-1" role="alert">{state.error}</p>}
       <button type="submit" className="btn btn-primary" disabled={isPending}>{isPending ? "Adding..." : "Add Item"}</button>
     </form>
   );

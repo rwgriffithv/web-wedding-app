@@ -1,6 +1,5 @@
 # Error Handling
 
-- **Date:** 2026-07-03
 - **Scope:** 404 page, error boundary, Server Action error patterns
 
 ## Overview
@@ -12,30 +11,6 @@ Next.js App Router provides two built-in error handling mechanisms for render er
 | `not-found.tsx` | Server Component | 404 — unmatched routes or explicit `notFound()` |
 | `error.tsx` | Client Component | Runtime errors during render |
 | Server Action returns | Structured `{ success, error? }` | Form validation and business logic errors |
-
-## 404 — Not Found
-
-The custom 404 page (`src/app/not-found.tsx`) handles unmatched routes:
-
-```
-/                    →  Landing page
-/login               →  Login page
-/home                →  Wedding home
-/lodging             →  Lodging recommendations
-/dress-code          →  Dress code mood board
-/rsvp                →  RSVP page
-/media               →  Media gallery
-/admin               →  Admin dashboard
-/admin/site          →  Site config
-/admin/parties       →  Party management
-/admin/guests        →  Guest management
-/admin/lodging       →  Lodging CRUD
-/admin/dress-code    →  Dress code images
-/admin/rsvp          →  RSVP responses
-/admin/media         →  Media gallery CRUD
-/api/health          →  Health check
-/anything-else       →  404
-```
 
 ## Error Boundary
 

@@ -15,6 +15,18 @@ Three phases comprise the full lifecycle:
 
 ---
 
+## Root-Level Setup Script
+
+`setup.sh` at the project root orchestrates both submodules in the correct order:
+
+```bash
+./setup.sh           # Normal: safe, idempotent
+./setup.sh --force   # Force: overwrite existing configs
+./setup.sh --deploy-only  # Skip agent-dev-env setup
+```
+
+The `--deploy-only` flag skips `agent-dev-env` (Ollama, devcontainer, agent skills) — useful for deployment-only hosts without GPU or dev tools. It also changes the Dockerfile's default base image from the full agent image to the leaner `web-deploy-base`.
+
 ## Phase 1: Bootstrap Infrastructure
 
 The `web-deploy-env` submodule provides two scripts that prepare the host environment:
@@ -364,6 +376,25 @@ The `webapp` health check runs inside the container and verifies:
 3. SQLite database responds to `SELECT 1`
 
 It does NOT go through Caddy — it hits `localhost:3000` directly, isolating the check to the application layer.
+
+**Implementation** (`src/app/api/health/route.ts`):
+
+```ts
+export async function GET(): Promise<NextResponse<HealthCheckResponse>> {
+  const checks: Record<string, CheckResult> = {};
+  checks.database = checkDatabase();  // db().prepare('SELECT 1').get()
+  checks.config = checkConfig();      // getConfig() — tests SQLite reads
+  checks.config = { status: 'healthy', ... };
+  return NextResponse.json({ status: 'healthy', version, checks }, { status: 200 });
+}
+```
+
+**Design decisions:**
+- Route requires no authentication — only exposes service health
+- Database health uses direct `better-sqlite3` query (no ORM overhead)
+- No external services — only verifies internal dependencies
+- Returns structured JSON with per-component status
+- HTTP status code matches overall health (200 = healthy, 503 = unhealthy)
 
 ---
 
