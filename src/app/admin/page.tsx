@@ -1,13 +1,16 @@
 import { getAll } from "@/lib/repository/guests";
-import { getAllUsers } from "@/lib/repository/users";
-import { getRecentResponses, getResponseCount } from "@/lib/repository/rsvp";
+import { getRecentResponses, getResponseCount, getPlusOneCount } from "@/lib/repository/rsvp";
 import { Header } from "@/components/header";
 
 export default function AdminDashboardPage() {
   const guests = getAll();
-  const users = getAllUsers();
   const rsvpCount = getResponseCount();
+  const plusOnes = getPlusOneCount();
   const responses = getRecentResponses(10);
+
+  const totalHeadcount = guests.length + plusOnes.attending;
+  const attending = rsvpCount.attending + plusOnes.attending;
+  const awaiting = guests.length - rsvpCount.total;
 
   return (
     <>
@@ -18,16 +21,20 @@ export default function AdminDashboardPage() {
           <div className="label">Total Guests</div>
         </div>
         <div className="stat-card">
-          <div className="value">{users.length}</div>
-          <div className="label">Total Users</div>
+          <div className="value">{totalHeadcount}</div>
+          <div className="label">Invited</div>
         </div>
         <div className="stat-card">
-          <div className="value">{rsvpCount.total}</div>
-          <div className="label">RSVPs Received</div>
-        </div>
-        <div className="stat-card">
-          <div className="value">{rsvpCount.attending}</div>
+          <div className="value">{attending}</div>
           <div className="label">Attending</div>
+        </div>
+        <div className="stat-card">
+          <div className="value">{plusOnes.attending}</div>
+          <div className="label">Plus Ones</div>
+        </div>
+        <div className="stat-card">
+          <div className="value">{awaiting}</div>
+          <div className="label">Awaiting RSVP</div>
         </div>
       </div>
 

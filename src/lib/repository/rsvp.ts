@@ -62,3 +62,11 @@ export function getResponseCount(): { total: number; attending: number } {
   const attending = db.prepare("SELECT COUNT(*) as count FROM rsvp_responses WHERE attending = 1").get() as { count: number };
   return { total: total.count, attending: attending.count };
 }
+
+export function getPlusOneCount(): { attending: number; not_attending: number } {
+  const db = getDb();
+  const wherePlusOne = "plus_one_name IS NOT NULL AND plus_one_name != ''";
+  const attending = db.prepare(`SELECT COUNT(*) as count FROM rsvp_responses WHERE attending = 1 AND ${wherePlusOne}`).get() as { count: number };
+  const not_attending = db.prepare(`SELECT COUNT(*) as count FROM rsvp_responses WHERE attending = 0 AND ${wherePlusOne}`).get() as { count: number };
+  return { attending: attending.count, not_attending: not_attending.count };
+}
