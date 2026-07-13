@@ -58,8 +58,25 @@ export function ensureMediaDir(): void {
 }
 
 const THUMB_SIZE = 400;
-const POSTER_WIDTH = 1920;
-const POSTER_HEIGHT = 1080;
+const POSTER_MAX = 1920;
+
+async function getVideoDimensions(inputPath: string): Promise<{ width: number; height: number }> {
+  const ffmpegPath = (await import("ffmpeg-static")).default;
+  if (!ffmpegPath) throw new Error("ffmpeg-static binary not found");
+
+  try {
+    await execFileAsync(ffmpegPath, ["-i", inputPath], { timeout: 5_000 });
+  } catch (err: unknown) {
+    const stderr = (err as { stderr?: Buffer }).stderr?.toString() ?? "";
+    const match = stderr.match(/Stream #\d+:\d+.*?: Video:.*?, (\d+)x(\d+)/);
+    if (match) {
+      const width = parseInt(match[1], 10);
+      const height = parseInt(match[2], 10);
+      if (width > 0 && height > 0) return { width, height };
+    }
+  }
+  return { width: 1920, height: 1080 };
+}
 
 export async function generateImageThumbnail(
   buffer: Buffer,
@@ -115,6 +132,11 @@ export async function generateVideoPoster(
   const ffmpegPath = (await import("ffmpeg-static")).default;
   if (!ffmpegPath) throw new Error("ffmpeg-static binary not found");
 
+  const { width: srcW, height: srcH } = await getVideoDimensions(inputPath);
+  const aspect = srcW / srcH;
+  const posterW = aspect >= 1 ? POSTER_MAX : Math.round(POSTER_MAX * aspect);
+  const posterH = aspect >= 1 ? Math.round(POSTER_MAX / aspect) : POSTER_MAX;
+
   const tmpJpg = path.join(THUMBNAILS_DIR, `tmp-poster-${outFilename}.jpg`);
   try {
     await execFileAsync(ffmpegPath, [
@@ -128,7 +150,7 @@ export async function generateVideoPoster(
     const sharp = (await import("sharp")).default;
     const outPath = path.join(THUMBNAILS_DIR, outFilename);
     await sharp(frameBuffer)
-      .resize(POSTER_WIDTH, POSTER_HEIGHT, { fit: "cover" })
+      .resize(posterW, posterH, { fit: "cover" })
       .webp({ quality: 80 })
       .toFile(outPath);
     const stat = await fs.promises.stat(outPath);

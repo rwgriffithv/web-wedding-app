@@ -96,3 +96,6 @@ This is an ordered list of features to implement along with a simple sub-bullet 
 
 * The site config section of the admin dashboard has inconsistent sub-section styling. I like that you added subsections for the RSVP settings, and the rate limiting settings. You should improve coherence by making a home page subsection (grouping the relevant fields) and change the Rate limiting subsection to a Login subsection that includes the landing page configuration fields. The order should be Login, Home Page, and then RSVP.
   * status: done
+
+* Please fix the display of the home page video poster on mobile. It looks perfect on desktop browsers but on my phone (chrome) the poster is zoomed in when displayed, leading to a jarring and bad transition to the video. Please fix this and explain how this happened.
+  * status: not done
