@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Playfair_Display, Great_Vibes } from "next/font/google";
 import "./globals.css";
 
@@ -14,6 +14,12 @@ const greatVibes = Great_Vibes({
   variable: "--font-script",
   display: "swap",
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   title: process.env.APP_NAME || "Wedding",

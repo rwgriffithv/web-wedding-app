@@ -21,7 +21,7 @@
   --color-fallback-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
-html, body {
+html {
   height: 100%;
 }
 
@@ -58,7 +58,7 @@ a:hover { text-decoration: underline; }
 /* Landing Page */
 .landing {
   position: relative;
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -135,7 +135,7 @@ a:hover { text-decoration: underline; }
 /* Home Page */
 .home-hero {
   position: relative;
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -233,7 +233,7 @@ a:hover { text-decoration: underline; }
 /* Wedding Navigation */
 .wedding-nav-wrapper {
   position: fixed;
-  bottom: 2rem;
+  bottom: calc(2rem + env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
   z-index: 50;
@@ -246,6 +246,7 @@ a:hover { text-decoration: underline; }
 .wedding-nav {
   background: rgba(255,255,255,0.8);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255,255,255,0.3);
   box-shadow: 0 4px 24px rgba(0,0,0,0.1);
   border-radius: 9999px;
@@ -361,7 +362,7 @@ a:hover { text-decoration: underline; }
 
 /* Content Pages */
 .page-content {
-  padding: 6rem 1.5rem 8rem;
+  padding: 6rem 1.5rem calc(8rem + env(safe-area-inset-bottom));
   max-width: 1000px;
   margin: 0 auto;
 }
@@ -741,7 +742,7 @@ a:hover { text-decoration: underline; }
 }
 
 /* Admin Styles */
-.admin-layout { display: flex; min-height: 100vh; position: relative; }
+.admin-layout { display: flex; min-height: 100dvh; position: relative; }
 
 .sidebar-toggle-input { display: none; }
 

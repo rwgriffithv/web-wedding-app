@@ -81,3 +81,6 @@ This is an ordered list of features to implement along with a simple sub-bullet 
 
 * Please load the first frame from the home page video and use that as the background while the video loads. Alternatively, please lazily load the video and serve it in chunks. That will be the smoothest operation.
   * status: not done
+
+* In the admin dashboard I need a good way of tracking "plus ones" as part of the total guest count. I want to factor them into a total invited count as well as if the plus ones were declined or accepted. This wil help me get better visibility into the actual total number of invites and attendees.
+  * status: not done
