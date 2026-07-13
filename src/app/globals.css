@@ -530,12 +530,13 @@ a:hover { text-decoration: underline; }
 
 .rsvp-form .radio-group {
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
   margin-bottom: 0.75rem;
 }
 
 .rsvp-form .radio-group label {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   font-size: 0.875rem;
@@ -543,7 +544,11 @@ a:hover { text-decoration: underline; }
 }
 
 .rsvp-form .radio-group input[type="radio"] {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
   accent-color: var(--color-primary);
+  flex-shrink: 0;
 }
 
 .rsvp-form .form-row {
