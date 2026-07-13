@@ -22,7 +22,7 @@ export default function AdminDashboardPage() {
         </div>
         <div className="stat-card">
           <div className="value">{totalHeadcount}</div>
-          <div className="label">Invited</div>
+          <div className="label">Headcount</div>
         </div>
         <div className="stat-card">
           <div className="value">{attending}</div>

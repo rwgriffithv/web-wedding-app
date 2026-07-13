@@ -8,6 +8,7 @@ import { getPartyByCode } from "@/lib/repository/party";
 import { getGuestsByPartyId } from "@/lib/repository/guests";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { getConfig } from "@/lib/repository/site-config";
+import { getString } from "@/lib/form-data";
 
 interface LoginState { error?: string }
 
@@ -30,13 +31,11 @@ async function getClientIp(): Promise<string> {
 }
 
 export async function login(prevState: LoginState | null, formData: FormData): Promise<LoginState> {
-  const rawUsername = formData.get("username");
-  const rawPassword = formData.get("password");
-  if (typeof rawUsername !== "string" || typeof rawPassword !== "string" || !rawUsername || !rawPassword) {
+  const username = getString(formData, "username");
+  const password = getString(formData, "password");
+  if (!username || !password) {
     return { error: "Username and password are required." };
   }
-  const username = rawUsername;
-  const password = rawPassword;
 
   const ip = await getClientIp();
   const rlConfig = getRateLimitConfig();
@@ -66,13 +65,8 @@ export async function login(prevState: LoginState | null, formData: FormData): P
 }
 
 export async function loginByPartyCode(prevState: LoginState | null, formData: FormData): Promise<LoginState> {
-  const rawCode = formData.get("code");
-  if (typeof rawCode !== "string") {
-    return { error: "Please enter your party code." };
-  }
-  const code = rawCode;
-
-  if (!code || !code.trim()) {
+  const code = getString(formData, "code");
+  if (!code) {
     return { error: "Please enter your party code." };
   }
 
