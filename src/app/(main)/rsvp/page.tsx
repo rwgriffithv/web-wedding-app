@@ -52,7 +52,6 @@ export default async function RsvpPage() {
   const responsesByGuest = new Map(responses.map(r => [r.guest_id, r]));
 
   const deadlineStr = getConfig("rsvp_deadline");
-  // datetime-local input produces local time string; server is in Pacific time
   const deadline = deadlineStr ? new Date(deadlineStr) : null;
   const isLocked = deadline ? new Date() > deadline : false;
   const formattedDeadline = deadline
