@@ -41,7 +41,7 @@ export function createParty(name: string, code?: string): Party {
   return created;
 }
 
-export function updateParty(id: number, data: { name?: string; code?: string }): void {
+export function updateParty(id: number, data: { name?: string; code?: string; invited?: number }): void {
   const db = getDb();
   db.transaction(() => {
     const existing = db.prepare("SELECT * FROM parties WHERE id = ?").get(id) as Party | undefined;
@@ -49,8 +49,9 @@ export function updateParty(id: number, data: { name?: string; code?: string }):
 
     const newName = data.name?.trim() || existing.name;
     const newCode = data.code?.trim().toUpperCase() || existing.code;
+    const newInvited = data.invited !== undefined ? data.invited : existing.invited;
 
-    db.prepare("UPDATE parties SET name = ?, code = ? WHERE id = ?").run(newName, newCode, id);
+    db.prepare("UPDATE parties SET name = ?, code = ?, invited = ? WHERE id = ?").run(newName, newCode, newInvited, id);
 
     const partyUser = getUserByPartyId(id);
     if (partyUser) {
@@ -82,9 +83,4 @@ export function deleteEmptyParty(partyId: number): void {
       deletePartyRows(db, partyId);
     }
   })();
-}
-
-export function setInvited(id: number, invited: boolean): void {
-  const db = getDb();
-  db.prepare("UPDATE parties SET invited = ? WHERE id = ?").run(invited ? 1 : 0, id);
 }

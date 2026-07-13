@@ -958,8 +958,6 @@ a:hover { text-decoration: underline; }
 }
 .party-expand-btn svg { transition: transform 0.15s ease; }
 .party-expand-btn[aria-expanded="true"] svg { transform: rotate(90deg); }
-.party-invite-toggle { cursor: pointer; background: none; border: none; padding: 0; }
-.party-invite-toggle input[type="checkbox"] { width: 1rem; height: 1rem; cursor: pointer; }
 .party-guest-row td { padding-left: 2.5rem; background: var(--color-surface); }
 .party-row-editing td { background: var(--color-surface); }
 

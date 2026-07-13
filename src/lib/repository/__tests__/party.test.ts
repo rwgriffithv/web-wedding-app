@@ -88,16 +88,16 @@ describe("party repository", () => {
     expect(getPartyById(party.id)).toBeDefined();
   });
 
-  it("setInvited toggles invited status", async () => {
-    const { createParty, setInvited, getPartyById } = await import("@/lib/repository/party");
-    const party = createParty("Invitee Family");
+  it("updateParty updates party invited status", async () => {
+    const { createParty, updateParty, getPartyById } = await import("@/lib/repository/party");
+    const party = createParty("Updateable Family");
 
     expect(getPartyById(party.id)!.invited).toBe(0);
 
-    setInvited(party.id, true);
+    updateParty(party.id, { invited: 1 });
     expect(getPartyById(party.id)!.invited).toBe(1);
 
-    setInvited(party.id, false);
+    updateParty(party.id, { invited: 0 });
     expect(getPartyById(party.id)!.invited).toBe(0);
   });
 });

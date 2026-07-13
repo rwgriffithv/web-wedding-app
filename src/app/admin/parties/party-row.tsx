@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useActionState } from "react";
 import { CopyButton } from "@/components/copy-button";
-import { updateParty, removeParty, toggleInvited } from "./actions";
+import { updateParty, removeParty } from "./actions";
 import type { Party, Guest } from "@/lib/db";
 
 interface PartyRowProps {
@@ -22,30 +22,19 @@ export function PartyRow({ party, guests }: PartyRowProps) {
   const [code, setCode] = useState(party.code);
   const [invited, setInvited] = useState(party.invited);
   const [editState, editDispatch, editPending] = useActionState(updateParty, initialState);
-  const [inviteState, inviteDispatch] = useActionState(toggleInvited, initialState);
   const [, deleteDispatch, deletePending] = useActionState(removeParty, initialState);
 
   useEffect(() => {
     if (editState?.success) setEditing(false);
   }, [editState?.success]);
 
-  useEffect(() => {
-    if (inviteState?.success) setInvited(prev => prev ? 0 : 1);
-  }, [inviteState?.success]);
-
   const handleSave = () => {
     const formData = new FormData();
     formData.append("party_id", String(party.id));
     formData.append("name", name);
     formData.append("code", code);
+    formData.append("invited", String(invited));
     editDispatch(formData);
-  };
-
-  const handleInviteToggle = () => {
-    const formData = new FormData();
-    formData.append("party_id", String(party.id));
-    formData.append("invited", invited ? "0" : "1");
-    inviteDispatch(formData);
   };
 
   const handleDelete = () => {
@@ -84,7 +73,14 @@ export function PartyRow({ party, guests }: PartyRowProps) {
             />
           </td>
           <td>
-            <span className="text-muted text-sm">{invited ? "Yes" : "No"}</span>
+            <select
+              value={invited}
+              onChange={e => setInvited(Number(e.target.value))}
+              className="table-inline-select"
+            >
+              <option value={0}>No</option>
+              <option value={1}>Yes</option>
+            </select>
           </td>
           <td className="table-actions">
             <button
@@ -102,6 +98,7 @@ export function PartyRow({ party, guests }: PartyRowProps) {
                 setEditing(false);
                 setName(party.name);
                 setCode(party.code);
+                setInvited(party.invited);
               }}
             >
               Cancel
@@ -147,21 +144,7 @@ export function PartyRow({ party, guests }: PartyRowProps) {
             <CopyButton text={party.code} title="Copy party code" />
           </span>
         </td>
-        <td>
-          <button
-            type="button"
-            className="party-invite-toggle"
-            onClick={handleInviteToggle}
-            title={invited ? "Mark as not invited" : "Mark as invited"}
-          >
-            <input
-              type="checkbox"
-              checked={!!invited}
-              readOnly
-              tabIndex={-1}
-            />
-          </button>
-        </td>
+        <td>{invited ? "Yes" : "No"}</td>
         <td className="table-actions">
           <button
             type="button"
