@@ -1,6 +1,8 @@
 import { cookies } from "next/headers";
 import crypto from "crypto";
 import { getEnvConfig } from "./config";
+import { getUserById } from "./repository/users";
+import { getPartyById } from "./repository/party";
 
 const SESSION_COOKIE = "session";
 
@@ -37,11 +39,29 @@ function verifySession(token: string): Session | null {
   }
 }
 
+async function validateSession(session: Session): Promise<Session | null> {
+  if (session.type === "admin" || session.type === "viewer") {
+    if (!session.userId) return null;
+    const user = getUserById(session.userId);
+    if (!user || user.type !== session.type) return null;
+    return session;
+  }
+  if (session.type === "party") {
+    if (!session.partyId) return null;
+    const party = getPartyById(session.partyId);
+    if (!party) return null;
+    return session;
+  }
+  return null;
+}
+
 export async function parseSession(): Promise<Session | null> {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  return verifySession(token);
+  const session = verifySession(token);
+  if (!session) return null;
+  return validateSession(session);
 }
 
 export async function isAdmin(): Promise<boolean> {
