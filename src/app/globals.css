@@ -165,7 +165,7 @@ a:hover { text-decoration: underline; }
   text-align: center;
   color: white;
   padding: 2rem;
-  margin: auto;
+  margin: 15vh auto auto auto;
 }
 
 .home-content h1 {
