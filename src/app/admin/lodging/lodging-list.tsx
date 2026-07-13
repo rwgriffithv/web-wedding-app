@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useActionState } from "react";
+import { useState, useEffect, useActionState } from "react";
 import { deleteOption, updateOption, moveOption } from "./actions";
 import type { LodgingOption } from "@/lib/db";
 
@@ -18,6 +18,10 @@ function LodgingListItem({ option, index, total }: { option: LodgingOption; inde
   const [editing, setEditing] = useState(false);
   const [titleValue, setTitleValue] = useState(option.title);
   const [urlValue, setUrlValue] = useState(option.url);
+
+  useEffect(() => {
+    if (editState?.success) setEditing(false);
+  }, [editState]);
 
   const hasChanges = titleValue !== option.title || urlValue !== option.url;
 

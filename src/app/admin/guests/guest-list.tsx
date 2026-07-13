@@ -26,10 +26,8 @@ export function GuestRow({ guest, parties }: GuestRowProps) {
   const [, deleteDispatch, deletePending] = useActionState(removeGuest, initialState);
 
   useEffect(() => {
-    if (guestState?.success) {
-      setEditing(false);
-    }
-  }, [guestState?.success]);
+    if (guestState?.success) setEditing(false);
+  }, [guestState]);
 
   const partyName = guest.party_id ? parties.find(p => p.id === guest.party_id)?.name : "\u2014";
 

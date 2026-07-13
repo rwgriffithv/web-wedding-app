@@ -26,7 +26,7 @@ export function PartyRow({ party, guests }: PartyRowProps) {
 
   useEffect(() => {
     if (editState?.success) setEditing(false);
-  }, [editState?.success]);
+  }, [editState]);
 
   const handleSave = () => {
     const formData = new FormData();

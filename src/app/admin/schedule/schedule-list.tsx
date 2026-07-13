@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useActionState } from "react";
+import { useState, useEffect, useActionState } from "react";
 import { deleteItem, updateItem, moveItem } from "./actions";
 import type { ScheduleItem } from "@/lib/db";
 
@@ -13,6 +13,10 @@ function ScheduleListItem({ item, index, total }: { item: ScheduleItem; index: n
   const [editing, setEditing] = useState(false);
   const [timeValue, setTimeValue] = useState(item.time);
   const [labelValue, setLabelValue] = useState(item.label);
+
+  useEffect(() => {
+    if (editState?.success) setEditing(false);
+  }, [editState]);
 
   const hasChanges = timeValue !== item.time || labelValue !== item.label;
 

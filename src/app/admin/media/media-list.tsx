@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useActionState } from "react";
+import { useState, useEffect, useActionState } from "react";
 import { deleteItem, updateItem, moveItem, renameTab, deleteTab, moveTab } from "./actions";
 import type { MediaItem, MediaTab } from "@/lib/db";
 
@@ -16,6 +16,10 @@ function MediaListItem({ item, index, total }: { item: MediaItem; index: number;
   const [moveState, moveDispatch, movePending] = useActionState(moveItem, null);
   const [editing, setEditing] = useState(false);
   const [titleValue, setTitleValue] = useState(item.title ?? "");
+
+  useEffect(() => {
+    if (editState?.success) setEditing(false);
+  }, [editState]);
 
   const hasChanges = titleValue !== (item.title ?? "");
 
@@ -87,6 +91,10 @@ function MediaTabGroup({ tab, slug, items, tabIndex, tabTotal }: { tab: MediaTab
   const [moveState, moveDispatch, movePending] = useActionState(moveTab, null);
   const [renaming, setRenaming] = useState(false);
   const [labelValue, setLabelValue] = useState(tab?.label ?? slug);
+
+  useEffect(() => {
+    if (renameState?.success) setRenaming(false);
+  }, [renameState]);
 
   const displayName = tab?.label ?? slug;
 
