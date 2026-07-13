@@ -83,7 +83,7 @@ This is an ordered list of features to implement along with a simple sub-bullet 
   * status: done
 
 * Make the parties section of the admin dashboard searchable. I want to easily be able to find codes!
-  * status: not done
+  * status: done
 
 * In the admin dashboard I need a good way of tracking "plus ones" as part of the total guest count. I want to factor them into a total invited count as well as if the plus ones were declined or accepted. This wil help me get better visibility into the actual total number of invites and attendees.
   * status: not done

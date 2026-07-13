@@ -1,13 +1,13 @@
 import { getAll } from "@/lib/repository/party";
 import { getGuestsByPartyId } from "@/lib/repository/guests";
 import { Header } from "@/components/header";
-import { PartyRow } from "./party-row";
+import { PartyList } from "./party-list";
 
 export default function AdminPartiesPage() {
   const parties = getAll();
 
   const partiesWithGuests = parties.map(party => ({
-    party,
+    ...party,
     guests: getGuestsByPartyId(party.id),
   }));
 
@@ -20,9 +20,7 @@ export default function AdminPartiesPage() {
           {parties.length === 0 ? (
             <p className="empty-state">No parties yet. Create one from the Guests page.</p>
           ) : (
-            partiesWithGuests.map(({ party, guests }) => (
-              <PartyRow key={party.id} party={party} guests={guests} />
-            ))
+            <PartyList parties={partiesWithGuests} />
           )}
         </div>
       </details>
