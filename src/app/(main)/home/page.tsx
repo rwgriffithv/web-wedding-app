@@ -1,5 +1,6 @@
 import { getAllConfig } from "@/lib/repository/site-config";
 import { getAll } from "@/lib/repository/schedule";
+import { MIME_TYPES } from "@/lib/media";
 import { CountdownTimer } from "@/components/countdown-timer";
 
 export const revalidate = 60;
@@ -13,6 +14,8 @@ export default function HomePage() {
   const location = config.home_location || "";
   const video = config.home_background_video || "";
   const poster = config.home_background_video_poster || "";
+  const videoExt = video.split(".").pop()?.split("?")[0]?.toLowerCase();
+  const videoType = videoExt ? MIME_TYPES[`.${videoExt}`] : undefined;
   const scheduleItems = getAll();
   const scheduleRange = scheduleItems.length > 0
     ? `${scheduleItems[0].time} – ${scheduleItems[scheduleItems.length - 1].time}`
@@ -30,7 +33,7 @@ export default function HomePage() {
     <div className="home-hero">
       {video ? (
         <video className="home-video" autoPlay muted loop playsInline preload="metadata" poster={poster || undefined} aria-hidden="true">
-          <source src={video} type="video/mp4" />
+          <source src={video} type={videoType} />
         </video>
       ) : (
         <div className="home-video" style={{ background: "var(--color-fallback-gradient)" }} />
