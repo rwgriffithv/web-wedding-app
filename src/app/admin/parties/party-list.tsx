@@ -16,6 +16,7 @@ export function PartyList({ parties }: PartyListProps) {
     const q = search.toLowerCase();
     return parties.filter(p =>
       p.name.toLowerCase().includes(q) ||
+      p.code.toLowerCase().includes(q) ||
       p.guests.some(g => g.display_name.toLowerCase().includes(q))
     );
   }, [parties, search]);
@@ -25,7 +26,7 @@ export function PartyList({ parties }: PartyListProps) {
       <div style={{ marginBottom: "1rem" }}>
         <input
           type="text"
-          placeholder="Search by party or guest name..."
+          placeholder="Search by party name, code, or guest name..."
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="admin-table-search"

@@ -53,7 +53,7 @@ export async function GET() {
     headers: {
       "Content-Type": MIME_TYPES[ext],
       "Content-Length": String(stat.size),
-      "Cache-Control": "public, max-age=3600",
+      "Cache-Control": "public, max-age=300",
     },
   });
 }
