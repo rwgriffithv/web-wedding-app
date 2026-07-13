@@ -5,6 +5,7 @@ import { isAdmin } from "@/lib/auth";
 import { getString } from "@/lib/form-data";
 import { setConfig, setConfigs, getConfig } from "@/lib/repository/site-config";
 import { ensureVideoPoster } from "@/lib/thumbnail";
+import { deleteThumbnail } from "@/lib/media";
 
 interface SiteConfigState { success?: boolean; error?: string }
 
@@ -60,13 +61,19 @@ export async function saveSiteConfig(prevState: SiteConfigState | null, formData
     setConfigs(entries);
 
     const videoUrl = getString(formData, "home_background_video") ?? "";
+    const existingPoster = getConfig("home_background_video_poster");
     if (videoUrl && videoUrl.startsWith("/api/media/")) {
-      const existingPoster = getConfig("home_background_video_poster");
-      const poster = await ensureVideoPoster(videoUrl, existingPoster);
-      if (poster && poster !== existingPoster) {
+      const poster = await ensureVideoPoster(videoUrl);
+      if (poster) {
+        if (existingPoster && existingPoster !== poster) {
+          deleteThumbnail(existingPoster);
+        }
         setConfig("home_background_video_poster", poster);
       }
     } else if (!videoUrl) {
+      if (existingPoster) {
+        deleteThumbnail(existingPoster);
+      }
       setConfig("home_background_video_poster", "");
     }
 
