@@ -64,11 +64,12 @@ export default async function RsvpPage() {
       {party && <p className="text-muted" style={{ marginBottom: "1.5rem" }}>Party: {party.name}</p>}
       <p className="text-muted text-sm mb-1">
         Please respond for each member of your party. Each member can be submitted individually.
-        {formattedDeadline && (
-          isLocked
-            ? <> RSVPs are now closed.</>
-            : <> Submissions may be changed up until {formattedDeadline}, after which RSVPs will be locked.</>
-        )}
+      </p>
+      <p className="text-muted text-sm mb-1">
+        Submissions may be changed up until the deadline.
+      </p>
+      <p className="text-muted text-sm" style={{ marginBottom: "1.5rem" }}>
+        RSVP Deadline: {formattedDeadline ?? "None"}
       </p>
 
       {members.map((m) => {
