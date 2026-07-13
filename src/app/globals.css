@@ -58,6 +58,7 @@ a:hover { text-decoration: underline; }
 /* Landing Page */
 .landing {
   position: relative;
+  min-height: 100vh;
   min-height: 100dvh;
   display: flex;
   align-items: center;
@@ -135,6 +136,7 @@ a:hover { text-decoration: underline; }
 /* Home Page */
 .home-hero {
   position: relative;
+  min-height: 100vh;
   min-height: 100dvh;
   display: flex;
   align-items: center;
@@ -747,7 +749,7 @@ a:hover { text-decoration: underline; }
 }
 
 /* Admin Styles */
-.admin-layout { display: flex; min-height: 100dvh; position: relative; }
+.admin-layout { display: flex; min-height: 100vh; min-height: 100dvh; position: relative; }
 
 .sidebar-toggle-input { display: none; }
 
