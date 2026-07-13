@@ -102,3 +102,9 @@ This is an ordered list of features to implement along with a simple sub-bullet 
 
 * Please make the grouped media displays (the mood board on the dress code tab of the guide page as well as the media page) more grid-based instead of cards like you currently have it. It looks good on desktop browsers but on mobile the cards are too big and fill the whole horizontal width.
   * status: done
+
+* Now please add a new feature to the Party section of the admin dashboard for admins to click a checkbox and mark each party as "invited" so admins can keep track of each person they have messaged or sent the website link and code to (manually). Please warn me if this causes a breaking change to the database. Provision for easy migration. It could be a new table in the databse if that works well. If possible, update the party view such that parties can be sorted and ordered by party name and "invited" status. This lets the admins manage parties much more easily. This mechanism hopefully is similar to the design of the Guests table.
+  * status: done
+
+* Please add an option in the Guests admin dashboard to make a guest as not likely to come. Please make the databse migration easy, and manual with a dedicated script under ./scripts. Then please update the main admin dashboard counters to to show values in three rows (styled cleanly, however you see fit). Each row of counts should show [guests, plus ones, total headcount]. Then the three row titles sould be "invited, expected, confirmed".
+  * status: not done

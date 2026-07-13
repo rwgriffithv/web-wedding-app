@@ -16,6 +16,7 @@ export const DDL = `
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     code TEXT NOT NULL UNIQUE,
+    invited INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
@@ -93,4 +94,5 @@ export const DDL = `
   CREATE INDEX IF NOT EXISTS idx_lodging_sort_order ON lodging_options(sort_order);
   CREATE INDEX IF NOT EXISTS idx_schedule_sort_order ON schedule_items(sort_order);
   CREATE INDEX IF NOT EXISTS idx_dress_code_sort_order ON dress_code_images(sort_order);
+  CREATE INDEX IF NOT EXISTS idx_parties_invited ON parties(invited);
 `;

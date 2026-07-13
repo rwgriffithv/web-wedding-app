@@ -945,13 +945,23 @@ a:hover { text-decoration: underline; }
 .party-row-name { font-weight: 600; margin-right: 0.75rem; }
 .party-row-code-group { display: inline-flex; align-items: center; gap: 0.25rem; margin-right: auto; }
 .party-row-code { font-family: monospace; font-size: 0.85rem; color: var(--color-muted); }
-.party-row-actions { display: flex; gap: 0.5rem; margin-left: 0.5rem; }
 .copy-btn { padding: 0.25rem 0.375rem !important; min-width: 0; }
-.party-row-editing { font-weight: 600; }
-.editing-summary { cursor: default !important; }
 .party-member-list { list-style: none; margin: 0; padding: 0; }
 .party-member-list li { padding: 0.35rem 0; font-size: 0.875rem; border-bottom: 1px solid var(--color-border); }
 .party-member-list li:last-child { border-bottom: none; }
+
+/* Party Table */
+.party-expand-btn {
+  cursor: pointer; background: none; border: none; padding: 0.25rem;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--color-muted);
+}
+.party-expand-btn svg { transition: transform 0.15s ease; }
+.party-expand-btn[aria-expanded="true"] svg { transform: rotate(90deg); }
+.party-invite-toggle { cursor: pointer; background: none; border: none; padding: 0; }
+.party-invite-toggle input[type="checkbox"] { width: 1rem; height: 1rem; cursor: pointer; }
+.party-guest-row td { padding-left: 2.5rem; background: var(--color-surface); }
+.party-row-editing td { background: var(--color-surface); }
 
 /* Activity Table */
 .activity-table { width: 100%; border-collapse: collapse; }

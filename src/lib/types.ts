@@ -24,6 +24,7 @@ export interface Party {
   id: number;
   name: string;
   code: string;
+  invited: number;
   created_at: string;
 }
 

@@ -114,8 +114,8 @@ export function GuestRow({ guest, parties }: GuestRowProps) {
           >
             Cancel
           </button>
-          {guestState?.error && <span className="table-error">{guestState.error}</span>}
-          {partyError && <span className="table-error">{partyError}</span>}
+          {guestState?.error && <span className="table-error" role="alert">{guestState.error}</span>}
+          {partyError && <span className="table-error" role="alert">{partyError}</span>}
         </td>
       </tr>
     );

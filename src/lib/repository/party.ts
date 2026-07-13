@@ -34,7 +34,7 @@ export function createParty(name: string, code?: string): Party {
   const db = getDb();
   const partyCode = code?.trim().toUpperCase() || generatePartyCode(name);
   const created = db.transaction(() => {
-    const party = db.prepare("INSERT INTO parties (name, code) VALUES (?, ?) RETURNING *").get(name, partyCode) as Party;
+    const party = db.prepare("INSERT INTO parties (name, code, invited) VALUES (?, ?, 0) RETURNING *").get(name, partyCode) as Party;
     createPartyUser(party.code, party.name, party.id);
     return party;
   })();
@@ -82,4 +82,9 @@ export function deleteEmptyParty(partyId: number): void {
       deletePartyRows(db, partyId);
     }
   })();
+}
+
+export function setInvited(id: number, invited: boolean): void {
+  const db = getDb();
+  db.prepare("UPDATE parties SET invited = ? WHERE id = ?").run(invited ? 1 : 0, id);
 }

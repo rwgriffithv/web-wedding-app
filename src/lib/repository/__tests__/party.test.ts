@@ -87,4 +87,17 @@ describe("party repository", () => {
     deleteEmptyParty(party.id);
     expect(getPartyById(party.id)).toBeDefined();
   });
+
+  it("setInvited toggles invited status", async () => {
+    const { createParty, setInvited, getPartyById } = await import("@/lib/repository/party");
+    const party = createParty("Invitee Family");
+
+    expect(getPartyById(party.id)!.invited).toBe(0);
+
+    setInvited(party.id, true);
+    expect(getPartyById(party.id)!.invited).toBe(1);
+
+    setInvited(party.id, false);
+    expect(getPartyById(party.id)!.invited).toBe(0);
+  });
 });
