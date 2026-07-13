@@ -1,6 +1,7 @@
 const MAX_STORE_SIZE = 10_000;
 
 const stores = new Map<string, Map<string, { count: number; resetAt: number }>>();
+const intervals = new Map<string, ReturnType<typeof setInterval>>();
 
 interface RateLimitConfig {
   maxAttempts: number;
@@ -18,15 +19,18 @@ export function createRateLimiter(
   }
   const store = stores.get(name)!;
 
-  const interval = setInterval(() => {
-    const now = Date.now();
-    for (const [key, entry] of store) {
-      if (now > entry.resetAt) store.delete(key);
-    }
-  }, 60_000);
+  if (!intervals.has(name)) {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      for (const [key, entry] of store) {
+        if (now > entry.resetAt) store.delete(key);
+      }
+    }, 60_000);
 
-  if (typeof interval.unref === "function") {
-    interval.unref();
+    if (typeof interval.unref === "function") {
+      interval.unref();
+    }
+    intervals.set(name, interval);
   }
 
   return {

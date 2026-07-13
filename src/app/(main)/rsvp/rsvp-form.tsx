@@ -25,7 +25,6 @@ export function RsvpForm({ memberId, displayName, canBringPlusOne, existingRespo
   return (
     <form action={dispatch} className="rsvp-form">
       <input type="hidden" name="member_id" value={memberId} />
-      <input type="hidden" name={`name_${memberId}`} value={displayName} />
 
       <div className="form-row">
         <div className="form-group">
