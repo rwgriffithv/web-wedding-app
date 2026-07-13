@@ -8,7 +8,8 @@ export default function AdminDashboardPage() {
   const plusOnes = getPlusOneCount();
   const responses = getRecentResponses(10);
 
-  const totalHeadcount = guests.length + plusOnes.attending;
+  const eligiblePlusOnes = guests.filter((g) => g.can_bring_plus_one).length;
+  const totalHeadcount = guests.length + eligiblePlusOnes;
   const attending = rsvpCount.attending + plusOnes.attending;
   const awaiting = Math.max(0, guests.length - rsvpCount.total);
 
