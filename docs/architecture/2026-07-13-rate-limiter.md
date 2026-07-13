@@ -19,9 +19,9 @@ Rate limit counters are stored in-memory (JavaScript `Map`). This is appropriate
 ## Architecture
 
 ```
-Request → parseSession() → rateLimiter.check(key, config)
-                         → if false, return 429
-                         → if true, proceed
+Login Request → rateLimiter.check(key, config)
+              → if false, return error
+              → if true, proceed with authentication
 ```
 
 ## Configuration

@@ -30,6 +30,8 @@ export default async function RsvpPage() {
   if (!partyId) redirect("/");
 
   const party = getPartyById(partyId);
+  if (!party) redirect("/");
+
   const members = getGuestsByPartyId(partyId);
 
   if (members.length === 0) {
@@ -61,7 +63,7 @@ export default async function RsvpPage() {
   return (
     <div className="page-content">
       <h1>RSVP</h1>
-      {party && <p className="text-muted" style={{ marginBottom: "1.5rem" }}>Party: {party.name}</p>}
+      <p className="text-muted" style={{ marginBottom: "1.5rem" }}>Party: {party.name}</p>
       <p className="text-muted text-sm mb-1">
         Please respond for each member of the party. Submissions may be changed up until the deadline.
       </p>
@@ -84,7 +86,6 @@ export default async function RsvpPage() {
             </div>
             <RsvpForm
               memberId={m.id}
-              displayName={m.display_name}
               canBringPlusOne={m.can_bring_plus_one === 1}
               existingResponse={response ?? undefined}
               isLocked={isLocked}

@@ -34,7 +34,7 @@ Config is read dynamically on each request (not cached), so changes take effect 
 
 Replaced `fs.promises.readFile` (full buffer in memory) with `fs.createReadStream` (streaming via `ReadableStream`). Also:
 - Added `Content-Length` header for proper download progress
-- Extended cache from 5 minutes to 1 hour
+- Set cache to 5 minutes (balance between performance and freshness)
 - Added `force-dynamic` to prevent Next.js caching interference
 
 ## Architecture Decisions

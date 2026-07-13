@@ -10,7 +10,7 @@ export default function AdminDashboardPage() {
 
   const totalHeadcount = guests.length + plusOnes.attending;
   const attending = rsvpCount.attending + plusOnes.attending;
-  const awaiting = guests.length - rsvpCount.total;
+  const awaiting = Math.max(0, guests.length - rsvpCount.total);
 
   return (
     <>

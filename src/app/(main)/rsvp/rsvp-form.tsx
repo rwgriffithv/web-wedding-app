@@ -5,7 +5,6 @@ import { submitRsvp } from "./actions";
 
 interface RsvpFormProps {
   memberId: number;
-  displayName: string;
   canBringPlusOne: boolean;
   existingResponse?: { guest_name: string; attending: number; plus_one_name: string | null };
   isLocked?: boolean;
@@ -13,7 +12,7 @@ interface RsvpFormProps {
 
 const initialState = null as { success?: boolean; error?: string } | null;
 
-export function RsvpForm({ memberId, displayName, canBringPlusOne, existingResponse, isLocked }: RsvpFormProps) {
+export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked }: RsvpFormProps) {
   const [state, dispatch, isPending] = useActionState(submitRsvp, initialState);
   const [attending, setAttending] = useState(existingResponse?.attending === 1 ? "yes" : existingResponse ? "no" : "");
   const [bringPlusOne, setBringPlusOne] = useState(
