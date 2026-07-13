@@ -61,7 +61,7 @@ a:hover { text-decoration: underline; }
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   overflow: hidden;
 }
@@ -80,6 +80,7 @@ a:hover { text-decoration: underline; }
   text-align: center;
   color: white;
   padding: 2rem;
+  margin: 18vh auto auto auto;
 }
 
 .landing-content h1 {
@@ -165,7 +166,7 @@ a:hover { text-decoration: underline; }
   text-align: center;
   color: white;
   padding: 2rem;
-  margin: 15vh auto auto auto;
+  margin: 20vh auto auto auto;
 }
 
 .home-content h1 {
