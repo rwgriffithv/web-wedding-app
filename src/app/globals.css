@@ -561,6 +561,17 @@ a:hover { text-decoration: underline; }
   border-top: 1px solid var(--color-border);
 }
 
+@media (max-width: 640px) {
+  .rsvp-member {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .rsvp-form .form-row {
+    flex-wrap: wrap;
+  }
+}
+
 /* Media Gallery */
 .media-gallery {
   display: grid;

@@ -69,3 +69,15 @@ This is an ordered list of features to implement along with a simple sub-bullet 
 
 * The admin dashboard for the dress code mood board images needs the ability to reorder the images in the moodboard. Copy the exact implementation used by the media admin dashboard and the loding admin dashboard reordering styles. Also, I cannot view the images in the dress code mood board when I click on them. I want them to pop up and load just like they do in the media page. Make sure to reuse code here if possible and pragmatic. There is no reason why one media viewer is broken while another seems to be working very well.
   * status: done
+
+* The horizontal spacing on the RSVP page flows off the page on mobile devices. Please fix this, if needed the user options can go vertical instead of horizontal.
+  * status: done
+
+* Make the parties section of the admin dashboard searchable. I want to easily be able to find codes!
+  * status: not done
+
+* Please make the "admin" and "logout" links below the pill a bit more visible, maybe have a slighly transparent backround for contrast like a mini pill. This will help with visibility over the video.
+  * status: not done
+
+* Please load the first frame from the home page video and use that as the background while the video loads. Alternatively, please lazily load the video and serve it in chunks. That will be the smoothest operation.
+  * status: not done
