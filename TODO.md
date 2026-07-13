@@ -92,4 +92,4 @@ This is an ordered list of features to implement along with a simple sub-bullet 
   * status: done
 
 * Please re-examine latency and bottleneck concerns, focusing on serving the home page video and ffmpeg calls in general. If one user logs in and is waiting for the video to be served will other users be unable to login or view the website at all? Is this application single-threaded and unable to serve multiple users at once like that?
-  * status: not done
+  * status: done
