@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { isAdmin } from "@/lib/auth";
 import { getString } from "@/lib/form-data";
-import { setConfig, getConfig } from "@/lib/repository/site-config";
+import { setConfig, setConfigs, getConfig } from "@/lib/repository/site-config";
 import { ensureVideoPoster } from "@/lib/thumbnail";
 
 interface SiteConfigState { success?: boolean; error?: string }
@@ -33,6 +33,7 @@ export async function saveSiteConfig(prevState: SiteConfigState | null, formData
   if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
 
   try {
+    const entries: [string, string][] = [];
     for (const key of CONFIG_KEYS) {
       const value = getString(formData, key) ?? "";
       const maxLen = MAX_LENGTHS[key] ?? 2000;
@@ -48,8 +49,15 @@ export async function saveSiteConfig(prevState: SiteConfigState | null, formData
           return { success: false, error: `"${key}" must be a positive number (1–1000).` };
         }
       }
-      setConfig(key, value);
+      if (key === "rsvp_deadline" && value) {
+        const date = new Date(value);
+        if (isNaN(date.getTime())) {
+          return { success: false, error: `"rsvp_deadline" must be a valid date.` };
+        }
+      }
+      entries.push([key, value]);
     }
+    setConfigs(entries);
 
     const videoUrl = getString(formData, "home_background_video") ?? "";
     if (videoUrl && videoUrl.startsWith("/api/media/")) {

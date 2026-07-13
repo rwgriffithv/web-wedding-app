@@ -52,6 +52,7 @@ export default async function RsvpPage() {
   const responsesByGuest = new Map(responses.map(r => [r.guest_id, r]));
 
   const deadlineStr = getConfig("rsvp_deadline");
+  // datetime-local input produces local time string; server is in Pacific time
   const deadline = deadlineStr ? new Date(deadlineStr) : null;
   const isLocked = deadline ? new Date() > deadline : false;
   const formattedDeadline = deadline
@@ -63,10 +64,7 @@ export default async function RsvpPage() {
       <h1>RSVP</h1>
       {party && <p className="text-muted" style={{ marginBottom: "1.5rem" }}>Party: {party.name}</p>}
       <p className="text-muted text-sm mb-1">
-        Please respond for each member of your party. Each member can be submitted individually.
-      </p>
-      <p className="text-muted text-sm mb-1">
-        Submissions may be changed up until the deadline.
+        Please respond for each member of the party. Submissions may be changed up until the deadline.
       </p>
       <p className="text-muted text-sm" style={{ marginBottom: "1.5rem" }}>
         RSVP Deadline: {formattedDeadline ?? "None"}

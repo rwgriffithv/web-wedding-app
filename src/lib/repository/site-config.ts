@@ -15,3 +15,13 @@ export function setConfig(key: string, value: string): void {
   const db = getDb();
   db.prepare("INSERT OR REPLACE INTO site_config (key, value) VALUES (?, ?)").run(key, value);
 }
+
+export function setConfigs(entries: [string, string][]): void {
+  const db = getDb();
+  db.transaction(() => {
+    const stmt = db.prepare("INSERT OR REPLACE INTO site_config (key, value) VALUES (?, ?)");
+    for (const [key, value] of entries) {
+      stmt.run(key, value);
+    }
+  })();
+}

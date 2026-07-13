@@ -40,7 +40,14 @@ export function createRateLimiter(
       const entry = store.get(key);
       if (!entry || now > entry.resetAt) {
         if (store.size >= MAX_STORE_SIZE) {
-          const oldestKey = store.keys().next().value;
+          let oldestKey: string | undefined;
+          let oldestReset = Infinity;
+          for (const [k, v] of store) {
+            if (v.resetAt < oldestReset) {
+              oldestReset = v.resetAt;
+              oldestKey = k;
+            }
+          }
           if (oldestKey !== undefined) store.delete(oldestKey);
         }
         store.set(key, { count: 1, resetAt: now + cfg.windowMs });
