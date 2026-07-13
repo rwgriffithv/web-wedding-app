@@ -35,7 +35,7 @@ export function MediaForm({ tabs }: { tabs: MediaTab[] }) {
       setSelectedTabId(null);
       formRef.current?.reset();
     }
-  }, [state?.success]);
+  }, [state]);
 
   const handleCreateNewTab = async (name: string) => {
     setCreatingTab(true);
