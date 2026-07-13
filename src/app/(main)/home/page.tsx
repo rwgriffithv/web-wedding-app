@@ -1,15 +1,18 @@
-import { getConfig } from "@/lib/repository/site-config";
+import { getAllConfig } from "@/lib/repository/site-config";
 import { getAll } from "@/lib/repository/schedule";
 import { CountdownTimer } from "@/components/countdown-timer";
 
+export const revalidate = 60;
+
 export default function HomePage() {
-  const title = getConfig("home_title");
-  const subtitle = getConfig("home_subtitle");
-  const date = getConfig("home_date");
-  const time = getConfig("home_time");
-  const location = getConfig("home_location");
-  const video = getConfig("home_background_video");
-  const poster = getConfig("home_background_video_poster");
+  const config = Object.fromEntries(getAllConfig().map((c) => [c.key, c.value]));
+  const title = config.home_title || "";
+  const subtitle = config.home_subtitle || "";
+  const date = config.home_date || "";
+  const time = config.home_time || "";
+  const location = config.home_location || "";
+  const video = config.home_background_video || "";
+  const poster = config.home_background_video_poster || "";
   const scheduleItems = getAll();
   const scheduleRange = scheduleItems.length > 0
     ? `${scheduleItems[0].time} – ${scheduleItems[scheduleItems.length - 1].time}`

@@ -4,6 +4,8 @@ import { MEDIA_DIR, IMAGE_EXTENSIONS, isWithinMediaDir, MIME_TYPES } from "@/lib
 import fs from "node:fs";
 import path from "node:path";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const background = getConfig("landing_background");
   if (!background || !background.startsWith("/api/media/")) {
@@ -22,20 +24,36 @@ export async function GET() {
     return NextResponse.json({ error: "Not found." }, { status: 404 });
   }
 
-  const contentType = MIME_TYPES[ext];
-
-  let buffer: Buffer;
+  let stat: fs.Stats;
   try {
-    buffer = await fs.promises.readFile(resolved);
-  } catch (error) {
-    console.error("Failed to read background image:", error);
+    stat = await fs.promises.stat(resolved);
+  } catch {
     return NextResponse.json({ error: "Not found." }, { status: 404 });
   }
 
-  return new NextResponse(buffer.buffer as ArrayBuffer, {
+  const stream = fs.createReadStream(resolved);
+  const readable = new ReadableStream({
+    start(controller) {
+      stream.on("data", (chunk) => {
+        if (typeof chunk === "string") {
+          controller.enqueue(new TextEncoder().encode(chunk));
+        } else {
+          controller.enqueue(new Uint8Array(chunk));
+        }
+      });
+      stream.on("end", () => controller.close());
+      stream.on("error", (err) => controller.error(err));
+    },
+    cancel() {
+      stream.destroy();
+    },
+  });
+
+  return new NextResponse(readable, {
     headers: {
-      "Content-Type": contentType,
-      "Cache-Control": "public, max-age=300",
+      "Content-Type": MIME_TYPES[ext],
+      "Content-Length": String(stat.size),
+      "Cache-Control": "public, max-age=3600",
     },
   });
 }

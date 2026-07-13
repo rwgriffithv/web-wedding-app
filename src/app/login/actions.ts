@@ -7,16 +7,18 @@ import { getUserByUsername, getUserByPartyId, recordLogin } from "@/lib/reposito
 import { getPartyByCode } from "@/lib/repository/party";
 import { getGuestsByPartyId } from "@/lib/repository/guests";
 import { createRateLimiter } from "@/lib/rate-limit";
+import { getConfig } from "@/lib/repository/site-config";
 
 interface LoginState { error?: string }
 
-const rateLimiterMax = parseInt(process.env.RATE_LIMIT_MAX ?? "5", 10);
-const rateLimiterWindow = parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? "60000", 10);
-const rateLimiter = createRateLimiter(
-  "login",
-  Number.isFinite(rateLimiterMax) && rateLimiterMax > 0 ? rateLimiterMax : 5,
-  Number.isFinite(rateLimiterWindow) && rateLimiterWindow > 0 ? rateLimiterWindow : 60_000,
-);
+const rateLimiter = createRateLimiter("login", 5, 60_000, () => {
+  const max = parseInt(getConfig("rate_limit_max_attempts") ?? "5", 10);
+  const window = parseInt(getConfig("rate_limit_window_seconds") ?? "60", 10);
+  return {
+    maxAttempts: Number.isFinite(max) && max > 0 ? max : 5,
+    windowMs: (Number.isFinite(window) && window > 0 ? window : 60) * 1000,
+  };
+});
 
 async function getClientIp(): Promise<string> {
   const h = await headers();

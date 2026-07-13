@@ -76,6 +76,9 @@ This is an ordered list of features to implement along with a simple sub-bullet 
 * Please load the first frame from the home page video and use that as the background while the video loads. Alternatively, please lazily load the video and serve it in chunks. That will be the smoothest operation. The video is already 1080p. It could be turned into a GIF? would that help? I'm looking for options.
   * status: done
 
+* Investigate if there is a max concurrent user load on the site. explain the reate limiting we have implemented before. Analyze any bottlenecks or issues with the website serving a moderate ~100 amount of concurrent users. I'm hosting the websit on my own home internet which has about 20 Mbps and I'm on the cloudflare free plan for the tunneling/routing. Also make sure to check the code itself to see if there are some issues with concurrent users.
+  * status: done
+
 * Make the parties section of the admin dashboard searchable. I want to easily be able to find codes!
   * status: not done
 

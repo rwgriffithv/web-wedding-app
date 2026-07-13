@@ -2,7 +2,17 @@ const MAX_STORE_SIZE = 10_000;
 
 const stores = new Map<string, Map<string, { count: number; resetAt: number }>>();
 
-export function createRateLimiter(name: string, maxAttempts = 5, windowMs = 60_000) {
+interface RateLimitConfig {
+  maxAttempts: number;
+  windowMs: number;
+}
+
+export function createRateLimiter(
+  name: string,
+  defaultMaxAttempts = 5,
+  defaultWindowMs = 60_000,
+  getConfig?: () => RateLimitConfig,
+) {
   if (!stores.has(name)) {
     stores.set(name, new Map());
   }
@@ -21,6 +31,7 @@ export function createRateLimiter(name: string, maxAttempts = 5, windowMs = 60_0
 
   return {
     check(key: string): boolean {
+      const cfg = getConfig?.() ?? { maxAttempts: defaultMaxAttempts, windowMs: defaultWindowMs };
       const now = Date.now();
       const entry = store.get(key);
       if (!entry || now > entry.resetAt) {
@@ -28,10 +39,10 @@ export function createRateLimiter(name: string, maxAttempts = 5, windowMs = 60_0
           const oldestKey = store.keys().next().value;
           if (oldestKey !== undefined) store.delete(oldestKey);
         }
-        store.set(key, { count: 1, resetAt: now + windowMs });
+        store.set(key, { count: 1, resetAt: now + cfg.windowMs });
         return true;
       }
-      if (entry.count >= maxAttempts) return false;
+      if (entry.count >= cfg.maxAttempts) return false;
       entry.count++;
       return true;
     },

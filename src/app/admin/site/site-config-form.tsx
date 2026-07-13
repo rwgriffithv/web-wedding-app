@@ -76,6 +76,22 @@ export function SiteConfigForm({ config }: SiteConfigFormProps) {
           </p>
         )}
       </div>
+      <fieldset className="form-group" style={{ border: "1px solid var(--color-border, #ccc)", borderRadius: "var(--radius)", padding: "1rem" }}>
+        <legend style={{ fontWeight: 600 }}>Rate Limiting (Login)</legend>
+        <div className="form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+          <div className="form-group">
+            <label htmlFor="rate_limit_max_attempts">Max Attempts (per window)</label>
+            <input id="rate_limit_max_attempts" name="rate_limit_max_attempts" type="number" min="1" max="1000" defaultValue={config.rate_limit_max_attempts || "5"} />
+          </div>
+          <div className="form-group">
+            <label htmlFor="rate_limit_window_seconds">Window (seconds)</label>
+            <input id="rate_limit_window_seconds" name="rate_limit_window_seconds" type="number" min="1" max="1000" defaultValue={config.rate_limit_window_seconds || "60"} />
+          </div>
+        </div>
+        <p className="text-muted text-xs" style={{ marginTop: "0.25rem" }}>
+          Limits login attempts per IP+user. Changes take effect on next request.
+        </p>
+      </fieldset>
       {state?.success && <p className="text-success text-sm mb-1" role="status">Saved successfully.</p>}
       {state?.error && <p className="text-error text-sm mb-1" role="alert">{state.error}</p>}
       <button type="submit" className="btn btn-primary" disabled={isPending}>{isPending ? "Saving..." : "Save Changes"}</button>

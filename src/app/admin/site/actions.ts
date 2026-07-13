@@ -11,6 +11,7 @@ interface SiteConfigState { success?: boolean; error?: string }
 const CONFIG_KEYS = [
   "landing_title", "landing_background",
   "home_title", "home_subtitle", "home_date", "home_time", "home_location", "home_background_video",
+  "rate_limit_max_attempts", "rate_limit_window_seconds",
 ];
 
 const MAX_LENGTHS: Record<string, number> = {
@@ -22,6 +23,8 @@ const MAX_LENGTHS: Record<string, number> = {
   home_location: 500,
   landing_background: 2000,
   home_background_video: 2000,
+  rate_limit_max_attempts: 10,
+  rate_limit_window_seconds: 10,
 };
 
 export async function saveSiteConfig(prevState: SiteConfigState | null, formData: FormData): Promise<SiteConfigState> {
@@ -33,6 +36,12 @@ export async function saveSiteConfig(prevState: SiteConfigState | null, formData
       const maxLen = MAX_LENGTHS[key] ?? 2000;
       if (value.length > maxLen) {
         return { success: false, error: `"${key}" must be ${maxLen} characters or fewer.` };
+      }
+      if (key === "rate_limit_max_attempts" || key === "rate_limit_window_seconds") {
+        const num = parseInt(value, 10);
+        if (!Number.isFinite(num) || num <= 0 || num > 1000) {
+          return { success: false, error: `"${key}" must be a positive number (1–1000).` };
+        }
       }
       setConfig(key, value);
     }
