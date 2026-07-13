@@ -100,4 +100,17 @@ describe("party repository", () => {
     updateParty(party.id, { invited: 0 });
     expect(getPartyById(party.id)!.invited).toBe(0);
   });
+
+  it("updateParty preserves invited when updating name", async () => {
+    const { createParty, updateParty, getPartyById } = await import("@/lib/repository/party");
+    const party = createParty("Preserve Family");
+
+    updateParty(party.id, { invited: 1 });
+    expect(getPartyById(party.id)!.invited).toBe(1);
+
+    updateParty(party.id, { name: "Updated Family" });
+    const updated = getPartyById(party.id)!;
+    expect(updated.name).toBe("Updated Family");
+    expect(updated.invited).toBe(1);
+  });
 });
