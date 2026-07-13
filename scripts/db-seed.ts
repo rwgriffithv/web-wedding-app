@@ -14,6 +14,32 @@ const adminPassword = process.env.ADMIN_PASSWORD || "admin";
 
 db.exec(DDL);
 
+const insertConfig = db.prepare("INSERT OR IGNORE INTO site_config (key, value) VALUES (?, ?)");
+const upsertConfig = db.prepare("UPDATE site_config SET value = ? WHERE key = ?");
+const setConfig = (key: string, value: string) => {
+  insertConfig.run(key, value);
+  upsertConfig.run(value, key);
+};
+
+setConfig("rate_limit_max_attempts", process.env.RATE_LIMIT_MAX || "5");
+setConfig("rate_limit_window_seconds", process.env.RATE_LIMIT_WINDOW_SEC ? String(Number(process.env.RATE_LIMIT_WINDOW_SEC)) : "60");
+
+// Ensure default config values exist for existing databases (only fills empty/null values)
+const upsertIfEmpty = db.prepare("UPDATE site_config SET value = ? WHERE key = ? AND (value IS NULL OR value = '')");
+const defaults: [string, string][] = [
+  ["landing_title", "We're Getting Married!"],
+  ["landing_background", ""],
+  ["home_title", "Our Wedding"],
+  ["home_subtitle", "Together with our families"],
+  ["home_date", "August 15, 2026"],
+  ["home_location", "Venue Name, City"],
+  ["home_background_video", ""],
+  ["dress_code_text", "Please dress in formal attire. Our wedding will feature a black-tie optional dress code. We recommend suits and cocktail dresses."],
+];
+for (const [key, value] of defaults) {
+  upsertIfEmpty.run(value, key);
+}
+
 const existingParty = db.prepare("SELECT COUNT(*) as count FROM parties WHERE code = ?").get("DEMO-1234") as { count: number };
 
 if (existingParty.count === 0) {
@@ -30,7 +56,6 @@ if (existingParty.count === 0) {
     insertGuest.run("John Guest", partyId, 0);
     insertGuest.run("Website Guest", null, 0);
 
-    const insertConfig = db.prepare("INSERT OR IGNORE INTO site_config (key, value) VALUES (?, ?)");
     insertConfig.run("landing_title", "We're Getting Married!");
     insertConfig.run("landing_background", "");
     insertConfig.run("home_title", "Our Wedding");

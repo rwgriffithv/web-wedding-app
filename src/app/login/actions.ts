@@ -15,8 +15,8 @@ interface LoginState { error?: string }
 const rateLimiter = createRateLimiter("login", 5, 60_000);
 
 function getRateLimitConfig() {
-  const max = parseInt(getConfig("rate_limit_max_attempts") ?? "5", 10);
-  const window = parseInt(getConfig("rate_limit_window_seconds") ?? "60", 10);
+  const max = parseInt(getConfig("rate_limit_max_attempts") ?? process.env.RATE_LIMIT_MAX ?? "5", 10);
+  const window = parseInt(getConfig("rate_limit_window_seconds") ?? process.env.RATE_LIMIT_WINDOW_SEC ?? "60", 10);
   return {
     maxAttempts: Number.isFinite(max) && max > 0 ? max : 5,
     windowMs: (Number.isFinite(window) && window > 0 ? window : 60) * 1000,

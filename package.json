@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "db:seed": "ADMIN_USERNAME=admin ADMIN_PASSWORD=admin SESSION_SECRET=rob-and-ana tsx scripts/db-seed.ts"
+    "test:all": "vitest run && playwright test",
+    "db:seed": "tsx scripts/db-seed.ts"
   },
   "dependencies": {
     "better-sqlite3": "^11.0.0",

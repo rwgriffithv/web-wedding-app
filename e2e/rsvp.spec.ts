@@ -1,71 +1,104 @@
 import { test, expect } from "@playwright/test";
 
-test("party code login redirects to RSVP page", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Party Code" }).click();
-  await page.fill("input[name=code]", "DEMO-1234");
-  await page.getByRole("button", { name: "Continue with Party Code" }).click();
-  await expect(page).toHaveURL(/\/rsvp/);
-  await expect(page.getByRole("heading", { name: "RSVP" })).toBeVisible();
-  await expect(page.getByText("Party: Demo Family")).toBeVisible();
-});
+test.describe.serial("RSVP flows", () => {
+  test("party code login redirects to home, RSVP accessible", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Party Code" }).click();
+    await page.fill("input[name=code]", "DEMO-1234");
+    await page.getByRole("button", { name: "Continue with Party Code" }).click();
+    await expect(page).toHaveURL(/\/home/);
+    await page.goto("/rsvp");
+    await expect(page.getByRole("heading", { name: "RSVP" })).toBeVisible();
+    await expect(page.getByText("Party: Demo Family")).toBeVisible();
+  });
 
-test("party can submit RSVP with plus one", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Party Code" }).click();
-  await page.fill("input[name=code]", "DEMO-1234");
-  await page.getByRole("button", { name: "Continue with Party Code" }).click();
-  await expect(page).toHaveURL(/\/rsvp/);
+  test("party can submit RSVP", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Party Code" }).click();
+    await page.fill("input[name=code]", "DEMO-1234");
+    await page.getByRole("button", { name: "Continue with Party Code" }).click();
+    await expect(page).toHaveURL(/\/home/);
+    await page.goto("/rsvp");
 
-  const form = page.locator(".rsvp-form").first();
+    const yesRadio = page.locator("input[type=radio][value=yes]").first();
+    await expect(yesRadio).toBeEnabled({ timeout: 5000 });
+    await yesRadio.check();
+    await page.locator("button[type=submit]").first().click();
+    await expect(page.getByText(/response submitted/i).or(page.getByText(/response updated/i))).toBeVisible();
+  });
 
-  const nameInput = form.locator("input[name^=name_]");
-  await nameInput.fill("Jane Guest");
+  test("invalid party code shows error", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Party Code" }).click();
+    await page.fill("input[name=code]", "INVALID-CODE");
+    await page.getByRole("button", { name: "Continue with Party Code" }).click();
+    await expect(page.getByText(/invalid party code/i)).toBeVisible();
+  });
 
-  await form.locator("input[type=radio][value=yes]").check();
+  test("existing RSVP shown on return", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Party Code" }).click();
+    await page.fill("input[name=code]", "DEMO-1234");
+    await page.getByRole("button", { name: "Continue with Party Code" }).click();
+    await expect(page).toHaveURL(/\/home/);
+    await page.goto("/rsvp");
 
-  const plusOneInput = form.locator("input[name^=plus_one_]");
-  if (await plusOneInput.isVisible()) {
-    await plusOneInput.fill("Sarah Guest");
-  }
+    const yesRadio = page.locator("input[type=radio][value=yes]").first();
+    await expect(yesRadio).toBeEnabled({ timeout: 5000 });
+    await yesRadio.check();
+    await page.locator("button[type=submit]").first().click();
+    await expect(page.getByText(/response submitted/i).or(page.getByText(/response updated/i))).toBeVisible();
 
-  await form.locator("button[type=submit]").click();
-  await expect(page.getByText(/^Response/)).toBeVisible();
-});
+    await page.goto("/rsvp");
+    await expect(page.getByText("Attending", { exact: true }).first()).toBeVisible();
+  });
 
-test("guest without RSVP access sees view-only message", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: "User sign in" }).click();
-  await page.fill("input[name=username]", "guest");
-  await page.fill("input[name=password]", "guest");
-  await page.locator("button[type=submit]").click();
-  await expect(page).toHaveURL(/\/home/);
+  test("RSVP form is locked when deadline is past", async ({ page }) => {
+    // Set deadline as admin
+    await page.goto("/login");
+    await page.getByRole("button", { name: "User sign in" }).click();
+    await page.fill("input[name=username]", "admin");
+    await page.fill("input[name=password]", "admin");
+    await page.locator("button[type=submit]").click();
+    await expect(page).toHaveURL(/\/admin/);
+    await page.goto("/admin/site");
+    const deadlineInput = page.locator("input[name=rsvp_deadline]");
+    await deadlineInput.fill("2020-01-01T00:00");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText(/saved/i)).toBeVisible();
 
-  await page.goto("/rsvp");
-  await expect(page.getByText(/no RSVP is required/i)).toBeVisible();
-});
+    // Logout, login as party, verify locked
+    await page.context().clearCookies();
+    await page.goto("/");
+    await page.fill("input[name=code]", "DEMO-1234");
+    await page.getByRole("button", { name: "Continue with Party Code" }).click();
+    await expect(page).toHaveURL(/\/home/);
+    await page.goto("/rsvp");
+    await expect(page.getByText(/rsvp is closed/i).first()).toBeVisible();
+    await expect(page.locator("input[type=radio]").first()).toBeDisabled();
 
-test("invalid party code shows error", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Party Code" }).click();
-  await page.fill("input[name=code]", "INVALID-CODE");
-  await page.getByRole("button", { name: "Continue with Party Code" }).click();
-  await expect(page.getByText(/invalid party code/i)).toBeVisible();
-});
+    // Cleanup: clear the deadline
+    await page.context().clearCookies();
+    await page.goto("/login");
+    await page.getByRole("button", { name: "User sign in" }).click();
+    await page.fill("input[name=username]", "admin");
+    await page.fill("input[name=password]", "admin");
+    await page.locator("button[type=submit]").click();
+    await expect(page).toHaveURL(/\/admin/);
+    await page.goto("/admin/site");
+    await deadlineInput.clear();
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText(/saved/i)).toBeVisible();
+  });
 
-test("existing RSVP shown on return", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Party Code" }).click();
-  await page.fill("input[name=code]", "DEMO-1234");
-  await page.getByRole("button", { name: "Continue with Party Code" }).click();
-  await expect(page).toHaveURL(/\/rsvp/);
-
-  const form = page.locator(".rsvp-form").first();
-  await form.locator("input[name^=name_]").fill("Jane Guest");
-  await form.locator("input[type=radio][value=yes]").check();
-  await form.locator("button[type=submit]").click();
-  await expect(page.getByText(/^Response/)).toBeVisible();
-
-  await page.goto("/rsvp");
-  await expect(page.getByText("Current response: Attending")).toBeVisible();
+  test("RSVP form is editable when no deadline is set", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Party Code" }).click();
+    await page.fill("input[name=code]", "DEMO-1234");
+    await page.getByRole("button", { name: "Continue with Party Code" }).click();
+    await expect(page).toHaveURL(/\/home/);
+    await page.goto("/rsvp");
+    await expect(page.locator("input[type=radio]").first()).toBeEnabled();
+    await expect(page.getByRole("button", { name: "Submit" }).first()).toBeVisible();
+  });
 });

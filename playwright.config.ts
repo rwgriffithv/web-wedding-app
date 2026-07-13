@@ -18,9 +18,16 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "RATE_LIMIT_MAX=100 RATE_LIMIT_WINDOW_MS=60000 npm run dev",
+    command: "npm run db:seed && npm run dev",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
-    timeout: 30000,
+    timeout: 60000,
+    env: {
+      ADMIN_USERNAME: "admin",
+      ADMIN_PASSWORD: "admin",
+      SESSION_SECRET: "rob-and-ana",
+      RATE_LIMIT_MAX: "100",
+      RATE_LIMIT_WINDOW_SEC: "60",
+    },
   },
 });

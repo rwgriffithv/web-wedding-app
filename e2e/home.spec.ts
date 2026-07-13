@@ -15,10 +15,10 @@ test("redirects to login when accessing home without auth", async ({ page }) => 
   await expect(page).toHaveURL("/login");
 });
 
-test("login with valid guest redirects to home", async ({ page }) => {
+test("login with valid credentials redirects to home", async ({ page }) => {
   await switchToCredentials(page);
-  await page.fill("input[name=username]", "guest");
-  await page.fill("input[name=password]", "guest");
+  await page.fill("input[name=username]", "DEMO-1234");
+  await page.fill("input[name=password]", "DEMO-1234");
   await page.locator("button[type=submit]").click();
   await page.waitForURL(/\/home/, { timeout: 10000 });
 });

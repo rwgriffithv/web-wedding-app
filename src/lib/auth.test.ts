@@ -5,6 +5,22 @@ vi.mock("next/headers", () => ({
   cookies: vi.fn(),
 }));
 
+vi.mock("./repository/users", () => ({
+  getUserById: vi.fn().mockImplementation((id: number) => {
+    if (id === 2) return { id: 2, username: "admin", type: "admin", display_name: "Admin", party_id: null, created_at: "", last_login_at: null, total_page_views: 0 };
+    return undefined;
+  }),
+  getUserByUsername: vi.fn(),
+  getUserByPartyId: vi.fn(),
+  recordLogin: vi.fn(),
+  incrementPageViews: vi.fn(),
+}));
+
+vi.mock("./repository/party", () => ({
+  getPartyById: vi.fn(),
+  getPartyByCode: vi.fn(),
+}));
+
 describe("auth", () => {
   it("creates a signed session token from a user", () => {
     const token = createSession({ userId: 1, type: "admin" });

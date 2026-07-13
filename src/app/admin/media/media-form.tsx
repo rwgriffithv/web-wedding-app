@@ -123,9 +123,8 @@ export function MediaForm({ tabs }: { tabs: MediaTab[] }) {
           value={selectedTabId}
           onChange={setSelectedTabId}
           onCreateNew={handleCreateNewTab}
-          placeholder="Select a tab..."
+          placeholder="Select a tab (optional)..."
           disabled={creatingTab}
-          required
         />
       </div>
       {state?.success && <p className="text-success text-sm mb-1" role="status">Media added.</p>}

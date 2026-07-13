@@ -21,7 +21,7 @@ test("login with admin credentials redirects to admin", async ({ page }) => {
 test("admin dashboard shows stats and rsvp table", async ({ page }) => {
   await loginAsAdmin(page);
   await page.waitForURL(/\/admin/, { timeout: 10000 });
-  await expect(page.locator(".stat-card")).toHaveCount(3);
+  await expect(page.locator(".stat-card")).toHaveCount(5);
 });
 
 test("admin sidebar has all management links", async ({ page }) => {

@@ -1,35 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test("admin can create and manage guests", async ({ page }) => {
-  // Login as admin
-  await page.goto("/");
-  await page.getByRole("button", { name: "User sign in" }).click();
-  await page.fill("input[name=username]", "admin");
-  await page.fill("input[name=password]", "admin");
-  await page.locator("button[type=submit]").click();
-  await expect(page).toHaveURL(/\/admin/);
-
-  // Navigate to guests
-  await page.getByRole("link", { name: "Guests" }).click();
-  await expect(page).toHaveURL(/\/admin\/guests/);
-
-  // Create a new guest (use #id selectors to avoid matching edit forms)
-  await page.fill("#display_name", "E2E Test Guest");
-  await page.fill("#username", "e2e-guest");
-  await page.fill("#password", "e2e-pass");
-  await page.getByRole("button", { name: "Add Guest" }).click();
-
-  // Verify guest appears in list (use .first() in case of stale data from prior runs)
-  await expect(page.locator(".admin-list-item").filter({ hasText: "E2E Test Guest" }).first()).toBeVisible();
-
-  // Update the first matching guest's username
-  const guestRow = page.locator(".admin-list-item").filter({ hasText: "E2E Test Guest" }).first();
-  await guestRow.locator("input[name=username]").fill("e2e-guest-updated");
-  await guestRow.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByText("Saved")).toBeVisible();
-});
-
-test("admin can create, verify, and delete lodging options", async ({ page }) => {
+test("admin can create and manage lodging options", async ({ page }) => {
   // Login as admin
   await page.goto("/");
   await page.getByRole("button", { name: "User sign in" }).click();

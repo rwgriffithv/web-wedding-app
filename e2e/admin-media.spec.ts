@@ -13,12 +13,24 @@ test("admin can add and remove media items", async ({ page }) => {
   await page.getByRole("link", { name: "Media" }).click();
   await expect(page).toHaveURL(/\/admin\/media/);
 
-  // Create a media item
-  await page.selectOption("select[name=type]", "image");
+  // Fill URL and title
   await page.fill("input[name=url]", "https://example.com/e2e-photo.jpg");
   await page.fill("input[name=title]", "E2E Test Photo");
-  await page.fill("input[name=section]", "E2E Test");
-  await page.getByRole("button", { name: "Add Media" }).click();
+
+  // Select existing tab from SearchableSelect by opening dropdown and picking first option
+  const tabInput = page.locator(".searchable-select-input").first();
+  await tabInput.click();
+  await page.waitForTimeout(300);
+  const firstOption = page.locator(".searchable-select-item[role=option]").first();
+  if (await firstOption.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await firstOption.click();
+  }
+
+  // Close any open dropdowns
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
+
+  await page.getByRole("button", { name: "Add Media" }).click({ timeout: 5000 });
   await expect(page.getByText("Media added.")).toBeVisible();
 
   // Verify in media list

@@ -98,4 +98,7 @@ This is an ordered list of features to implement along with a simple sub-bullet 
   * status: done
 
 * Please fix the display of the home page video poster on mobile. It looks perfect on desktop browsers but on my phone (chrome) the poster is zoomed in when displayed, leading to a jarring and bad transition to the video. Please fix this and explain how this happened.
+  * status: done
+
+* Please make the grouped media displays (the mood board on the dress code tab of the guide page as well as the media page) more grid-based instead of cards like you currently have it. It looks good on desktop browsers but on mobile the cards are too big and fill the whole horizontal width.
   * status: not done
