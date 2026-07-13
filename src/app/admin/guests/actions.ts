@@ -37,6 +37,7 @@ export async function updateGuest(prevState: GuestState | null, formData: FormDa
   const displayName = getString(formData, "display_name");
   const partyIdRaw = getString(formData, "party_id");
   const canBringPlusOneRaw = getString(formData, "can_bring_plus_one");
+  const unexpectedRaw = getString(formData, "unexpected");
 
   if (!displayName?.trim()) return { success: false, error: "Display name is required." };
 
@@ -44,6 +45,7 @@ export async function updateGuest(prevState: GuestState | null, formData: FormDa
   if (partyId !== null && (isNaN(partyId) || partyId < 1)) return { success: false, error: "Invalid party ID." };
 
   const canBringPlusOne = canBringPlusOneRaw === "1" ? 1 : 0;
+  const unexpected = unexpectedRaw === "1" ? 1 : 0;
   const oldPartyId = existing.party_id;
 
   try {
@@ -53,6 +55,7 @@ export async function updateGuest(prevState: GuestState | null, formData: FormDa
         display_name: displayName,
         party_id: partyId,
         can_bring_plus_one: canBringPlusOne,
+        unexpected,
       });
 
       if (oldPartyId !== null && oldPartyId !== partyId) {
@@ -74,6 +77,7 @@ export async function addGuest(prevState: GuestState | null, formData: FormData)
   const displayName = getString(formData, "display_name");
   const partyIdRaw = getString(formData, "party_id");
   const canBringPlusOneRaw = getString(formData, "can_bring_plus_one");
+  const unexpectedRaw = getString(formData, "unexpected");
 
   if (!displayName?.trim()) {
     return { success: false, error: "Display name is required." };
@@ -83,9 +87,10 @@ export async function addGuest(prevState: GuestState | null, formData: FormData)
   if (!partyId || isNaN(partyId) || partyId < 1) return { success: false, error: "Party is required." };
 
   const canBringPlusOne = canBringPlusOneRaw === "1" ? 1 : 0;
+  const unexpected = unexpectedRaw === "1" ? 1 : 0;
 
   try {
-    createGuest(displayName.trim(), partyId, canBringPlusOne);
+    createGuest(displayName.trim(), partyId, canBringPlusOne, unexpected);
     revalidatePath("/admin/guests");
     return { success: true };
   } catch (error) {

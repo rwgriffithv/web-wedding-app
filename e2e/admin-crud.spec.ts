@@ -58,3 +58,32 @@ test("admin can create and delete schedule items", async ({ page }) => {
   await scheduleRow.getByRole("button", { name: "Delete" }).click();
   await expect(page.getByText("E2E Test Event")).not.toBeVisible();
 });
+
+test("admin guest table shows unexpected column", async ({ page }) => {
+  // Login as admin
+  await page.goto("/");
+  await page.getByRole("button", { name: "User sign in" }).click();
+  await page.fill("input[name=username]", "admin");
+  await page.fill("input[name=password]", "admin");
+  await page.locator("button[type=submit]").click();
+  await expect(page).toHaveURL(/\/admin/);
+
+  // Navigate to guests
+  await page.getByRole("link", { name: "Guests" }).click();
+  await expect(page).toHaveURL(/\/admin\/guests/);
+
+  // Verify table headers include Unexpected
+  const headers = page.locator(".admin-table th");
+  await expect(headers).toHaveCount(5);
+  await expect(headers.nth(0)).toHaveText(/Name/);
+  await expect(headers.nth(1)).toHaveText(/Party/);
+  await expect(headers.nth(2)).toHaveText(/\+1/);
+  await expect(headers.nth(3)).toHaveText(/Unexpected/);
+  await expect(headers.nth(4)).toHaveText(/Actions/);
+
+  // Verify seed data guests show "No" for Unexpected (default is 0)
+  const rows = page.locator(".admin-table tbody tr");
+  await expect(rows.first()).toBeVisible();
+  await expect(page.getByText("Jane Guest")).toBeVisible();
+  await expect(page.getByText("John Guest")).toBeVisible();
+});

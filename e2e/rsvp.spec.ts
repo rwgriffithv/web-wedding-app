@@ -101,4 +101,58 @@ test.describe.serial("RSVP flows", () => {
     await expect(page.locator("input[type=radio]").first()).toBeEnabled();
     await expect(page.getByRole("button", { name: "Submit" }).first()).toBeVisible();
   });
+
+  test("selecting No for attending disables plus-one fields", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Party Code" }).click();
+    await page.fill("input[name=code]", "DEMO-1234");
+    await page.getByRole("button", { name: "Continue with Party Code" }).click();
+    await expect(page).toHaveURL(/\/home/);
+    await page.goto("/rsvp");
+    await expect(page.getByRole("heading", { name: "RSVP" })).toBeVisible();
+
+    // Find the first rsvp-member (Jane Guest, can_bring_plus_one=1)
+    const member = page.locator(".rsvp-member").first();
+    await expect(member.getByText("Jane Guest")).toBeVisible();
+
+    // Select "No" for attending (use name selector to avoid matching plus-one radios)
+    const noRadio = member.locator("input[name^=attending_][value=no]");
+    await noRadio.check();
+
+    // Plus-one radios should be disabled
+    const plusOneRadios = member.locator("input[name^=bring_plus_one]");
+    await expect(plusOneRadios).toHaveCount(2);
+    await expect(plusOneRadios.first()).toBeDisabled();
+    await expect(plusOneRadios.last()).toBeDisabled();
+  });
+
+  test("selecting No for attending resets plus-one selection", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Party Code" }).click();
+    await page.fill("input[name=code]", "DEMO-1234");
+    await page.getByRole("button", { name: "Continue with Party Code" }).click();
+    await expect(page).toHaveURL(/\/home/);
+    await page.goto("/rsvp");
+    await expect(page.getByRole("heading", { name: "RSVP" })).toBeVisible();
+
+    const member = page.locator(".rsvp-member").first();
+    await expect(member.getByText("Jane Guest")).toBeVisible();
+
+    // Select "Yes" for attending first
+    const yesRadio = member.locator("input[name^=attending_][value=yes]");
+    await yesRadio.check();
+
+    // Select "Yes" for plus-one
+    const plusOneYes = member.locator("input[name^=bring_plus_one][value=yes]");
+    await plusOneYes.check();
+    await expect(plusOneYes).toBeChecked();
+
+    // Now select "No" for attending
+    const noRadio = member.locator("input[name^=attending_][value=no]");
+    await noRadio.check();
+
+    // Plus-one should be reset to "No"
+    const plusOneNo = member.locator("input[name^=bring_plus_one][value=no]");
+    await expect(plusOneNo).toBeChecked();
+  });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useActionState } from "react";
+import { useState, useEffect, useActionState } from "react";
 import { submitRsvp } from "./actions";
 
 interface RsvpFormProps {
@@ -18,6 +18,10 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
   const [bringPlusOne, setBringPlusOne] = useState(
     existingResponse?.plus_one_name ? "yes" : "no"
   );
+
+  useEffect(() => {
+    if (attending === "no") setBringPlusOne("no");
+  }, [attending]);
 
   const hasResponse = !!existingResponse;
 
@@ -51,7 +55,7 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
                   value="yes"
                   checked={bringPlusOne === "yes"}
                   onChange={() => setBringPlusOne("yes")}
-                  disabled={isLocked}
+                  disabled={isLocked || attending === "no"}
                 />
                 Yes
               </label>
@@ -62,7 +66,7 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
                   value="no"
                   checked={bringPlusOne === "no"}
                   onChange={() => setBringPlusOne("no")}
-                  disabled={isLocked}
+                  disabled={isLocked || attending === "no"}
                 />
                 No
               </label>
@@ -81,7 +85,7 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
             defaultValue={existingResponse?.plus_one_name ?? ""}
             placeholder="Guest's name"
             style={{ maxWidth: "300px" }}
-            disabled={isLocked}
+            disabled={isLocked || attending === "no"}
           />
         </div>
       )}

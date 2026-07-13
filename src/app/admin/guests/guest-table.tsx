@@ -89,13 +89,14 @@ export function GuestTable({ guests, parties }: GuestTableProps) {
                   Party{sortIndicator("party")}
                 </th>
                 <th>+1</th>
+                <th>Unexpected</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="empty-state">
+                  <td colSpan={5} className="empty-state">
                     {search ? "No guests match your search." : "No guests yet."}
                   </td>
                 </tr>

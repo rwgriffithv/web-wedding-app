@@ -18,6 +18,7 @@ export function GuestRow({ guest, parties }: GuestRowProps) {
   const [formKey, setFormKey] = useState(0);
   const [displayName, setDisplayName] = useState(guest.display_name);
   const [canBringPlusOne, setCanBringPlusOne] = useState(guest.can_bring_plus_one);
+  const [unexpected, setUnexpected] = useState(guest.unexpected);
   const [partyOptions, setPartyOptions] = useState(parties.map(p => ({ value: p.id, label: p.name })));
   const [selectedPartyId, setSelectedPartyId] = useState<number | null>(guest.party_id);
   const [guestState, guestDispatch, guestPending] = useActionState(updateGuest, initialState);
@@ -57,6 +58,7 @@ export function GuestRow({ guest, parties }: GuestRowProps) {
     formData.append("display_name", displayName);
     formData.append("party_id", selectedPartyId !== null ? String(selectedPartyId) : "");
     formData.append("can_bring_plus_one", String(canBringPlusOne));
+    formData.append("unexpected", String(unexpected));
     guestDispatch(formData);
   };
 
@@ -91,6 +93,16 @@ export function GuestRow({ guest, parties }: GuestRowProps) {
             <option value={1}>Yes</option>
           </select>
         </td>
+        <td>
+          <select
+            value={unexpected}
+            onChange={e => setUnexpected(Number(e.target.value))}
+            className="table-inline-select"
+          >
+            <option value={0}>No</option>
+            <option value={1}>Yes</option>
+          </select>
+        </td>
         <td className="table-actions">
           <button
             type="button"
@@ -107,6 +119,7 @@ export function GuestRow({ guest, parties }: GuestRowProps) {
               setEditing(false);
               setDisplayName(guest.display_name);
               setCanBringPlusOne(guest.can_bring_plus_one);
+              setUnexpected(guest.unexpected);
               setSelectedPartyId(guest.party_id);
             }}
           >
@@ -124,6 +137,7 @@ export function GuestRow({ guest, parties }: GuestRowProps) {
       <td>{guest.display_name}</td>
       <td>{partyName}</td>
       <td>{guest.can_bring_plus_one ? "Yes" : "No"}</td>
+      <td>{guest.unexpected ? "Yes" : "No"}</td>
       <td className="table-actions">
         <button type="button" className="btn btn-sm btn-ghost" onClick={() => { setEditing(true); setFormKey(k => k + 1); }}>
           Edit

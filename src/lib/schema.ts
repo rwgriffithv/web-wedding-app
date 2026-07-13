@@ -25,6 +25,7 @@ export const DDL = `
     display_name TEXT NOT NULL,
     party_id INTEGER,
     can_bring_plus_one INTEGER NOT NULL DEFAULT 0,
+    unexpected INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (party_id) REFERENCES parties(id) ON DELETE SET NULL
   );

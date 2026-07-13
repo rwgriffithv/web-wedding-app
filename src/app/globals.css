@@ -854,14 +854,16 @@ a:hover { text-decoration: underline; }
 .admin-main h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
 .admin-main .meta { color: var(--color-muted); font-size: 0.875rem; margin-bottom: 2rem; }
 
-.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-
 .stat-card {
   border: 1px solid var(--color-border); border-radius: var(--radius);
   padding: 1.25rem; background: var(--color-surface);
 }
 .stat-card .value { font-size: 1.75rem; font-weight: 700; }
 .stat-card .label { font-size: 0.8rem; color: var(--color-muted); margin-top: 0.25rem; }
+
+.stat-rows { display: flex; flex-direction: column; gap: 1.25rem; margin-bottom: 2rem; }
+.stat-row-title { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-muted); margin-bottom: 0.5rem; }
+.stat-row-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
 
 .badge {
   display: inline-block; padding: 0.125rem 0.5rem; border-radius: 9999px;
@@ -893,6 +895,7 @@ a:hover { text-decoration: underline; }
 
 @media (max-width: 640px) {
   .admin-fieldset .form-row { grid-template-columns: 1fr; }
+  .stat-row-cards { grid-template-columns: 1fr; }
 }
 
 /* Admin Collapsible Sections */

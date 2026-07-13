@@ -1,42 +1,33 @@
-import { getAll } from "@/lib/repository/guests";
-import { getRecentResponses, getResponseCount, getPlusOneCount } from "@/lib/repository/rsvp";
 import { Header } from "@/components/header";
+import { getDashboardCounts, getRecentResponses } from "@/lib/repository/rsvp";
 
 export default function AdminDashboardPage() {
-  const guests = getAll();
-  const rsvpCount = getResponseCount();
-  const plusOnes = getPlusOneCount();
+  const counts = getDashboardCounts();
   const responses = getRecentResponses(10);
-
-  const eligiblePlusOnes = guests.filter((g) => g.can_bring_plus_one).length;
-  const totalHeadcount = guests.length + eligiblePlusOnes;
-  const attending = rsvpCount.attending + plusOnes.attending;
-  const awaiting = Math.max(0, guests.length - rsvpCount.total);
 
   return (
     <>
       <Header title="Dashboard" description="Overview of your wedding website." />
-      <div className="stats">
-        <div className="stat-card">
-          <div className="value">{guests.length}</div>
-          <div className="label">Total Guests</div>
-        </div>
-        <div className="stat-card">
-          <div className="value">{totalHeadcount}</div>
-          <div className="label">Headcount</div>
-        </div>
-        <div className="stat-card">
-          <div className="value">{attending}</div>
-          <div className="label">Attending</div>
-        </div>
-        <div className="stat-card">
-          <div className="value">{plusOnes.attending}</div>
-          <div className="label">Plus Ones</div>
-        </div>
-        <div className="stat-card">
-          <div className="value">{awaiting}</div>
-          <div className="label">Awaiting RSVP</div>
-        </div>
+      <div className="stat-rows">
+        {(["invited", "expected", "confirmed"] as const).map(key => (
+          <div key={key}>
+            <h3 className="stat-row-title">{key === "invited" ? "Invited" : key === "expected" ? "Expected" : "Confirmed"}</h3>
+            <div className="stat-row-cards">
+              <div className="stat-card">
+                <div className="value">{counts[key].guests}</div>
+                <div className="label">Guests</div>
+              </div>
+              <div className="stat-card">
+                <div className="value">{counts[key].plus_ones}</div>
+                <div className="label">Plus Ones</div>
+              </div>
+              <div className="stat-card">
+                <div className="value">{counts[key].total}</div>
+                <div className="label">Total</div>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
       <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.75rem" }}>Recent RSVPs</h2>

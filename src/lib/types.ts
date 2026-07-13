@@ -3,6 +3,7 @@ export interface Guest {
   display_name: string;
   party_id: number | null;
   can_bring_plus_one: number;
+  unexpected: number;
   created_at: string;
 }
 

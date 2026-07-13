@@ -49,4 +49,15 @@ describe("guests repository", () => {
     const { getGuestById } = await import("@/lib/repository/guests");
     expect(getGuestById(999)).toBeUndefined();
   });
+
+  it("preserves unexpected field during partial update", async () => {
+    const { createGuest, getGuestById, updateGuest } = await import("@/lib/repository/guests");
+    const created = createGuest("Dave", null, 0, 1);
+    expect(created.unexpected).toBe(1);
+
+    updateGuest(created.id, { display_name: "Dave Updated" });
+    const updated = getGuestById(created.id);
+    expect(updated!.display_name).toBe("Dave Updated");
+    expect(updated!.unexpected).toBe(1);
+  });
 });

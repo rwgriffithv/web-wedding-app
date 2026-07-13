@@ -71,6 +71,13 @@ export function GuestForm({ parties }: GuestFormProps) {
           <option value="1">Yes</option>
         </select>
       </div>
+      <div className="form-group">
+        <label>Unexpected?</label>
+        <select name="unexpected" defaultValue="0">
+          <option value="0">No</option>
+          <option value="1">Yes</option>
+        </select>
+      </div>
       {guestState?.success && <p className="text-success text-sm mb-1" role="status">Guest added.</p>}
       {guestState?.error && <p className="text-error text-sm mb-1" role="alert">{guestState.error}</p>}
       {partyError && <p className="text-error text-sm mb-1" role="alert">{partyError}</p>}
