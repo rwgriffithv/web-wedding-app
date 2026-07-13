@@ -58,6 +58,7 @@ export function ensureMediaDir(): void {
 }
 
 const THUMB_SIZE = 400;
+const POSTER_WIDTH = 1920;
 
 export async function generateImageThumbnail(
   buffer: Buffer,
@@ -99,6 +100,38 @@ export async function generateVideoThumbnail(
       .resize(THUMB_SIZE, THUMB_SIZE, { fit: "cover" })
       .webp({ quality: 80 })
       .toFile(outPath);
+    return `/api/media/thumbnails/${outFilename}`;
+  } finally {
+    await fs.promises.unlink(tmpJpg).catch(() => {});
+  }
+}
+
+export async function generateVideoPoster(
+  inputPath: string,
+  outFilename: string,
+): Promise<string> {
+  fs.mkdirSync(THUMBNAILS_DIR, { recursive: true });
+  const ffmpegPath = (await import("ffmpeg-static")).default;
+  if (!ffmpegPath) throw new Error("ffmpeg-static binary not found");
+
+  const tmpJpg = path.join(THUMBNAILS_DIR, `tmp-poster-${outFilename}.jpg`);
+  try {
+    await execFileAsync(ffmpegPath, [
+      "-i", inputPath,
+      "-frames:v", "1",
+      "-q:v", "2",
+      tmpJpg,
+    ], { timeout: 10_000 });
+
+    const frameBuffer = await fs.promises.readFile(tmpJpg);
+    const sharp = (await import("sharp")).default;
+    const outPath = path.join(THUMBNAILS_DIR, outFilename);
+    await sharp(frameBuffer)
+      .resize(POSTER_WIDTH, null, { fit: "inside" })
+      .webp({ quality: 80 })
+      .toFile(outPath);
+    const stat = await fs.promises.stat(outPath);
+    if (stat.size === 0) throw new Error("Poster file is empty");
     return `/api/media/thumbnails/${outFilename}`;
   } finally {
     await fs.promises.unlink(tmpJpg).catch(() => {});

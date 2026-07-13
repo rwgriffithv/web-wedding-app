@@ -70,6 +70,11 @@ export function SiteConfigForm({ config }: SiteConfigFormProps) {
           <FileUpload onUpload={(result) => { if (homeBgRef.current) homeBgRef.current.value = result.url; }} accept="video/*" label="Upload" />
           <button type="button" className="btn btn-sm" onClick={() => setShowBrowser("home")}>Local</button>
         </div>
+        {config.home_background_video_poster && (
+          <p className="text-muted text-xs mt-1">
+            Poster auto-generated from first frame.
+          </p>
+        )}
       </div>
       {state?.success && <p className="text-success text-sm mb-1" role="status">Saved successfully.</p>}
       {state?.error && <p className="text-error text-sm mb-1" role="alert">{state.error}</p>}

@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { isAdmin } from "@/lib/auth";
 import { getString } from "@/lib/form-data";
-import { setConfig } from "@/lib/repository/site-config";
+import { setConfig, getConfig } from "@/lib/repository/site-config";
+import { ensureVideoPoster } from "@/lib/thumbnail";
 
 interface SiteConfigState { success?: boolean; error?: string }
 
@@ -35,6 +36,18 @@ export async function saveSiteConfig(prevState: SiteConfigState | null, formData
       }
       setConfig(key, value);
     }
+
+    const videoUrl = getString(formData, "home_background_video") ?? "";
+    if (videoUrl && videoUrl.startsWith("/api/media/")) {
+      const existingPoster = getConfig("home_background_video_poster");
+      const poster = await ensureVideoPoster(videoUrl, existingPoster);
+      if (poster && poster !== existingPoster) {
+        setConfig("home_background_video_poster", poster);
+      }
+    } else if (!videoUrl) {
+      setConfig("home_background_video_poster", "");
+    }
+
     revalidatePath("/admin/site");
     revalidatePath("/");
     revalidatePath("/home");

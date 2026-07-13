@@ -73,13 +73,13 @@ This is an ordered list of features to implement along with a simple sub-bullet 
 * The horizontal spacing on the RSVP page flows off the page on mobile devices. Please fix this, if needed the user options can go vertical instead of horizontal.
   * status: done
 
+* Please load the first frame from the home page video and use that as the background while the video loads. Alternatively, please lazily load the video and serve it in chunks. That will be the smoothest operation. The video is already 1080p. It could be turned into a GIF? would that help? I'm looking for options.
+  * status: done
+
 * Make the parties section of the admin dashboard searchable. I want to easily be able to find codes!
   * status: not done
 
 * Please make the "admin" and "logout" links below the pill a bit more visible, maybe have a slighly transparent backround for contrast like a mini pill. This will help with visibility over the video.
-  * status: not done
-
-* Please load the first frame from the home page video and use that as the background while the video loads. Alternatively, please lazily load the video and serve it in chunks. That will be the smoothest operation.
   * status: not done
 
 * In the admin dashboard I need a good way of tracking "plus ones" as part of the total guest count. I want to factor them into a total invited count as well as if the plus ones were declined or accepted. This wil help me get better visibility into the actual total number of invites and attendees.

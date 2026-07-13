@@ -9,6 +9,7 @@ export default function HomePage() {
   const time = getConfig("home_time");
   const location = getConfig("home_location");
   const video = getConfig("home_background_video");
+  const poster = getConfig("home_background_video_poster");
   const scheduleItems = getAll();
   const scheduleRange = scheduleItems.length > 0
     ? `${scheduleItems[0].time} – ${scheduleItems[scheduleItems.length - 1].time}`
@@ -25,7 +26,7 @@ export default function HomePage() {
   return (
     <div className="home-hero">
       {video ? (
-        <video className="home-video" autoPlay muted loop playsInline aria-hidden="true">
+        <video className="home-video" autoPlay muted loop playsInline preload="none" poster={poster || undefined} aria-hidden="true">
           <source src={video} type="video/mp4" />
         </video>
       ) : (

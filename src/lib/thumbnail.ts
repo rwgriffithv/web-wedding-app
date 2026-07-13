@@ -1,6 +1,6 @@
 import path from "node:path";
 import fs from "node:fs";
-import { MEDIA_DIR, IMAGE_EXTENSIONS, VIDEO_EXTENSIONS, isWithinMediaDir, generateImageThumbnail, generateVideoThumbnail } from "@/lib/media";
+import { MEDIA_DIR, IMAGE_EXTENSIONS, VIDEO_EXTENSIONS, isWithinMediaDir, generateImageThumbnail, generateVideoThumbnail, generateVideoPoster } from "@/lib/media";
 import { randomUUID } from "node:crypto";
 
 /**
@@ -55,4 +55,35 @@ function extractLocalPath(url: string): string | null {
   const relative = url.slice("/api/media/".length);
   if (!relative) return null;
   return relative;
+}
+
+/**
+ * Generate a full-width poster image from a local video's first frame.
+ * Returns the poster URL path, or null if generation was skipped.
+ */
+export async function ensureVideoPoster(
+  videoUrl: string,
+  existingPosterUrl?: string | null,
+): Promise<string | null> {
+  if (existingPosterUrl) return existingPosterUrl;
+
+  const localPath = extractLocalPath(videoUrl);
+  if (!localPath) return null;
+
+  const resolved = path.resolve(MEDIA_DIR, localPath);
+  if (!isWithinMediaDir(resolved)) return null;
+  if (!fs.existsSync(resolved)) return null;
+
+  const ext = path.extname(resolved).toLowerCase();
+  if (!VIDEO_EXTENSIONS.has(ext)) return null;
+
+  const uuid = randomUUID();
+  const posterFilename = `${uuid}_poster.webp`;
+
+  try {
+    return await generateVideoPoster(resolved, posterFilename);
+  } catch (error) {
+    console.error("Video poster generation failed:", error);
+    return null;
+  }
 }
