@@ -26,7 +26,7 @@ export default function HomePage() {
   return (
     <div className="home-hero">
       {video ? (
-        <video className="home-video" autoPlay muted loop playsInline preload="none" poster={poster || undefined} aria-hidden="true">
+        <video className="home-video" autoPlay muted loop playsInline preload="metadata" poster={poster || undefined} aria-hidden="true">
           <source src={video} type="video/mp4" />
         </video>
       ) : (

@@ -59,6 +59,7 @@ export function ensureMediaDir(): void {
 
 const THUMB_SIZE = 400;
 const POSTER_WIDTH = 1920;
+const POSTER_HEIGHT = 1080;
 
 export async function generateImageThumbnail(
   buffer: Buffer,
@@ -127,7 +128,7 @@ export async function generateVideoPoster(
     const sharp = (await import("sharp")).default;
     const outPath = path.join(THUMBNAILS_DIR, outFilename);
     await sharp(frameBuffer)
-      .resize(POSTER_WIDTH, null, { fit: "inside" })
+      .resize(POSTER_WIDTH, POSTER_HEIGHT, { fit: "cover" })
       .webp({ quality: 80 })
       .toFile(outPath);
     const stat = await fs.promises.stat(outPath);
