@@ -38,6 +38,9 @@ export async function saveSiteConfig(prevState: SiteConfigState | null, formData
         return { success: false, error: `"${key}" must be ${maxLen} characters or fewer.` };
       }
       if (key === "rate_limit_max_attempts" || key === "rate_limit_window_seconds") {
+        if (!value) {
+          return { success: false, error: `"${key}" is required.` };
+        }
         const num = parseInt(value, 10);
         if (!Number.isFinite(num) || num <= 0 || num > 1000) {
           return { success: false, error: `"${key}" must be a positive number (1–1000).` };

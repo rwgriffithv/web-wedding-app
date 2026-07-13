@@ -11,14 +11,16 @@ import { getConfig } from "@/lib/repository/site-config";
 
 interface LoginState { error?: string }
 
-const rateLimiter = createRateLimiter("login", 5, 60_000, () => {
+const rateLimiter = createRateLimiter("login", 5, 60_000);
+
+function getRateLimitConfig() {
   const max = parseInt(getConfig("rate_limit_max_attempts") ?? "5", 10);
   const window = parseInt(getConfig("rate_limit_window_seconds") ?? "60", 10);
   return {
     maxAttempts: Number.isFinite(max) && max > 0 ? max : 5,
     windowMs: (Number.isFinite(window) && window > 0 ? window : 60) * 1000,
   };
-});
+}
 
 async function getClientIp(): Promise<string> {
   const h = await headers();
@@ -37,7 +39,8 @@ export async function login(prevState: LoginState | null, formData: FormData): P
   const password = rawPassword;
 
   const ip = await getClientIp();
-  if (!rateLimiter.check(`${ip}:user:${username}`)) {
+  const rlConfig = getRateLimitConfig();
+  if (!rateLimiter.check(`${ip}:user:${username}`, rlConfig)) {
     return { error: "Too many attempts. Please wait before trying again." };
   }
 
@@ -76,7 +79,8 @@ export async function loginByPartyCode(prevState: LoginState | null, formData: F
   const trimmedCode = code.trim().toUpperCase();
 
   const ip = await getClientIp();
-  if (!rateLimiter.check(`${ip}:party:${trimmedCode}`)) {
+  const rlConfig = getRateLimitConfig();
+  if (!rateLimiter.check(`${ip}:party:${trimmedCode}`, rlConfig)) {
     return { error: "Too many attempts. Please wait before trying again." };
   }
 

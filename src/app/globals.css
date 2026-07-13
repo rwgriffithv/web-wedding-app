@@ -844,6 +844,14 @@ a:hover { text-decoration: underline; }
 .admin-form input:focus, .admin-form textarea:focus, .admin-form select:focus { outline: none; border-color: var(--color-primary); }
 .admin-form textarea { min-height: 100px; resize: vertical; }
 
+.admin-fieldset {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+.admin-fieldset legend { font-weight: 600; }
+.admin-fieldset .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
 /* Admin Collapsible Sections */
 .admin-section {
   margin-bottom: 1.5rem;

@@ -30,8 +30,8 @@ export function createRateLimiter(
   }
 
   return {
-    check(key: string): boolean {
-      const cfg = getConfig?.() ?? { maxAttempts: defaultMaxAttempts, windowMs: defaultWindowMs };
+    check(key: string, config?: RateLimitConfig): boolean {
+      const cfg = config ?? getConfig?.() ?? { maxAttempts: defaultMaxAttempts, windowMs: defaultWindowMs };
       const now = Date.now();
       const entry = store.get(key);
       if (!entry || now > entry.resetAt) {

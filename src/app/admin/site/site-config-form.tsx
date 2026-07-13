@@ -76,9 +76,9 @@ export function SiteConfigForm({ config }: SiteConfigFormProps) {
           </p>
         )}
       </div>
-      <fieldset className="form-group" style={{ border: "1px solid var(--color-border, #ccc)", borderRadius: "var(--radius)", padding: "1rem" }}>
-        <legend style={{ fontWeight: 600 }}>Rate Limiting (Login)</legend>
-        <div className="form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+      <fieldset className="admin-fieldset form-group">
+        <legend>Rate Limiting (Login)</legend>
+        <div className="form-row">
           <div className="form-group">
             <label htmlFor="rate_limit_max_attempts">Max Attempts (per window)</label>
             <input id="rate_limit_max_attempts" name="rate_limit_max_attempts" type="number" min="1" max="1000" defaultValue={config.rate_limit_max_attempts || "5"} />

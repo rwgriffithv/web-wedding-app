@@ -9,7 +9,7 @@ The home page background video (1080p MP4) loaded eagerly with no placeholder. U
 ## Design Decisions
 
 - **Poster generation reuses existing pipeline** — `ffmpeg-static` extracts the first frame, `sharp` resizes to 1920px width (full-width for hero background) and outputs WebP at quality 80. Same infrastructure as the media thumbnail system.
-- **`preload="none"`** — Prevents the browser from downloading any video data on page load. The video starts downloading only when the browser is ready, after the poster is visible.
+- **`preload="metadata"`** — Allows the browser to fetch only the video duration and dimensions for layout, without downloading the full video data. The poster displays immediately while the video loads in the background.
 - **Poster stored in `site_config`** — New key `home_background_video_poster` stores the poster URL, auto-generated when a local video is saved.
 - **GIF rejected** — A 1080p GIF would be 50-100MB with no compression benefit for photographic content.
 - **Intersection Observer rejected** — The hero video is above the fold; lazy loading adds complexity with no benefit.
@@ -22,7 +22,7 @@ The home page background video (1080p MP4) loaded eagerly with no placeholder. U
 | `src/lib/thumbnail.ts` | Added `ensureVideoPoster()` orchestrator function |
 | `src/app/admin/site/actions.ts` | Auto-generate poster on video save, import `ensureVideoPoster` |
 | `src/app/admin/site/site-config-form.tsx` | Show poster status text when available |
-| `src/app/(main)/home/page.tsx` | Added `poster`, `preload="none"`, fetch poster from config |
+| `src/app/(main)/home/page.tsx` | Added `poster`, `preload="metadata"`, fetch poster from config |
 
 ## Compliance
 
