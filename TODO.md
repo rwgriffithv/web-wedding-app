@@ -93,3 +93,6 @@ This is an ordered list of features to implement along with a simple sub-bullet 
 
 * Please re-examine latency and bottleneck concerns, focusing on serving the home page video and ffmpeg calls in general. If one user logs in and is waiting for the video to be served will other users be unable to login or view the website at all? Is this application single-threaded and unable to serve multiple users at once like that?
   * status: done
+
+* The site config section of the admin dashboard has inconsistent sub-section styling. I like that you added subsections for the RSVP settings, and the rate limiting settings. You should improve coherence by making a home page subsection (grouping the relevant fields) and change the Rate limiting subsection to a Login subsection that includes the landing page configuration fields. The order should be Login, Home Page, and then RSVP.
+  * status: done
