@@ -12,6 +12,7 @@ const CONFIG_KEYS = [
   "landing_title", "landing_background",
   "home_title", "home_subtitle", "home_date", "home_time", "home_location", "home_background_video",
   "rate_limit_max_attempts", "rate_limit_window_seconds",
+  "rsvp_deadline",
 ];
 
 const MAX_LENGTHS: Record<string, number> = {
@@ -25,6 +26,7 @@ const MAX_LENGTHS: Record<string, number> = {
   home_background_video: 2000,
   rate_limit_max_attempts: 10,
   rate_limit_window_seconds: 10,
+  rsvp_deadline: 50,
 };
 
 export async function saveSiteConfig(prevState: SiteConfigState | null, formData: FormData): Promise<SiteConfigState> {

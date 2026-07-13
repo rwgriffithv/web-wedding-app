@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { parseSession } from "@/lib/auth";
+import { getConfig } from "@/lib/repository/site-config";
 import { getGuestById } from "@/lib/repository/guests";
 import { getPartyById } from "@/lib/repository/party";
 import { submitResponse } from "@/lib/repository/rsvp";
@@ -15,6 +16,14 @@ export async function submitRsvp(prevState: RsvpState | null, formData: FormData
 
   if (session.type === "admin" || session.type === "viewer") {
     return { success: false, error: "RSVP is not available for user logins. Please use your Party Code to RSVP." };
+  }
+
+  const deadlineStr = getConfig("rsvp_deadline");
+  if (deadlineStr) {
+    const deadline = new Date(deadlineStr);
+    if (new Date() > deadline) {
+      return { success: false, error: "RSVP submissions are closed." };
+    }
   }
 
   const memberIdRaw = getString(formData, "member_id");

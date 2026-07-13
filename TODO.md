@@ -87,3 +87,9 @@ This is an ordered list of features to implement along with a simple sub-bullet 
 
 * In the admin dashboard I need a good way of tracking "plus ones" as part of the total guest count. I want to factor them into a total invited count as well as if the plus ones were declined or accepted. This wil help me get better visibility into the actual total number of invites and attendees.
   * status: done
+
+* Please update the RSVP page of the website to add to the text instructions specifying that submissions may be changed up until <configurable-date>, and that RSVPs will be locked and not accepted after that date. The configurable date should be configurable in the RSVP section of the admin dashboard.
+  * status: done
+
+* Please re-examine latency and bottleneck concerns, focusing on serving the home page video and ffmpeg calls in general. If one user logs in and is waiting for the video to be served will other users be unable to login or view the website at all? Is this application single-threaded and unable to serve multiple users at once like that?
+  * status: not done

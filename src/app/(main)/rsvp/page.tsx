@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { parseSession } from "@/lib/auth";
+import { getConfig } from "@/lib/repository/site-config";
 import { getResponsesByGuests } from "@/lib/repository/rsvp";
 import { getGuestsByPartyId } from "@/lib/repository/guests";
 import { getPartyById } from "@/lib/repository/party";
@@ -50,12 +51,24 @@ export default async function RsvpPage() {
   const responses = getResponsesByGuests(members.map(m => m.id));
   const responsesByGuest = new Map(responses.map(r => [r.guest_id, r]));
 
+  const deadlineStr = getConfig("rsvp_deadline");
+  const deadline = deadlineStr ? new Date(deadlineStr) : null;
+  const isLocked = deadline ? new Date() > deadline : false;
+  const formattedDeadline = deadline
+    ? deadline.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })
+    : null;
+
   return (
     <div className="page-content">
       <h1>RSVP</h1>
       {party && <p className="text-muted" style={{ marginBottom: "1.5rem" }}>Party: {party.name}</p>}
       <p className="text-muted text-sm mb-1">
         Please respond for each member of your party. Each member can be submitted individually.
+        {formattedDeadline && (
+          isLocked
+            ? <> RSVPs are now closed.</>
+            : <> Submissions may be changed up until {formattedDeadline}, after which RSVPs will be locked.</>
+        )}
       </p>
 
       {members.map((m) => {
@@ -76,6 +89,7 @@ export default async function RsvpPage() {
               displayName={m.display_name}
               canBringPlusOne={m.can_bring_plus_one === 1}
               existingResponse={response ?? undefined}
+              isLocked={isLocked}
             />
           </div>
         );

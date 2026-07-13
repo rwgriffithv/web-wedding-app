@@ -77,6 +77,16 @@ export function SiteConfigForm({ config }: SiteConfigFormProps) {
         )}
       </div>
       <fieldset className="admin-fieldset form-group">
+        <legend>RSVP Settings</legend>
+        <div className="form-group">
+          <label htmlFor="rsvp_deadline">RSVP Deadline</label>
+          <input id="rsvp_deadline" name="rsvp_deadline" type="datetime-local" defaultValue={config.rsvp_deadline} />
+        </div>
+        <p className="text-muted text-xs" style={{ marginTop: "0.25rem" }}>
+          Submissions locked after this date. Leave empty to keep RSVPs always open.
+        </p>
+      </fieldset>
+      <fieldset className="admin-fieldset form-group">
         <legend>Rate Limiting (Login)</legend>
         <div className="form-row">
           <div className="form-group">

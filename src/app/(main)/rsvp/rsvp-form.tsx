@@ -8,11 +8,12 @@ interface RsvpFormProps {
   displayName: string;
   canBringPlusOne: boolean;
   existingResponse?: { guest_name: string; attending: number; plus_one_name: string | null };
+  isLocked?: boolean;
 }
 
 const initialState = null as { success?: boolean; error?: string } | null;
 
-export function RsvpForm({ memberId, displayName, canBringPlusOne, existingResponse }: RsvpFormProps) {
+export function RsvpForm({ memberId, displayName, canBringPlusOne, existingResponse, isLocked }: RsvpFormProps) {
   const [state, dispatch, isPending] = useActionState(submitRsvp, initialState);
   const [attending, setAttending] = useState(existingResponse?.attending === 1 ? "yes" : existingResponse ? "no" : "");
   const [bringPlusOne, setBringPlusOne] = useState(
@@ -31,11 +32,11 @@ export function RsvpForm({ memberId, displayName, canBringPlusOne, existingRespo
           <label id={`attending-label-${memberId}`}>Attending?</label>
           <div className="radio-group" role="radiogroup" aria-labelledby={`attending-label-${memberId}`}>
             <label>
-              <input type="radio" name={`attending_${memberId}`} value="yes" checked={attending === "yes"} onChange={() => setAttending("yes")} required />
+              <input type="radio" name={`attending_${memberId}`} value="yes" checked={attending === "yes"} onChange={() => setAttending("yes")} required disabled={isLocked} />
               Yes
             </label>
             <label>
-              <input type="radio" name={`attending_${memberId}`} value="no" checked={attending === "no"} onChange={() => setAttending("no")} />
+              <input type="radio" name={`attending_${memberId}`} value="no" checked={attending === "no"} onChange={() => setAttending("no")} disabled={isLocked} />
               No
             </label>
           </div>
@@ -52,6 +53,7 @@ export function RsvpForm({ memberId, displayName, canBringPlusOne, existingRespo
                   value="yes"
                   checked={bringPlusOne === "yes"}
                   onChange={() => setBringPlusOne("yes")}
+                  disabled={isLocked}
                 />
                 Yes
               </label>
@@ -62,6 +64,7 @@ export function RsvpForm({ memberId, displayName, canBringPlusOne, existingRespo
                   value="no"
                   checked={bringPlusOne === "no"}
                   onChange={() => setBringPlusOne("no")}
+                  disabled={isLocked}
                 />
                 No
               </label>
@@ -80,6 +83,7 @@ export function RsvpForm({ memberId, displayName, canBringPlusOne, existingRespo
             defaultValue={existingResponse?.plus_one_name ?? ""}
             placeholder="Guest's name"
             style={{ maxWidth: "300px" }}
+            disabled={isLocked}
           />
         </div>
       )}
@@ -92,9 +96,13 @@ export function RsvpForm({ memberId, displayName, canBringPlusOne, existingRespo
       {state?.error && (
         <p className="text-error text-sm mt-1" role="alert">{state.error}</p>
       )}
-      <button type="submit" className="btn btn-primary btn-sm mt-1" disabled={isPending}>
-        {isPending ? "Saving..." : hasResponse ? "Update" : "Submit"}
-      </button>
+      {isLocked ? (
+        <p className="text-muted text-sm mt-1" style={{ fontStyle: "italic" }}>RSVP is closed.</p>
+      ) : (
+        <button type="submit" className="btn btn-primary btn-sm mt-1" disabled={isPending}>
+          {isPending ? "Saving..." : hasResponse ? "Update" : "Submit"}
+        </button>
+      )}
     </form>
   );
 }
