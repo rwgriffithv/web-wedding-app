@@ -139,9 +139,10 @@ a:hover { text-decoration: underline; }
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   overflow: hidden;
+  overflow-y: auto;
 }
 
 .home-video {
@@ -164,6 +165,7 @@ a:hover { text-decoration: underline; }
   text-align: center;
   color: white;
   padding: 2rem;
+  margin: auto;
 }
 
 .home-content h1 {
@@ -570,6 +572,14 @@ a:hover { text-decoration: underline; }
 }
 
 @media (max-width: 640px) {
+  .home-content h1 {
+    font-size: 3rem;
+  }
+
+  .home-content .subtitle {
+    font-size: 1.05rem;
+  }
+
   .rsvp-member {
     grid-template-columns: 1fr;
     gap: 1rem;
