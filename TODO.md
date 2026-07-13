@@ -79,10 +79,10 @@ This is an ordered list of features to implement along with a simple sub-bullet 
 * Investigate if there is a max concurrent user load on the site. explain the reate limiting we have implemented before. Analyze any bottlenecks or issues with the website serving a moderate ~100 amount of concurrent users. I'm hosting the websit on my own home internet which has about 20 Mbps and I'm on the cloudflare free plan for the tunneling/routing. Also make sure to check the code itself to see if there are some issues with concurrent users.
   * status: done
 
-* Make the parties section of the admin dashboard searchable. I want to easily be able to find codes!
-  * status: not done
-
 * Please make the "admin" and "logout" links below the pill a bit more visible, maybe have a slighly transparent backround for contrast like a mini pill. This will help with visibility over the video.
+  * status: done
+
+* Make the parties section of the admin dashboard searchable. I want to easily be able to find codes!
   * status: not done
 
 * In the admin dashboard I need a good way of tracking "plus ones" as part of the total guest count. I want to factor them into a total invited count as well as if the plus ones were declined or accepted. This wil help me get better visibility into the actual total number of invites and attendees.

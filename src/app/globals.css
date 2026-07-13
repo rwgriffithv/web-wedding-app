@@ -295,10 +295,12 @@ a:hover { text-decoration: underline; }
 .wedding-nav-secondary button {
   font-size: 0.7rem;
   font-weight: 400;
-  color: var(--color-muted);
+  color: var(--color-text);
   white-space: nowrap;
   border: none;
-  background: none;
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   cursor: pointer;
   transition: all 0.15s;
   text-decoration: none;
@@ -314,7 +316,7 @@ a:hover { text-decoration: underline; }
 .wedding-nav-secondary a:hover,
 .wedding-nav-secondary button:hover {
   color: var(--color-primary);
-  background: rgba(212, 165, 116, 0.1);
+  background: rgba(255,255,255,0.9);
   text-decoration: none;
 }
 
