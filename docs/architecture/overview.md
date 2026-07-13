@@ -175,7 +175,7 @@ src/
 | Data fetching | Server Components | No client-server waterfall, smaller bundles |
 | Mutations | Server Actions | Type-safe, colocated, no API boilerplate |
 | Database | SQLite | Zero-config, file-based, no server process needed |
-| Auth | HMAC-signed JSON cookie | Simple, secure (signed), replaceable |
+| Auth | HMAC-signed JSON cookie + DB validation | Simple, secure (signed), sessions validated against DB on every request |
 | Access control | Layout-level guards + server actions | Every admin page and action validates `isAdmin()` server-side |
 | RSVP | Party model | Families RSVP once with a code (not per-person passwords) |
 | Styling | Plain CSS | Zero dependencies, themeable via custom properties |
@@ -183,6 +183,10 @@ src/
 | Error handling | Per-route error.tsx | Granular error boundaries per route segment |
 | Media auth | Session-based (not admin) | Any logged-in user can view media; login bg gets dedicated public endpoint |
 | Media tabs | Database-driven + URL routing | Reuses guide `?tab=` pattern for consistency; slug-based loose coupling |
+| Rate limiting | In-memory + Caddy | App-level for login protection, Caddy for IP-based defense. Configurable via admin dashboard. |
+| Home page | ISR (revalidate: 60) | Zero personalization, safe to cache. All other pages are dynamic (session-dependent). |
+| Video poster | ffmpeg + sharp pipeline | Auto-generates 1920x1080 WebP from first frame. Reuses existing thumbnail infrastructure. |
+| RSVP deadline | Server-timezone comparison | `datetime-local` input parsed as server time (Pacific). Works because admin and server share timezone. |
 
 ## Known Issues & Limitations
 

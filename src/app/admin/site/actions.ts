@@ -10,8 +10,8 @@ interface SiteConfigState { success?: boolean; error?: string }
 
 const CONFIG_KEYS = [
   "landing_title", "landing_background",
-  "home_title", "home_subtitle", "home_date", "home_time", "home_location", "home_background_video",
   "rate_limit_max_attempts", "rate_limit_window_seconds",
+  "home_title", "home_subtitle", "home_date", "home_time", "home_location", "home_background_video",
   "rsvp_deadline",
 ];
 

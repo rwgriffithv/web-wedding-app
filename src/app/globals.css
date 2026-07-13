@@ -869,6 +869,10 @@ a:hover { text-decoration: underline; }
 .admin-fieldset legend { font-weight: 600; }
 .admin-fieldset .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
+@media (max-width: 640px) {
+  .admin-fieldset .form-row { grid-template-columns: 1fr; }
+}
+
 /* Admin Collapsible Sections */
 .admin-section {
   margin-bottom: 1.5rem;

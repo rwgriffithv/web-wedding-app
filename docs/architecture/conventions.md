@@ -192,6 +192,38 @@ Called inside the delete transaction, before the DELETE statement. Failures are 
 
 ---
 
+## CSS Conventions
+
+### Full-Screen Sections
+Use `100dvh` with `100vh` fallback for full-screen sections (home hero, landing):
+```css
+.min-h-screen { min-height: 100dvh; min-height: 100vh; }
+```
+
+### Safe Area (Safari iOS)
+Use `env(safe-area-inset-bottom)` for home indicator clearance on notch devices:
+```css
+margin-bottom: 2rem;
+margin-bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
+```
+
+### Backdrop Filter
+Always include `-webkit-backdrop-filter` alongside unprefixed version:
+```css
+-webkit-backdrop-filter: blur(10px);
+backdrop-filter: blur(10px);
+```
+
+### Mobile Breakpoint
+- **640px** — Used for mobile-specific adjustments. Avoid 768px (reserved for admin sidebar).
+- Use `@media (max-width: 640px)` for phone-specific overrides.
+
+### Admin Form CSS
+- Admin-only forms use `.admin-form` for consistent left-aligned labels
+- Admin forms use `.admin-fieldset` for the 3-fieldset layout (Login, Home, RSVP)
+
+---
+
 ## File Organization
 
 ```
