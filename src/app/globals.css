@@ -665,6 +665,28 @@ a:hover { text-decoration: underline; }
   transform: translate(-50%, -50%) scale(1.1);
 }
 
+@media (max-width: 640px) {
+  .media-gallery {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .mood-board {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .mood-board-item {
+    height: 150px;
+  }
+
+  .mood-board-item:first-child:nth-last-child(2),
+  .mood-board-item:first-child:nth-last-child(2) ~ .mood-board-item {
+    grid-column: span 1;
+    height: 150px;
+  }
+}
+
 /* Lightbox */
 .lightbox-overlay {
   position: fixed;
