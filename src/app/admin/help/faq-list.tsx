@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useActionState } from "react";
+import { useState, useEffect, useActionState } from "react";
 import { updateFaq, deleteFaq, moveFaq } from "./actions";
 import { CharCount } from "@/components/char-count";
 import { MAX_QUESTION_LENGTH, MAX_ANSWER_LENGTH } from "@/lib/constants";
@@ -16,7 +16,6 @@ export function FaqList({ items }: { items: FaqItem[] }) {
   const [editState, dispatchEdit, isPendingEdit] = useActionState(updateFaq, initialEditState);
   const [deleteState, dispatchDelete, isPendingDelete] = useActionState(deleteFaq, initialEditState);
   const [moveState, dispatchMove] = useActionState(moveFaq, initialEditState);
-  const editFormRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     if (editState?.success) setEditingId(null);
@@ -57,7 +56,7 @@ export function FaqList({ items }: { items: FaqItem[] }) {
           {filtered.map(item => (
             <div className="admin-item" key={item.id}>
               {editingId === item.id ? (
-                <form ref={editFormRef} action={dispatchEdit} className="styled-form">
+                <form action={dispatchEdit} className="styled-form">
                   <input type="hidden" name="faq_id" value={item.id} />
                   <div className="form-group">
                     <label htmlFor={`edit_question_${item.id}`}>Question</label>

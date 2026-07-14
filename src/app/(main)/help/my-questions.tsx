@@ -11,7 +11,6 @@ const initialState: { success?: boolean; error?: string } | null = null;
 export function MyQuestions({ questions }: { questions: Question[] }) {
   const [state, dispatch, isPending] = useActionState(submitQuestion, initialState);
   const [questionText, setQuestionText] = useState("");
-  const formRef = useRef<HTMLFormElement>(null);
   const successHandledRef = useRef(false);
 
   useEffect(() => {
@@ -26,7 +25,7 @@ export function MyQuestions({ questions }: { questions: Question[] }) {
 
   return (
     <div>
-      <form ref={formRef} action={dispatch} className="styled-form mb-4">
+      <form action={dispatch} className="styled-form mb-4">
         <div className="form-group">
           <label htmlFor="question_text">Ask a question</label>
           <textarea
