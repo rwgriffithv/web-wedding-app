@@ -232,3 +232,28 @@ Added 17 utility classes to `globals.css`. Applied across 10 files, ~60% inline 
 - `overview.md` is the single entry point for understanding the system
 
 **Files:** `docs/architecture/overview.md`, `docs/architecture/database-layer.md`, `docs/architecture/deployment-pipeline.md`, `docs/architecture/conventions.md`, `docs/architecture/changelog.md`
+
+---
+
+## 15. IP Banning + Rate-Limit Refactoring
+
+**Problem:** No protection against brute-force login attacks. Rate limiting was in-memory only (lost on restart) with no persistent tracking or auto-ban capability. Rate limit config was scattered across site config and hardcoded defaults.
+
+**Solution:**
+- **New tables:** `banned_ips` (soft-delete with `unbanned_at`) and `rate_limit_violations` (event log for auto-ban decisions)
+- **Auto-ban:** After N rate-limit lockouts within a configurable window, the client IP is automatically banned
+- **Admin UI:** `/admin/security` page with auto-ban settings, login rate limit config, manual IP ban form, and banned IP list with unban buttons
+- **Dashboard stats:** Security row showing suspicious IPs (approaching threshold) and banned count
+- **Rate-limit refactoring:** `getRateLimitConfig()` shared helper replaces scattered defaults. `createRateLimiter(name)` simplified — config passed at call site, no hidden defaults. `RateLimitForm` component with optional props for per-feature defaults.
+- **Login page:** Server Component checks IP ban before rendering — banned clients see a minimal screen, no images or heavy assets loaded
+
+**Design decisions:**
+- IP check at page level (not middleware) to avoid serving landing page assets to banned clients
+- `tryAutoBan` extracted as shared helper for both `login()` and `loginByPartyCode()`
+- Periodic cleanup via counter (every 50th lockout), not a timer
+- Race conditions guarded: `banIp()` wrapped in try-catch to handle concurrent duplicate inserts from the unique index
+- In-memory rate limiter resets on restart; DB violations persist for auto-ban decisions
+
+**Migrations:** 7 (banned_ips), 8 (rate_limit_violations), 9 (unique partial index)
+
+**Files:** `src/lib/ip.ts`, `src/lib/constants.ts`, `src/lib/rate-limit.ts`, `src/lib/schema.ts`, `src/lib/types.ts`, `src/lib/repository/ip-bans.ts`, `src/app/login/page.tsx`, `src/app/login/actions.ts`, `src/app/admin/security/`, `src/components/rate-limit-form/`, `docs/features/ip-banning.md`

@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { parseSession } from "@/lib/auth";
 import { getConfig } from "@/lib/repository/site-config";
+import { isIpBanned } from "@/lib/repository/ip-bans";
+import { getClientIp } from "@/lib/ip";
 import { validateMediaUrl } from "@/lib/form-data";
 import { LoginForm } from "./login-form";
 
@@ -9,6 +11,22 @@ export default async function LoginPage() {
   if (session) {
     const redirectTo = session.type === "admin" ? "/admin" : "/home";
     redirect(redirectTo);
+  }
+
+  const ip = await getClientIp();
+  if (isIpBanned(ip)) {
+    return (
+      <div className="banned-screen">
+        <div className="banned-screen-inner">
+          <p className="banned-screen-title">
+            ⛔ Your IP has been banned ⛔
+          </p>
+          <p className="banned-screen-subtitle">
+            Contact the site administrator if you believe this is an error.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   const title = getConfig("landing_title");

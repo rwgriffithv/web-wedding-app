@@ -2,14 +2,15 @@
 
 import { useActionState } from "react";
 import { saveRateLimitConfig } from "./actions";
+import { RATE_LIMIT_MAX_ATTEMPTS_DEFAULT, RATE_LIMIT_WINDOW_SECONDS_DEFAULT } from "@/lib/constants";
 
 interface RateLimitFormProps {
   config: Record<string, string>;
   maxKey: string;
   windowKey: string;
-  maxDefault: string;
-  windowDefault: string;
   description: string;
+  maxDefault?: string;
+  windowDefault?: string;
 }
 
 const initialState: { success?: boolean; error?: string } | null = null;
@@ -18,9 +19,9 @@ export function RateLimitForm({
   config,
   maxKey,
   windowKey,
-  maxDefault,
-  windowDefault,
   description,
+  maxDefault = String(RATE_LIMIT_MAX_ATTEMPTS_DEFAULT),
+  windowDefault = String(RATE_LIMIT_WINDOW_SECONDS_DEFAULT),
 }: RateLimitFormProps) {
   const [state, dispatch, isPending] = useActionState(
     saveRateLimitConfig,

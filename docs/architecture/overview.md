@@ -75,6 +75,7 @@ Server-first Next.js 16 App Router application with SQLite, deployed via Docker 
 | `/admin/rsvp` | Dynamic | Admin only | RSVP response viewer (sortable table) |
 | `/admin/media` | Dynamic | Admin only | Media gallery CRUD |
 | `/admin/schedule` | Dynamic | Admin only | Wedding day schedule CRUD |
+| `/admin/security` | Dynamic | Admin only | IP banning, auto-ban settings, rate limit config |
 | `/api/health` | Static | None | Health check endpoint |
 | `/api/upload` | Dynamic | Admin only | File upload (multipart) |
 | `/api/media/[...path]` | Dynamic | Session | File serving (any logged-in user) |
@@ -91,7 +92,7 @@ Three session types:
 | `party` | Party code login | `/(main)/*` + RSVP for party members |
 | `viewer` | Username/password login | `/(main)/*` only |
 
-Auth is enforced at the layout level (`isAdmin()` guard) and in every Server Action. `SafeUser` type (`Omit<User, "password">`) is returned by all repository functions except `getUserWithPassword` and `getPartyUserWithPassword`.
+Auth is enforced at the layout level (`isAdmin()` guard) and in every Server Action. `SafeUser` type (`Omit<User, "password">`) is returned by all repository functions except `getUserWithPassword` and `getPartyUserWithPassword`. Login attempts are protected by in-memory rate limiting with auto-ban on repeated violations — see [authentication.md](../features/authentication.md) and [ip-banning.md](../features/ip-banning.md) for details.
 
 ## Technology Stack
 
@@ -104,7 +105,7 @@ Auth is enforced at the layout level (`isAdmin()` guard) and in every Server Act
 | Styling | Plain CSS (custom properties) | Zero-dependency, themeable via `:root`. **No Tailwind CSS.** Utility classes are hand-crafted in `globals.css`. |
 | Proxy | Caddy 2.11 (alpine) | TLS, rate limiting, security headers |
 | Tunnel | cloudflared 2026.6.1 | Outbound-only Cloudflare Tunnel |
-| Testing | Vitest + Playwright | 66 unit tests + E2E specs |
+| Testing | Vitest + Playwright | 152 unit tests + E2E specs |
 | Deployment | Docker Compose | Multi-stage build, isolated networks |
 
 ## Directory Layout
@@ -138,6 +139,7 @@ src/
 │   │   │   ├── media-list.tsx    # Grouped by tab, inline title editing
 │   │   │   └── actions.ts        # addItem, deleteItem, updateItem, createTabInline, renameTab, deleteTab
 │   │   ├── schedule/             # Schedule CRUD
+│   │   ├── security/             # IP banning, auto-ban, rate limit config
 │   │   └── layout.tsx            # Admin guard + responsive sidebar
 │   ├── login/                    # Login page + actions
 │   ├── api/health/route.ts       # Health check
@@ -146,22 +148,24 @@ src/
 │   ├── api/media/list/route.ts   # Directory listing (admin)
 │   ├── api/login-background/     # Login bg image (public)
 │   └── (page.tsx, layout.tsx, error.tsx, not-found.tsx)
-├── components/                   # Shared UI (5 client components)
+├── components/                   # Shared UI (6 client components)
 │   ├── searchable-select.tsx     # WAI-ARIA combobox
 │   ├── countdown-timer.tsx       # T-XYZ / T+XYZ timer
 │   ├── file-upload.tsx           # Drag-and-drop upload
 │   ├── file-browser.tsx          # Text-based file explorer
-│   └── logout-button.tsx         # Logout form wrapper
+│   ├── logout-button.tsx         # Logout form wrapper
+│   └── rate-limit-form/          # Reusable rate limit config form
 ├── lib/                          # Server-only utilities
-│   ├── repository/               # Data access (9 entity files)
+│   ├── repository/               # Data access (10 entity files)
 │   ├── types.ts                  # All interfaces + SafeUser
 │   ├── auth.ts                   # Session + password hashing
 │   ├── db.ts                     # Connection + DDL + seed
-│   ├── schema.ts                 # DDL (10 tables)
+│   ├── schema.ts                 # DDL (12 tables)
 │   ├── config.ts                 # Env validation
 │   ├── form-data.ts              # Safe FormData extraction + validateMediaUrl
+│   ├── ip.ts                     # getClientIp() — IP extraction from proxy headers
 │   ├── media.ts                  # Media directory config
-│   └── rate-limit.ts             # LRU eviction rate limiter
+│   └── rate-limit.ts             # In-memory rate limiter + getRateLimitConfig()
 ├── test/                         # Test utilities
 │   ├── test-utils.ts             # Shared test helpers
 │   └── db-test-utils.ts          # createTestDb() + truncateAll()
@@ -183,7 +187,7 @@ src/
 | Error handling | Per-route error.tsx | Granular error boundaries per route segment |
 | Media auth | Session-based (not admin) | Any logged-in user can view media; login bg gets dedicated public endpoint |
 | Media tabs | Database-driven + URL routing | Reuses guide `?tab=` pattern for consistency; slug-based loose coupling |
-| Rate limiting | In-memory + Caddy | App-level for login protection, Caddy for IP-based defense. Configurable via admin dashboard. |
+| Rate limiting | In-memory + SQLite violations | App-level login protection with configurable auto-ban. Caddy for IP-based defense. |
 | Home page | ISR (revalidate: 60) | Zero personalization, safe to cache. All other pages are dynamic (session-dependent). |
 | Video poster | ffmpeg + sharp pipeline | Auto-generates 1920x1080 WebP from first frame. Reuses existing thumbnail infrastructure. |
 | RSVP deadline | Server-timezone comparison | `datetime-local` input parsed as server time (Pacific). Works because admin and server share timezone. |

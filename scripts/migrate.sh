@@ -117,6 +117,51 @@ if (!tableExists('questions')) {
   console.log('  - Table questions already exists.');
 }
 
+// ── Migration 7: banned_ips table ──
+if (!tableExists('banned_ips')) {
+  db.exec(\`
+    CREATE TABLE banned_ips (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ip_address TEXT NOT NULL,
+      reason TEXT NOT NULL DEFAULT 'manual',
+      banned_at TEXT NOT NULL DEFAULT (datetime('now')),
+      unbanned_at TEXT
+    );
+  \`);
+  db.exec('CREATE INDEX IF NOT EXISTS idx_banned_ips_ip ON banned_ips(ip_address)');
+  console.log('  ✓ Table banned_ips created.');
+} else {
+  console.log('  - Table banned_ips already exists.');
+}
+
+// ── Migration 8: rate_limit_violations table ──
+if (!tableExists('rate_limit_violations')) {
+  db.exec(\`
+    CREATE TABLE rate_limit_violations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ip_address TEXT NOT NULL,
+      violated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  \`);
+  db.exec('CREATE INDEX IF NOT EXISTS idx_rate_limit_violations_ip ON rate_limit_violations(ip_address)');
+  console.log('  ✓ Table rate_limit_violations created.');
+} else {
+  console.log('  - Table rate_limit_violations already exists.');
+}
+
+// ── Migration 9: unique index on active bans ──
+try {
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_banned_ips_active ON banned_ips(ip_address) WHERE unbanned_at IS NULL');
+  console.log('  ✓ Unique index idx_banned_ips_active created.');
+} catch (e: unknown) {
+  const msg = e instanceof Error ? e.message : String(e);
+  if (msg.includes('already exists')) {
+    console.log('  - Unique index idx_banned_ips_active already exists.');
+  } else {
+    throw e;
+  }
+}
+
 db.close();
 "
 

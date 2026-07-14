@@ -1,14 +1,17 @@
 "use server";
 
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createSession, destroySession, verifyPassword, SESSION_COOKIE } from "@/lib/auth";
 import { getUserWithPassword, getPartyUserWithPassword, recordLogin } from "@/lib/repository/users";
 import { getPartyByCode } from "@/lib/repository/party";
 import { getGuestsByPartyId } from "@/lib/repository/guests";
-import { createRateLimiter } from "@/lib/rate-limit";
+import { createRateLimiter, getRateLimitConfig } from "@/lib/rate-limit";
 import { getConfig } from "@/lib/repository/site-config";
+import { isIpBanned, recordRateLimitViolation, getViolationCount, banIp, deleteOldViolations, getAutoBanConfig } from "@/lib/repository/ip-bans";
+import { getClientIp } from "@/lib/ip";
 import { getString } from "@/lib/form-data";
+import { RATE_LIMIT_MAX_ATTEMPTS_DEFAULT, RATE_LIMIT_WINDOW_SECONDS_DEFAULT } from "@/lib/constants";
 
 interface LoginState { error?: string }
 
@@ -17,22 +20,26 @@ function getSessionMaxSeconds(): number {
   return (Number.isFinite(hours) && hours > 0 ? Math.min(hours, 24) : 24) * 60 * 60;
 }
 
-const rateLimiter = createRateLimiter("login", 5, 60_000);
+const rateLimiter = createRateLimiter("login");
 
-function getRateLimitConfig() {
-  const max = parseInt(getConfig("rate_limit_max_attempts"), 10);
-  const window = parseInt(getConfig("rate_limit_window_seconds"), 10);
-  return {
-    maxAttempts: Number.isFinite(max) && max > 0 ? max : 5,
-    windowMs: (Number.isFinite(window) && window > 0 ? window : 60) * 1000,
-  };
+function getLoginRateLimitConfig() {
+  return getRateLimitConfig("rate_limit_max_attempts", "rate_limit_window_seconds", RATE_LIMIT_MAX_ATTEMPTS_DEFAULT, RATE_LIMIT_WINDOW_SECONDS_DEFAULT);
 }
 
-async function getClientIp(): Promise<string> {
-  const h = await headers();
-  return h.get("x-forwarded-for")?.split(",")[0]?.trim()
-    ?? h.get("x-real-ip")
-    ?? "127.0.0.1";
+let violationCleanupCounter = 0;
+
+function tryAutoBan(ip: string): void {
+  const { threshold, windowSeconds: autoBanWindow } = getAutoBanConfig();
+  if (getViolationCount(ip, autoBanWindow) >= threshold && !isIpBanned(ip)) {
+    try {
+      banIp(ip, "auto:rate-limit-threshold");
+    } catch {
+      // Unique constraint: another concurrent request already banned this IP
+    }
+  }
+  if (++violationCleanupCounter % 50 === 0) {
+    deleteOldViolations(autoBanWindow);
+  }
 }
 
 export async function login(formData: FormData): Promise<LoginState> {
@@ -43,8 +50,15 @@ export async function login(formData: FormData): Promise<LoginState> {
   }
 
   const ip = await getClientIp();
-  const rlConfig = getRateLimitConfig();
+
+  if (isIpBanned(ip)) {
+    return { error: "Your IP has been banned." };
+  }
+
+  const rlConfig = getLoginRateLimitConfig();
   if (!rateLimiter.check(`${ip}:user:${username}`, rlConfig)) {
+    recordRateLimitViolation(ip);
+    tryAutoBan(ip);
     return { error: "Too many attempts. Please wait before trying again." };
   }
 
@@ -80,8 +94,15 @@ export async function loginByPartyCode(formData: FormData): Promise<LoginState> 
   const trimmedCode = code.trim().toUpperCase();
 
   const ip = await getClientIp();
-  const rlConfig = getRateLimitConfig();
+
+  if (isIpBanned(ip)) {
+    return { error: "Your IP has been banned." };
+  }
+
+  const rlConfig = getLoginRateLimitConfig();
   if (!rateLimiter.check(`${ip}:party:${trimmedCode}`, rlConfig)) {
+    recordRateLimitViolation(ip);
+    tryAutoBan(ip);
     return { error: "Too many attempts. Please wait before trying again." };
   }
 

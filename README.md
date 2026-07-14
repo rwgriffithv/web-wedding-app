@@ -38,6 +38,7 @@ A production-ready wedding website built with Next.js 16, SQLite, and Docker. Fe
 | **Media Gallery** | Photo and video sections (e.g. Engagement, Ceremony, Reception) |
 | **Admin Dashboard** | Full CRUD for all content, parties, guests, and RSVP viewer |
 | **Authentication** | Admin (username/password), Party (access code), Guest (shared view-only) |
+| **Security** | IP banning, auto-ban on brute-force, configurable rate limits |
 | **Health Check** | `/api/health` endpoint for Docker health checks and monitoring |
 
 ---
@@ -164,7 +165,7 @@ src/
 
 ### Database
 
-7 tables: `parties`, `guests`, `site_config`, `lodging_options`, `dress_code_images`, `rsvp_responses`, `media_items`.
+12 tables: `users`, `parties`, `guests`, `site_config`, `lodging_options`, `dress_code_images`, `rsvp_responses`, `media_items`, `media_tabs`, `schedule_items`, `banned_ips`, `rate_limit_violations`.
 
 See [docs/architecture/database-layer.md](docs/architecture/database-layer.md) for the full schema.
 
@@ -197,6 +198,7 @@ See [docs/architecture/deployment-pipeline.md](docs/architecture/deployment-pipe
 | Document | Contents |
 |---|---|
 | [Authentication](docs/features/authentication.md) | Three auth methods, session management, rate limiting |
+| [IP Banning](docs/features/ip-banning.md) | IP banning, auto-ban, rate-limit refactoring |
 | [Admin Dashboard](docs/features/admin-dashboard.md) | All admin pages and CRUD operations |
 | [RSVP System](docs/features/rsvp.md) | Party-based RSVP, per-member submission |
 | [Database Layer](docs/architecture/database-layer.md) | Schema, connection, migration, seed |

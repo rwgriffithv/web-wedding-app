@@ -1,19 +1,30 @@
+import { getConfig } from "./repository/site-config";
+
 const MAX_STORE_SIZE = 10_000;
 
 const stores = new Map<string, Map<string, { count: number; resetAt: number }>>();
 const intervals = new Map<string, ReturnType<typeof setInterval>>();
 
-interface RateLimitConfig {
+export interface RateLimitConfig {
   maxAttempts: number;
   windowMs: number;
 }
 
-export function createRateLimiter(
-  name: string,
-  defaultMaxAttempts = 5,
-  defaultWindowMs = 60_000,
-  getConfig?: () => RateLimitConfig,
-) {
+export function getRateLimitConfig(
+  maxKey: string,
+  windowKey: string,
+  defaultMax: number,
+  defaultWindowSeconds: number,
+): RateLimitConfig {
+  const max = parseInt(getConfig(maxKey), 10);
+  const windowSeconds = parseInt(getConfig(windowKey), 10);
+  return {
+    maxAttempts: Number.isFinite(max) && max > 0 ? max : defaultMax,
+    windowMs: (Number.isFinite(windowSeconds) && windowSeconds > 0 ? windowSeconds : defaultWindowSeconds) * 1000,
+  };
+}
+
+export function createRateLimiter(name: string) {
   if (!stores.has(name)) {
     stores.set(name, new Map());
   }
@@ -34,8 +45,7 @@ export function createRateLimiter(
   }
 
   return {
-    check(key: string, config?: RateLimitConfig): boolean {
-      const cfg = config ?? getConfig?.() ?? { maxAttempts: defaultMaxAttempts, windowMs: defaultWindowMs };
+    check(key: string, config: RateLimitConfig): boolean {
       const now = Date.now();
       const entry = store.get(key);
       if (!entry || now > entry.resetAt) {
@@ -50,10 +60,10 @@ export function createRateLimiter(
           }
           if (oldestKey !== undefined) store.delete(oldestKey);
         }
-        store.set(key, { count: 1, resetAt: now + cfg.windowMs });
+        store.set(key, { count: 1, resetAt: now + config.windowMs });
         return true;
       }
-      if (entry.count >= cfg.maxAttempts) return false;
+      if (entry.count >= config.maxAttempts) return false;
       entry.count++;
       return true;
     },

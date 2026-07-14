@@ -22,13 +22,14 @@ The admin layout (`src/app/admin/layout.tsx`) provides:
 │  │  Panel     │  │  Description           ││
 │  │            │  │                        ││
 │  │  ►Dashboard│  │  [Stat Cards]          ││
-│  │  Site      │  │  [RSVP Summary Table]  ││
-│  │  Parties   │  │                        ││
+│  │  Site      │  │  [Security Stats]      ││
+│  │  Parties   │  │  [RSVP Summary Table]  ││
 │  │  Guests    │  │                        ││
 │  │  Lodging   │  │                        ││
 │  │  Dress Code│  │                        ││
 │  │  RSVP      │  │                        ││
 │  │  Media     │  │                        ││
+│  │  Security  │  │                        ││
 │  │            │  │                        ││
 │  │  ← Back    │  │                        ││
 │  └────────────┘  └────────────────────────┘│
@@ -41,13 +42,15 @@ The admin layout (`src/app/admin/layout.tsx`) provides:
 
 The main dashboard page renders:
 
-**Stats Cards** — Three summary metrics:
+**Stats Cards** — Three summary metrics plus a security row:
 
 | Metric | Query |
 |---|---|
 | Guests | `SELECT COUNT(*) FROM guests` |
 | RSVP'd Yes | `SELECT COUNT(*) FROM rsvp_responses WHERE attending = 1` |
 | RSVP'd No | `SELECT COUNT(*) FROM rsvp_responses WHERE attending = 0` |
+| Suspicious IPs | IPs with violation count ≥ auto-ban threshold (not yet banned) |
+| Banned | Count of active bans in `banned_ips` |
 
 **Recent RSVP Table** — The 10 most recent responses, showing guest name, attendance, and plus one name.
 
@@ -139,6 +142,19 @@ CRUD for photo/video sections on `/media`:
 | Section | Section heading (e.g. "Engagement", "Ceremony", "Reception") |
 | Sort Order | Display order |
 
+### `/admin/security` — IP Banning & Rate Limiting
+
+IP banning and rate-limit configuration:
+
+| Section | Component | Description |
+|---|---|---|
+| Auto-Ban Settings | `AutoBanForm` | Threshold (1–100 lockouts) and window (60–86400s) |
+| Login Rate Limiting | `RateLimitForm` | Max attempts and window for login rate limiter |
+| Ban IP | `BanIpForm` | Manual IP ban with optional reason (validates IPv4) |
+| Banned IPs | `BanList` | Active bans with unban buttons and reason labels |
+
+See [ip-banning.md](ip-banning.md) for the full implementation.
+
 ---
 
 ## Component Architecture
@@ -172,11 +188,17 @@ admin/layout.tsx              ← Server Component (guard + sidebar)
   │   └── image-form.tsx       ← Client Component
   ├── admin/rsvp/
   │   └── page.tsx             ← Server Component (read-only)
-  └── admin/media/
-      ├── page.tsx             ← Server Component
-      ├── actions.ts           ← Server Actions (CRUD)
-      ├── media-list.tsx       ← Client Component
-      └── media-form.tsx       ← Client Component
+  ├── admin/media/
+  │   ├── page.tsx             ← Server Component
+  │   ├── actions.ts           ← Server Actions (CRUD)
+  │   ├── media-list.tsx       ← Client Component
+  │   └── media-form.tsx       ← Client Component
+  └── admin/security/
+      ├── page.tsx             ← Server Component (banned IPs, settings)
+      ├── actions.ts           ← Server Actions (ban/unban/settings)
+      ├── ban-list.tsx         ← Client Component (banned IP list)
+      ├── auto-ban-form.tsx    ← Client Component (auto-ban settings)
+      └── ban-ip-form.tsx      ← Client Component (manual IP ban)
 ```
 
 All admin pages are Server Components. Forms are Client Components using `useActionState` for mutations with `revalidatePath()`.

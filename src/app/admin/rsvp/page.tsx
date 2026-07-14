@@ -26,7 +26,6 @@ export default function AdminRsvpPage() {
             maxKey="rsvp_rate_limit_max"
             windowKey="rsvp_rate_limit_window"
             maxDefault="10"
-            windowDefault="60"
             description="Rate limiting for RSVP submissions, per party. Changes take effect on next request."
           />
         </div>

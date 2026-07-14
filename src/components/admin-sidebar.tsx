@@ -47,6 +47,7 @@ export function AdminSidebar() {
     { href: "/admin/rsvp", label: "RSVP" },
     { href: "/admin/media", label: "Media" },
     { href: "/admin/help", label: "Help" },
+    { href: "/admin/security", label: "Security" },
   ];
 
   const isActive = (href: string) => {

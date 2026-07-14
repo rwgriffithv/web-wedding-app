@@ -110,3 +110,11 @@ export interface Question {
   created_at: string;
   answered_at: string | null;
 }
+
+export interface BannedIp {
+  id: number;
+  ip_address: string;
+  reason: string;
+  banned_at: string;
+  unbanned_at: string | null;
+}

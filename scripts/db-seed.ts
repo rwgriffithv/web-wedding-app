@@ -58,6 +58,8 @@ const defaults: [string, string][] = [
   ["dress_code_text", "Please dress in formal attire. Our wedding will feature a black-tie optional dress code. We recommend suits and cocktail dresses."],
   ["schedule_text", ""],
   ["lodging_text", ""],
+  ["auto_ban_login_threshold", "5"],
+  ["auto_ban_window_seconds", "3600"],
 ];
 for (const [key, value] of defaults) {
   upsertIfEmpty.run(value, key);

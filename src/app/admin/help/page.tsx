@@ -23,8 +23,6 @@ export default function AdminHelpPage() {
             config={config}
             maxKey="question_rate_limit_max"
             windowKey="question_rate_limit_window"
-            maxDefault="5"
-            windowDefault="60"
             description="Rate limiting for help question submissions, per party. Changes take effect on next request."
           />
         </div>

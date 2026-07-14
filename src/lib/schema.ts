@@ -119,4 +119,22 @@ export const DDL = `
 
   CREATE INDEX IF NOT EXISTS idx_faq_sort_order ON faq_items(sort_order);
   CREATE INDEX IF NOT EXISTS idx_questions_party_id ON questions(party_id);
+
+  CREATE TABLE IF NOT EXISTS banned_ips (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ip_address TEXT NOT NULL,
+    reason TEXT NOT NULL DEFAULT 'manual',
+    banned_at TEXT NOT NULL DEFAULT (datetime('now')),
+    unbanned_at TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS rate_limit_violations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ip_address TEXT NOT NULL,
+    violated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_banned_ips_ip ON banned_ips(ip_address);
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_banned_ips_active ON banned_ips(ip_address) WHERE unbanned_at IS NULL;
+  CREATE INDEX IF NOT EXISTS idx_rate_limit_violations_ip ON rate_limit_violations(ip_address);
 `;

@@ -3,22 +3,16 @@
 import { revalidatePath } from "next/cache";
 import { parseSession } from "@/lib/auth";
 import { getString } from "@/lib/form-data";
-import { MAX_QUESTION_LENGTH } from "@/lib/constants";
+import { MAX_QUESTION_LENGTH, RATE_LIMIT_MAX_ATTEMPTS_DEFAULT, RATE_LIMIT_WINDOW_SECONDS_DEFAULT } from "@/lib/constants";
 import { create } from "@/lib/repository/questions";
-import { createRateLimiter } from "@/lib/rate-limit";
-import { getConfig } from "@/lib/repository/site-config";
+import { createRateLimiter, getRateLimitConfig } from "@/lib/rate-limit";
 
 interface HelpState { success?: boolean; error?: string }
 
-const questionRateLimiter = createRateLimiter("question", 5, 60_000);
+const questionRateLimiter = createRateLimiter("question");
 
 function getQuestionRateLimitConfig() {
-  const max = parseInt(getConfig("question_rate_limit_max"), 10);
-  const window = parseInt(getConfig("question_rate_limit_window"), 10);
-  return {
-    maxAttempts: Number.isFinite(max) && max > 0 ? max : 5,
-    windowMs: (Number.isFinite(window) && window > 0 ? window : 60) * 1000,
-  };
+  return getRateLimitConfig("question_rate_limit_max", "question_rate_limit_window", RATE_LIMIT_MAX_ATTEMPTS_DEFAULT, RATE_LIMIT_WINDOW_SECONDS_DEFAULT);
 }
 
 export async function submitQuestion(prevState: HelpState | null, formData: FormData): Promise<HelpState> {

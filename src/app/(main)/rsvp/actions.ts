@@ -6,23 +6,19 @@ import { getConfig } from "@/lib/repository/site-config";
 import { getGuestById } from "@/lib/repository/guests";
 import { getPartyById } from "@/lib/repository/party";
 import { submitResponse } from "@/lib/repository/rsvp";
-import { createRateLimiter } from "@/lib/rate-limit";
+import { createRateLimiter, getRateLimitConfig } from "@/lib/rate-limit";
 import { getString } from "@/lib/form-data";
+import { RATE_LIMIT_WINDOW_SECONDS_DEFAULT } from "@/lib/constants";
 
 export interface RsvpState {
   success?: boolean;
   error?: string;
 }
 
-const rsvpRateLimiter = createRateLimiter("rsvp", 10, 60_000);
+const rsvpRateLimiter = createRateLimiter("rsvp");
 
 function getRsvpRateLimitConfig() {
-  const max = parseInt(getConfig("rsvp_rate_limit_max"), 10);
-  const window = parseInt(getConfig("rsvp_rate_limit_window"), 10);
-  return {
-    maxAttempts: Number.isFinite(max) && max > 0 ? max : 10,
-    windowMs: (Number.isFinite(window) && window > 0 ? window : 60) * 1000,
-  };
+  return getRateLimitConfig("rsvp_rate_limit_max", "rsvp_rate_limit_window", 10, RATE_LIMIT_WINDOW_SECONDS_DEFAULT);
 }
 
 export async function submitRsvp(_prevState: RsvpState | null, formData: FormData): Promise<RsvpState> {

@@ -8,6 +8,7 @@ A production-ready Next.js starter web application with admin dashboard, SQLite 
 - **Language**: TypeScript (strict mode), no `any` allowed
 - **Database**: SQLite via better-sqlite3 (WAL mode), server-only access
 - **Auth**: Cookie-based session (HMAC-signed JSON for demo)
+- **Security**: IP banning, auto-ban on rate-limit violations, configurable rate limits
 - **Lint**: ESLint 9 with flat config (`eslint.config.js`)
 - **Deployment**: Multi-stage Docker → Caddy reverse proxy → Cloudflare Tunnel
 

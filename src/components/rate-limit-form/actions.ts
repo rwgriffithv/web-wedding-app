@@ -38,6 +38,7 @@ export async function saveRateLimitConfig(
     revalidatePath("/admin/rsvp");
     revalidatePath("/admin/help");
     revalidatePath("/admin/site");
+    revalidatePath("/admin/security");
     return { success: true };
   } catch (error) {
     console.error(error);

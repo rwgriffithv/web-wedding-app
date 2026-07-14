@@ -39,7 +39,7 @@ DATABASE_URL=file:./data/dev.db               # Development (optional)
 Falls back to:          data/dev.db           # No env var set
 ```
 
-## Schema (10 Tables)
+## Schema (12 Tables)
 
 ### `users`
 
@@ -199,6 +199,48 @@ CREATE TABLE IF NOT EXISTS media_tabs (
 
 Tab deletion cascades to `media_items` via application logic (transaction deletes matching `media_items` where `section = slug`, then deletes the tab). Files on disk are never touched.
 
+### `banned_ips`
+
+IP addresses banned for brute-force or abuse. Soft-deleted via `unbanned_at`.
+
+```sql
+CREATE TABLE IF NOT EXISTS banned_ips (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ip_address TEXT NOT NULL,
+  reason TEXT NOT NULL DEFAULT 'manual',
+  banned_at TEXT NOT NULL DEFAULT (datetime('now')),
+  unbanned_at TEXT
+);
+```
+
+| Column | Description |
+|---|---|
+| `ip_address` | The banned IP (text, not validated as IPv4 — accepts any string) |
+| `reason` | `"manual"` or `"auto:rate-limit-threshold"` |
+| `banned_at` | When the ban was created |
+| `unbanned_at` | NULL = active ban; set by admin unban action |
+
+Partial unique index `idx_banned_ips_active` on `(ip_address) WHERE unbanned_at IS NULL` prevents duplicate active bans.
+
+### `rate_limit_violations`
+
+Tracks rate-limit lockout events per IP, used for auto-ban decisions.
+
+```sql
+CREATE TABLE IF NOT EXISTS rate_limit_violations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ip_address TEXT NOT NULL,
+  violated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+```
+
+| Column | Description |
+|---|---|
+| `ip_address` | The IP that triggered the lockout |
+| `violated_at` | Timestamp of the violation |
+
+Cleaned up periodically (every 50th lockout event) via `deleteOldViolations()`. See [ip-banning.md](../features/ip-banning.md) for the full auto-ban flow.
+
 ### Indexes
 
 ```sql
@@ -212,6 +254,9 @@ CREATE INDEX IF NOT EXISTS idx_lodging_sort_order ON lodging_options(sort_order)
 CREATE INDEX IF NOT EXISTS idx_schedule_sort_order ON schedule_items(sort_order);
 CREATE INDEX IF NOT EXISTS idx_dress_code_sort_order ON dress_code_images(sort_order);
 CREATE INDEX IF NOT EXISTS idx_media_tabs_sort_order ON media_tabs(sort_order);
+CREATE INDEX IF NOT EXISTS idx_banned_ips_ip ON banned_ips(ip_address);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_banned_ips_active ON banned_ips(ip_address) WHERE unbanned_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_rate_limit_violations_ip ON rate_limit_violations(ip_address);
 ```
 
 ## Types
@@ -231,6 +276,7 @@ All interfaces defined in `src/lib/types.ts`, re-exported from `src/lib/db.ts`:
 | `MediaItem` | Gallery photo/video |
 | `MediaTab` | Gallery tab (slug, label, sort_order) |
 | `ScheduleItem` | Timeline event |
+| `BannedIp` | Banned IP record (ip_address, reason, banned_at, unbanned_at) |
 
 ## Repository Pattern
 
@@ -247,6 +293,7 @@ All SQL queries live in typed modules under `src/lib/repository/`. See [conventi
 | `dress-code.ts` | `getImages()`, `createImage()`, `deleteImage()` |
 | `media.ts` | `getAll()`, `getBySection()`, `create()`, `update()`, `deleteItem()`, `swapItemSortOrder()`, `getAllTabs()`, `createTab()`, `updateTab()`, `deleteTab()`, `swapTabSortOrder()` |
 | `schedule.ts` | `getAll()`, `create()`, `deleteItem()` |
+| `ip-bans.ts` | `isIpBanned()`, `banIp()`, `unbanIp()`, `getBannedIps()`, `getBannedCount()`, `getAutoBanConfig()`, `recordRateLimitViolation()`, `getViolationCount()`, `getSuspiciousIpCount()`, `deleteOldViolations()` |
 
 All functions return typed interfaces. All queries use parameterized statements. Repository functions use CRUD verbs (`create`, `update`, `delete`). Server Actions use domain verbs (`add`, `save`, `move`) — see [conventions.md](conventions.md).
 

@@ -124,10 +124,30 @@ Login attempts are rate-limited per-username and per-party-code:
 
 | Variable | Default | Description |
 |---|---|---|
-| `RATE_LIMIT_MAX` | 5 | Max failed attempts per window |
-| `RATE_LIMIT_WINDOW_MS` | 60000 | Window duration (60 seconds) |
+| `RATE_LIMIT_MAX_ATTEMPTS_DEFAULT` | 5 | Max failed attempts per window |
+| `RATE_LIMIT_WINDOW_SECONDS_DEFAULT` | 60 | Window duration (seconds) |
 
-The rate limiter is in-process memory (cleaned every 5 minutes). In production with multiple instances, replace with a Redis-backed rate limiter.
+Both are configurable via the admin Security page (`/admin/security`). The rate limiter uses in-memory counters per key (e.g. `192.168.1.1:user:admin`). The `site_config` values are read on every request via `getRateLimitConfig()` — changes take effect immediately.
+
+The rate limiter is in-process memory (cleaned every 60 seconds). See [ip-banning.md](ip-banning.md) for the persistent violation tracking and auto-ban system that layers on top of this.
+
+---
+
+## IP Banning
+
+Repeated rate-limit violations trigger automatic IP bans. This is a defense layer on top of the in-memory rate limiter:
+
+| Mechanism | Storage | Purpose |
+|---|---|---|
+| Rate limiting | In-memory | Fast first line of defense — blocks repeated attempts per key |
+| IP banning | SQLite (`banned_ips`) | Persistent ban that survives server restarts |
+| Violation tracking | SQLite (`rate_limit_violations`) | Records lockout events for auto-ban threshold decisions |
+
+When a client exceeds the auto-ban threshold (default: 5 lockouts within 1 hour), their IP is banned. The login page renders a minimal banned screen for banned IPs — no images, no background, no heavy assets.
+
+Admins can manually ban/unban IPs and tune auto-ban settings from `/admin/security`.
+
+See [ip-banning.md](ip-banning.md) for the full implementation details, auto-ban flow, and admin UI.
 
 ---
 
@@ -169,9 +189,12 @@ When a party code is updated by an admin, the corresponding party user's passwor
 |---|---|
 | `src/lib/auth.ts` | Session create/parse/destroy, password hash/verify |
 | `src/lib/config.ts` | Environment variable validation (`ADMIN_USERNAME`, `ADMIN_PASSWORD`, `SESSION_SECRET`) |
-| `src/app/login/page.tsx` | Login page — redirects if already authenticated |
+| `src/lib/ip.ts` | `getClientIp()` — IP extraction from proxy headers |
+| `src/lib/rate-limit.ts` | `getRateLimitConfig()`, `createRateLimiter()` — in-memory rate limiter |
+| `src/lib/repository/ip-bans.ts` | IP ban + violation DB operations, `getAutoBanConfig()` |
+| `src/app/login/page.tsx` | Login page — IP ban check before rendering |
 | `src/app/login/login-form.tsx` | Client component — dual-tab form (credentials / party code) |
-| `src/app/login/actions.ts` | Server Actions — `login()`, `loginByPartyCode()`, `logout()` |
+| `src/app/login/actions.ts` | Server Actions — `login()`, `loginByPartyCode()`, `logout()`, auto-ban logic |
 
 ## Access Control
 
