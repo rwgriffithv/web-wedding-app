@@ -30,7 +30,7 @@ async function getClientIp(): Promise<string> {
     ?? "127.0.0.1";
 }
 
-export async function login(prevState: LoginState | null, formData: FormData): Promise<LoginState> {
+export async function login(formData: FormData): Promise<LoginState> {
   const username = getString(formData, "username");
   const password = getString(formData, "password");
   if (!username || !password) {
@@ -64,7 +64,7 @@ export async function login(prevState: LoginState | null, formData: FormData): P
   redirect(user.type === "admin" ? "/admin" : "/home");
 }
 
-export async function loginByPartyCode(prevState: LoginState | null, formData: FormData): Promise<LoginState> {
+export async function loginByPartyCode(formData: FormData): Promise<LoginState> {
   const code = getString(formData, "code");
   if (!code) {
     return { error: "Please enter your party code." };

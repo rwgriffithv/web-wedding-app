@@ -13,7 +13,7 @@ function CredentialsForm() {
     setIsPending(true);
     try {
       const formData = new FormData(e.currentTarget);
-      const result = await login(null, formData);
+      const result = await login(formData);
       setState(result);
     } catch (err) {
       if (isRedirectError(err)) throw err;
@@ -52,7 +52,7 @@ function PartyCodeForm() {
     setIsPending(true);
     try {
       const formData = new FormData(e.currentTarget);
-      const result = await loginByPartyCode(null, formData);
+      const result = await loginByPartyCode(formData);
       setState(result);
     } catch (err) {
       if (isRedirectError(err)) throw err;
