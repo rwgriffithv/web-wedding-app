@@ -50,7 +50,7 @@ export function PartyList({ parties }: PartyListProps) {
 
   return (
     <>
-      <div style={{ marginBottom: "1rem" }}>
+      <div className="mb-2">
         <input
           type="text"
           placeholder="Search by party or guest name..."
@@ -63,12 +63,12 @@ export function PartyList({ parties }: PartyListProps) {
       <table className="admin-table">
         <thead>
           <tr>
-            <th style={{ width: "2rem" }} />
-            <th onClick={() => toggleSort("name")} style={{ cursor: "pointer" }}>
+            <th className="w-2" />
+            <th onClick={() => toggleSort("name")} className="cursor-pointer">
               Name{sortIndicator("name")}
             </th>
             <th>Code</th>
-            <th onClick={() => toggleSort("invited")} style={{ cursor: "pointer" }}>
+            <th onClick={() => toggleSort("invited")} className="cursor-pointer">
               Invited{sortIndicator("invited")}
             </th>
             <th>Actions</th>

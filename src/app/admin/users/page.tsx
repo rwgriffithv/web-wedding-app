@@ -1,4 +1,5 @@
 import { getAllUsers, getPartyActivity } from "@/lib/repository/users";
+import { getEnvConfig } from "@/lib/config";
 import { Header } from "@/components/header";
 import { UserForm } from "./user-form";
 import { UserList } from "./user-list";
@@ -8,7 +9,7 @@ export default function AdminUsersPage() {
   const allUsers = getAllUsers();
   const editableUsers = allUsers.filter(u => u.type !== "party");
   const partyUsers = allUsers.filter(u => u.type === "party");
-  const primaryAdminUsername = process.env.ADMIN_USERNAME ?? "admin";
+  const primaryAdminUsername = getEnvConfig().adminUsername;
   const activityUsers = getPartyActivity();
 
   return (

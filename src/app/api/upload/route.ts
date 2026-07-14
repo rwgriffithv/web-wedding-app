@@ -42,6 +42,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to save file." }, { status: 500 });
   }
 
+  // SVG excluded from isImage to prevent thumbnail generation (sharp cannot rasterize SVG).
+  // SVG is still typed as "image" in the database for gallery display.
   const isImage = IMAGE_EXTENSIONS.has(ext) && ext !== ".svg";
   const isVideo = VIDEO_EXTENSIONS.has(ext);
   const type = isImage ? "image" : isVideo ? "video" : "image";

@@ -9,6 +9,8 @@ export const DDL = `
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     last_login_at TEXT,
     total_page_views INTEGER NOT NULL DEFAULT 0,
+    password_changed_at TEXT,
+    last_page_view_at TEXT,
     FOREIGN KEY (party_id) REFERENCES parties(id) ON DELETE SET NULL
   );
 

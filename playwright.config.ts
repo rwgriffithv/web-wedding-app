@@ -26,8 +26,6 @@ export default defineConfig({
       ADMIN_USERNAME: "admin",
       ADMIN_PASSWORD: "admin",
       SESSION_SECRET: "rob-and-ana",
-      RATE_LIMIT_MAX: "100",
-      RATE_LIMIT_WINDOW_SEC: "60",
     },
   },
 });

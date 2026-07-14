@@ -23,11 +23,11 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
 
   useEffect(() => {
     if (attending === "no") setBringPlusOne("no");
-  }, [attending]);
+  }, [attending, setBringPlusOne]);
 
   useEffect(() => {
     if (bringPlusOne === "no") setPlusOneName("");
-  }, [bringPlusOne]);
+  }, [bringPlusOne, setPlusOneName]);
 
   useEffect(() => {
     if (state?.success) setHasSubmitted(true);

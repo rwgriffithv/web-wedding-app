@@ -26,7 +26,7 @@ export async function submitQuestion(prevState: HelpState | null, formData: Form
   if (!session?.partyId) return { success: false, error: "Not logged in as a party." };
 
   if (!questionRateLimiter.check(`party:${session.partyId}`, getQuestionRateLimitConfig())) {
-    return { success: false, error: "Too many submissions. Please wait before trying again." };
+    return { success: false, error: "Your party has made too many requests. Please wait before trying again." };
   }
 
   const question = getString(formData, "question")?.trim();

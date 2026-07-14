@@ -145,5 +145,8 @@ N	@	feature_collector.js:23
 Please help!
   * status: done
 
+* Is there a way to add IP banning as an option to the admin dashboard with detection for multiple login failures where it tracks how many times an IP has tried to login and failed by getting rate limitted? I would like some trackign like that in a "Security" section of the admin dashboard and then on the main dashboard section add a warning status with a counter for the number of suspicious IPs detected and not banned. I would also want a counter for the total number of IPs banned. It would be similar counter and warning system to the questionsi answered and questions unanswered system.
+  * status: not done
+
 * The admin dashboard does not seem to render very well on mobile. Some things are misaligned, flow too wide on the page and result in scrolling, and the hamburger menu dropdown results in a weird vertical scrolling that is more like a collapsible element than a real hamburger menu. Please review the design of the mobile rendering of the admin dashboard and see if there are alternative implementations of the hamburger menu as well as making horizontal scrolling of the tables more coherent and better looking.
   * status: not done

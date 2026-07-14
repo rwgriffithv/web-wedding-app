@@ -1,7 +1,7 @@
 import { getDb, type User, type SafeUser } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 
-const SAFE_COLUMNS = "id, username, display_name, type, party_id, created_at, last_login_at, total_page_views";
+const SAFE_COLUMNS = "id, username, display_name, type, party_id, created_at, last_login_at, total_page_views, password_changed_at, last_page_view_at";
 
 function toSafeUser(row: User): SafeUser {
   const { password: _, ...safe } = row;
@@ -44,7 +44,7 @@ export function updateUser(id: number, data: { username?: string; password?: str
   const values: (string | number | null)[] = [];
 
   if (data.username !== undefined) { fields.push("username = ?"); values.push(data.username); }
-  if (data.password !== undefined) { fields.push("password = ?"); values.push(hashPassword(data.password)); }
+  if (data.password !== undefined) { fields.push("password = ?"); values.push(hashPassword(data.password)); fields.push("password_changed_at = datetime('now')"); }
   if (data.display_name !== undefined) { fields.push("display_name = ?"); values.push(data.display_name); }
   if (data.type !== undefined) { fields.push("type = ?"); values.push(data.type); }
   if (data.party_id !== undefined) { fields.push("party_id = ?"); values.push(data.party_id); }
@@ -76,10 +76,22 @@ export function recordLogin(userId: number): void {
   if (result.changes === 0) throw new Error(`User ${userId} not found`);
 }
 
-export function incrementPageViews(userId: number): void {
+export function incrementPageViews(userId: number, debounceMinutes: number): boolean {
   const db = getDb();
-  const result = db.prepare("UPDATE users SET total_page_views = total_page_views + 1 WHERE id = ?").run(userId);
+  const user = db.prepare("SELECT last_page_view_at FROM users WHERE id = ?").get(userId) as { last_page_view_at: string | null } | undefined;
+  if (!user) throw new Error(`User ${userId} not found`);
+
+  if (user.last_page_view_at) {
+    // SQLite datetime('now') stores UTC. Appending 'Z' ensures Date.parse treats it as UTC.
+    // Date.now() is also UTC milliseconds, so the comparison is timezone-safe.
+    const lastViewMs = new Date(`${user.last_page_view_at}Z`).getTime();
+    const minutesSince = (Date.now() - lastViewMs) / (1000 * 60);
+    if (minutesSince < debounceMinutes) return false;
+  }
+
+  const result = db.prepare("UPDATE users SET total_page_views = total_page_views + 1, last_page_view_at = datetime('now') WHERE id = ?").run(userId);
   if (result.changes === 0) throw new Error(`User ${userId} not found`);
+  return true;
 }
 
 export function getPartyActivity(): SafeUser[] {

@@ -52,13 +52,13 @@ function LodgingListItem({ option, index, total }: { option: LodgingOption; inde
               </div>
               <div className="flex-row items-center gap-1">
                 <input
+                  name="url"
                   type="text"
                   value={urlValue}
                   onChange={e => setUrlValue(e.target.value)}
                   placeholder="Booking URL"
                   className="table-inline-input flex-1"
                 />
-                <input type="hidden" name="url" value={urlValue} />
               </div>
               <div className="flex-row items-center gap-1">
                 <button type="submit" className="btn btn-sm btn-primary" disabled={editPending || !hasChanges}>{editPending ? "Saving..." : "Save"}</button>

@@ -57,9 +57,10 @@ export async function login(formData: FormData): Promise<LoginState> {
   recordLogin(user.id);
 
   const store = await cookies();
-  const sessionData: { userId: number; partyId?: number; type: "admin" | "viewer" | "party" } = {
+  const sessionData: { userId: number; partyId?: number; type: "admin" | "viewer" | "party"; pwChangedAt?: string | null } = {
     userId: user.id,
     type: user.type,
+    pwChangedAt: user.password_changed_at,
   };
   if (user.type === "party" && user.party_id) {
     sessionData.partyId = user.party_id;
@@ -103,7 +104,7 @@ export async function loginByPartyCode(formData: FormData): Promise<LoginState> 
 
   const store = await cookies();
   const sessionMaxAge = getSessionMaxSeconds();
-  store.set(SESSION_COOKIE, createSession({ userId: partyUser.id, partyId: party.id, type: "party" }, sessionMaxAge), { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: sessionMaxAge });
+  store.set(SESSION_COOKIE, createSession({ userId: partyUser.id, partyId: party.id, type: "party", pwChangedAt: partyUser.password_changed_at }, sessionMaxAge), { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: sessionMaxAge });
 
   redirect("/home");
 }

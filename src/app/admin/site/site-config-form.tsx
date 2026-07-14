@@ -58,6 +58,19 @@ export function SiteConfigForm({ config }: SiteConfigFormProps) {
         <p className="text-muted text-xs" style={{ marginTop: "0.25rem" }}>
           Rate limiting protects login attempts per IP+user. Changes take effect on next request.
         </p>
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="session_max_hours">Session Expiry (hours)</label>
+            <input id="session_max_hours" name="session_max_hours" type="number" min="1" max="24" defaultValue={config.session_max_hours || "24"} />
+          </div>
+          <div className="form-group">
+            <label htmlFor="page_view_debounce_minutes">Page View Debounce (minutes)</label>
+            <input id="page_view_debounce_minutes" name="page_view_debounce_minutes" type="number" min="1" max="1440" defaultValue={config.page_view_debounce_minutes || "15"} />
+          </div>
+        </div>
+        <p className="text-muted text-xs" style={{ marginTop: "0.25rem" }}>
+          Session expiry: how long login sessions last (max 24h). Page view debounce: minimum time between page view increments per user.
+        </p>
       </fieldset>
       <fieldset className="admin-fieldset form-group">
         <legend>Home</legend>
@@ -94,16 +107,6 @@ export function SiteConfigForm({ config }: SiteConfigFormProps) {
             </p>
           )}
         </div>
-      </fieldset>
-      <fieldset className="admin-fieldset form-group">
-        <legend>RSVP</legend>
-        <div className="form-group">
-          <label htmlFor="rsvp_deadline">RSVP Deadline</label>
-          <input id="rsvp_deadline" name="rsvp_deadline" type="datetime-local" defaultValue={config.rsvp_deadline} />
-        </div>
-        <p className="text-muted text-xs" style={{ marginTop: "0.25rem" }}>
-          Submissions locked after this date. Leave empty to keep RSVPs always open.
-        </p>
       </fieldset>
       {state?.success && <p className="text-success text-sm mb-1" role="status">Saved successfully.</p>}
       {state?.error && <p className="text-error text-sm mb-1" role="alert">{state.error}</p>}

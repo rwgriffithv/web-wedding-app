@@ -21,17 +21,13 @@ const CONFIG_SCHEMA: Record<string, ConfigField> = {
   rate_limit_max_attempts:    { maxLength: 10, numeric: { max: 1000 } },
   rate_limit_window_seconds:  { maxLength: 10, numeric: { max: 1000 } },
   session_max_hours:          { maxLength: 10, numeric: { max: 24 } },
-  rsvp_rate_limit_max:        { maxLength: 10, numeric: { max: 1000 } },
-  rsvp_rate_limit_window:     { maxLength: 10, numeric: { max: 1000 } },
-  question_rate_limit_max:    { maxLength: 10, numeric: { max: 1000 } },
-  question_rate_limit_window: { maxLength: 10, numeric: { max: 1000 } },
+  page_view_debounce_minutes: { maxLength: 10, numeric: { max: 1440 } },
   home_title:                 { maxLength: 200 },
   home_subtitle:              { maxLength: 500 },
   home_date:                  { maxLength: 50 },
   home_time:                  { maxLength: 50 },
   home_location:              { maxLength: 500 },
   home_background_video:      { maxLength: 1000 },
-  rsvp_deadline:              { maxLength: 50, date: true },
 };
 
 const CONFIG_KEYS = Object.keys(CONFIG_SCHEMA) as (keyof typeof CONFIG_SCHEMA)[];

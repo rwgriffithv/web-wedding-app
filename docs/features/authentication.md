@@ -137,8 +137,29 @@ The rate limiter is in-process memory (cleaned every 5 minutes). In production w
 |---|---|
 | Name | `session` |
 | HTTP-only | `true` |
+| Secure | `true` (unconditional — production uses HTTPS via Cloudflare Tunnel) |
+| SameSite | `lax` |
 | Path | `/` |
-| Max-Age | 86400 (24 hours) |
+| Max-Age | Configurable via `session_max_hours` in admin dashboard (default 24h, max 24h) |
+
+**Note:** The `Secure` flag is always set. Local development over plain HTTP (`npm run dev`) will not persist session cookies in the browser. Use a self-signed cert or accept that sessions won't persist during local development.
+
+### Session Invalidation
+
+Sessions include a `pwChangedAt` timestamp. On every request, `validateSession()` compares this against the user's current `password_changed_at` in the database. If the password has been changed since the session was issued, the session is rejected and the user must log in again.
+
+---
+
+## Party Code Authentication
+
+Party codes serve as both the **username and password** for party logins. This is an intentional design decision:
+
+- Guests receive party codes via invitations or messages
+- Each party has one code that grants access to RSVP for all party members
+- Admins need visibility into party codes to manage delivery and troubleshoot access
+- The party code is displayed in plaintext in the admin Parties panel with a copy button for convenience
+
+When a party code is updated by an admin, the corresponding party user's password is also updated, and all existing sessions for that party are invalidated (due to the `pwChangedAt` check).
 
 ---
 

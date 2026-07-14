@@ -17,6 +17,8 @@ export interface User {
   created_at: string;
   last_login_at: string | null;
   total_page_views: number;
+  password_changed_at: string | null;
+  last_page_view_at: string | null;
 }
 
 export type SafeUser = Omit<User, "password">;

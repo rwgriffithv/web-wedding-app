@@ -69,7 +69,7 @@ export function GuestTable({ guests, parties }: GuestTableProps) {
       <details className="admin-section" open>
         <summary>Guests ({guests.length})</summary>
         <div className="admin-section-body">
-          <div style={{ marginBottom: "1rem" }}>
+          <div className="mb-2">
             <input
               type="text"
               placeholder="Search by name or party..."
@@ -82,10 +82,10 @@ export function GuestTable({ guests, parties }: GuestTableProps) {
           <table className="admin-table">
             <thead>
               <tr>
-                <th onClick={() => toggleSort("name")} style={{ cursor: "pointer" }}>
+                <th onClick={() => toggleSort("name")} className="cursor-pointer">
                   Name{sortIndicator("name")}
                 </th>
-                <th onClick={() => toggleSort("party")} style={{ cursor: "pointer" }}>
+                <th onClick={() => toggleSort("party")} className="cursor-pointer">
                   Party{sortIndicator("party")}
                 </th>
                 <th>+1</th>

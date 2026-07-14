@@ -21,10 +21,11 @@ test("login with admin credentials redirects to admin", async ({ page }) => {
 test("admin dashboard shows stats and rsvp table", async ({ page }) => {
   await loginAsAdmin(page);
   await page.waitForURL(/\/admin/, { timeout: 10000 });
-  await expect(page.locator(".stat-row")).toHaveCount(3);
+  await expect(page.locator(".stat-row")).toHaveCount(4);
   await expect(page.getByRole("heading", { name: "Invited" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Expected" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Confirmed" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Help Questions" })).toBeVisible();
   await expect(page.getByRole("table")).toBeVisible();
 });
 

@@ -101,7 +101,7 @@ Auth is enforced at the layout level (`isAdmin()` guard) and in every Server Act
 | Language | TypeScript 5.4 (strict) | Type safety with no `any` |
 | Database | better-sqlite3 (WAL mode) | Synchronous SQLite, zero-config |
 | Auth | HMAC-signed JSON cookie | Session tokens with scrypt password hashing |
-| Styling | Plain CSS (custom properties) | Zero-dependency, themeable via `:root` |
+| Styling | Plain CSS (custom properties) | Zero-dependency, themeable via `:root`. **No Tailwind CSS.** Utility classes are hand-crafted in `globals.css`. |
 | Proxy | Caddy 2.11 (alpine) | TLS, rate limiting, security headers |
 | Tunnel | cloudflared 2026.6.1 | Outbound-only Cloudflare Tunnel |
 | Testing | Vitest + Playwright | 66 unit tests + E2E specs |
@@ -178,7 +178,7 @@ src/
 | Auth | HMAC-signed JSON cookie + DB validation | Simple, secure (signed), sessions validated against DB on every request |
 | Access control | Layout-level guards + server actions | Every admin page and action validates `isAdmin()` server-side |
 | RSVP | Party model | Families RSVP once with a code (not per-person passwords) |
-| Styling | Plain CSS | Zero dependencies, themeable via custom properties |
+| Styling | Plain CSS | Zero dependencies, themeable via custom properties. **No Tailwind CSS** — utility classes are hand-crafted in `globals.css`. |
 | Deployment | Docker Compose | Isolated networks, multi-stage builds, health checks |
 | Error handling | Per-route error.tsx | Granular error boundaries per route segment |
 | Media auth | Session-based (not admin) | Any logged-in user can view media; login bg gets dedicated public endpoint |
@@ -187,6 +187,17 @@ src/
 | Home page | ISR (revalidate: 60) | Zero personalization, safe to cache. All other pages are dynamic (session-dependent). |
 | Video poster | ffmpeg + sharp pipeline | Auto-generates 1920x1080 WebP from first frame. Reuses existing thumbnail infrastructure. |
 | RSVP deadline | Server-timezone comparison | `datetime-local` input parsed as server time (Pacific). Works because admin and server share timezone. |
+
+## Database Migrations
+
+**Migrations are manual operations.** They are never run automatically by `deploy.sh`, the webapp, or any startup script.
+
+When schema changes require new columns or tables:
+1. Write an idempotent migration script in `scripts/migrate-*.sh`
+2. **Run it manually** on the production server before deploying: `./scripts/migrate-<name>.sh`
+3. The script backs up the database, runs `ALTER TABLE`, and reports success
+
+Like database backups, migrations are an explicit operator responsibility. The DDL in `schema.ts` uses `CREATE TABLE IF NOT EXISTS` — it creates new tables but **never alters existing ones**.
 
 ## Known Issues & Limitations
 

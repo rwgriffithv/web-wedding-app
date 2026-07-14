@@ -7,7 +7,7 @@ vi.mock("next/headers", () => ({
 
 vi.mock("./repository/users", () => ({
   getUserById: vi.fn().mockImplementation((id: number) => {
-    if (id === 2) return { id: 2, username: "admin", type: "admin", display_name: "Admin", party_id: null, created_at: "", last_login_at: null, total_page_views: 0 };
+    if (id === 2) return { id: 2, username: "admin", type: "admin", display_name: "Admin", party_id: null, created_at: "", last_login_at: null, total_page_views: 0, password_changed_at: null, last_page_view_at: null };
     return undefined;
   }),
   getUserWithPassword: vi.fn(),

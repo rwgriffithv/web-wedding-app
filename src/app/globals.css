@@ -1128,3 +1128,7 @@ footer { border-top: 1px solid var(--color-border); padding: 2rem 0; text-align:
 .inline-flex { display: inline-flex; }
 .display-inline { display: inline; }
 .italic { font-style: italic; }
+.cursor-pointer { cursor: pointer; }
+.w-2 { width: 2rem; }
+.opacity-muted { opacity: 0.6; }
+.opacity-muted:hover { opacity: 1; }

@@ -1,0 +1,46 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { isAdmin } from "@/lib/auth";
+import { getString } from "@/lib/form-data";
+import { setConfigs } from "@/lib/repository/site-config";
+
+interface RateLimitState {
+  success?: boolean;
+  error?: string;
+}
+
+export async function saveRateLimitConfig(
+  _prev: RateLimitState | null,
+  formData: FormData,
+): Promise<RateLimitState> {
+  if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+
+  try {
+    const entries: [string, string][] = [];
+    for (const key of formData.keys()) {
+      if (key === "_key") continue;
+      const value = getString(formData, key) ?? "";
+      const num = parseInt(value, 10);
+      if (!Number.isFinite(num) || num <= 0 || num > 1000) {
+        return {
+          success: false,
+          error: `"${key}" must be a positive number (1–1000).`,
+        };
+      }
+      entries.push([key, value]);
+    }
+    if (entries.length === 0) {
+      return { success: false, error: "No fields to save." };
+    }
+
+    setConfigs(entries);
+    revalidatePath("/admin/rsvp");
+    revalidatePath("/admin/help");
+    revalidatePath("/admin/site");
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: "Failed to save rate limit config." };
+  }
+}

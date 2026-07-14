@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { getEnvConfig } from "./config";
 import { getUserById } from "./repository/users";
 import { getPartyById } from "./repository/party";
+import { getPartyUserWithPassword } from "./repository/users";
 
 export const SESSION_COOKIE = "session";
 
@@ -11,6 +12,7 @@ interface Session {
   partyId?: number;
   type: "admin" | "viewer" | "party";
   exp?: number;
+  pwChangedAt?: string | null;
 }
 
 function getSessionSecret(): string {
@@ -58,12 +60,15 @@ async function validateSession(session: Session): Promise<Session | null> {
     if (!session.userId) return null;
     const user = getUserById(session.userId);
     if (!user || user.type !== session.type) return null;
+    if ((session.pwChangedAt ?? null) !== user.password_changed_at) return null;
     return session;
   }
   if (session.type === "party") {
     if (!session.partyId) return null;
     const party = getPartyById(session.partyId);
     if (!party) return null;
+    const partyUser = getPartyUserWithPassword(session.partyId);
+    if (partyUser && (session.pwChangedAt ?? null) !== partyUser.password_changed_at) return null;
     return session;
   }
   return null;
@@ -83,7 +88,7 @@ export async function isAdmin(): Promise<boolean> {
   return session?.type === "admin";
 }
 
-export function createSession(data: { userId?: number; partyId?: number; type: "admin" | "viewer" | "party" }, expiresInSeconds?: number): string {
+export function createSession(data: { userId?: number; partyId?: number; type: "admin" | "viewer" | "party"; pwChangedAt?: string | null }, expiresInSeconds?: number): string {
   return signSession(data, expiresInSeconds);
 }
 

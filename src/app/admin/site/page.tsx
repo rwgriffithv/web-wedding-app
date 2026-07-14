@@ -8,7 +8,7 @@ export default function AdminSitePage() {
 
   return (
     <>
-      <Header title="Site Configuration" description="Manage landing page and home page content." />
+      <Header title="Site Configuration" description="Manage landing page, home page, and security settings." />
       <details className="admin-section" open>
         <summary>Site Settings</summary>
         <div className="admin-section-body">

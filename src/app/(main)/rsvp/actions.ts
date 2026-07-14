@@ -56,7 +56,7 @@ export async function submitRsvp(_prevState: RsvpState | null, formData: FormDat
     if (!party) return { success: false, error: "Party not found." };
 
     if (!rsvpRateLimiter.check(`party:${session.partyId}`, getRsvpRateLimitConfig())) {
-      return { success: false, error: "Too many submissions. Please wait before trying again." };
+      return { success: false, error: "Your party has made too many submissions. Please wait before trying again." };
     }
 
     const member = getGuestById(memberId);

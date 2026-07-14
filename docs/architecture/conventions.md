@@ -194,6 +194,15 @@ Called inside the delete transaction, before the DELETE statement. Failures are 
 
 ## CSS Conventions
 
+**No Tailwind CSS.** This project uses hand-crafted CSS utility classes defined in `src/app/globals.css`. Do not use Tailwind class names — they will have no effect. When converting inline styles, use only the utility classes that exist in `globals.css` (e.g. `.flex-row`, `.gap-2`, `.mb-2`, `.text-sm`, `.cursor-pointer`). If a needed utility doesn't exist, add it to the `/* Utility Classes */` section at the bottom of `globals.css`.
+
+**Inline styles are acceptable** when:
+- Referencing CSS custom properties: `style={{ color: "var(--color-muted)" }}`, `style={{ borderRadius: "var(--radius)" }}`
+- Setting dynamic values: `style={{ width: computedWidth }}`, `style={{ objectFit: "cover" }}`
+- Using Next.js Image props that require inline: `style={{ objectFit: "cover" }}`
+
+Convert to utility classes only when the style is **static and reusable** (e.g. `marginBottom: "1rem"` → `className="mb-2"`). Do not create utility classes for one-off values or values that depend on CSS variables.
+
 ### Full-Screen Sections
 Use `100dvh` with `100vh` fallback for full-screen sections (home hero, landing):
 ```css
@@ -242,3 +251,14 @@ src/lib/repository/
 - `page.tsx` imports from `repository/` directly (Server Component, no client boundary)
 - `actions.ts` imports from `repository/` (Server Actions, also server-only)
 - `*-form.tsx` and `*-list.tsx` use `"use client"` — never import from `repository/` directly; they call actions
+
+## Database Migrations
+
+**Never put migration code in the webapp or deploy scripts.** Migrations are manual operator tasks, like backups.
+
+- Write idempotent scripts in `scripts/migrate-*.sh`
+- Run them manually on the production server **before** deploying: `./scripts/migrate-<name>.sh`
+- Each script backs up the DB, runs `ALTER TABLE`, and logs what it did
+- `deploy.sh` only builds and restarts — it does not touch the database schema
+- `db.ts` uses `CREATE TABLE IF NOT EXISTS` — it creates new tables but never alters existing ones
+- `scripts/db-seed.ts` runs DDL and includes idempotent column migrations for dev/test databases (only adds missing columns, never drops or modifies existing ones)

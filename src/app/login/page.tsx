@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { parseSession } from "@/lib/auth";
 import { getConfig } from "@/lib/repository/site-config";
+import { validateMediaUrl } from "@/lib/form-data";
 import { LoginForm } from "./login-form";
 
 export default async function LoginPage() {
@@ -17,7 +18,7 @@ export default async function LoginPage() {
   if (background) {
     if (background.startsWith("/api/media/")) {
       safeBackground = "url(/api/login-background)";
-    } else if (background.startsWith("https://")) {
+    } else if (background.startsWith("https://") && !validateMediaUrl(background)) {
       safeBackground = `url(${background})`;
     }
   }

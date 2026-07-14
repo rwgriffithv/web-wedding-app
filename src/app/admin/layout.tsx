@@ -37,7 +37,7 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
         <Link href="/admin/media">Media</Link>
         <Link href="/admin/help">Help</Link>
         <div className="flex-1" />
-        <Link href="/home" className="opacity-60 hover:opacity-100">&larr; Back to Site</Link>
+        <Link href="/home" className="opacity-muted">&larr; Back to Site</Link>
       </aside>
       <main className="admin-main">{children}</main>
     </div>

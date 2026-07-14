@@ -14,6 +14,16 @@ const adminPassword = process.env.ADMIN_PASSWORD || "admin";
 
 db.exec(DDL);
 
+// Idempotent column migrations for existing databases
+const columns = db.pragma("table_info(users)") as { name: string }[];
+const columnNames = new Set(columns.map((c) => c.name));
+if (!columnNames.has("password_changed_at")) {
+  db.exec("ALTER TABLE users ADD COLUMN password_changed_at TEXT");
+}
+if (!columnNames.has("last_page_view_at")) {
+  db.exec("ALTER TABLE users ADD COLUMN last_page_view_at TEXT");
+}
+
 const insertConfig = db.prepare("INSERT OR IGNORE INTO site_config (key, value) VALUES (?, ?)");
 const upsertConfig = db.prepare("UPDATE site_config SET value = ? WHERE key = ?");
 const setConfig = (key: string, value: string) => {
@@ -21,8 +31,8 @@ const setConfig = (key: string, value: string) => {
   upsertConfig.run(value, key);
 };
 
-setConfig("rate_limit_max_attempts", process.env.RATE_LIMIT_MAX || "5");
-setConfig("rate_limit_window_seconds", process.env.RATE_LIMIT_WINDOW_SEC ? String(Number(process.env.RATE_LIMIT_WINDOW_SEC)) : "60");
+setConfig("rate_limit_max_attempts", "5");
+setConfig("rate_limit_window_seconds", "60");
 
 // Ensure default config values exist for existing databases (only fills empty/null values)
 const upsertIfEmpty = db.prepare("UPDATE site_config SET value = ? WHERE key = ? AND (value IS NULL OR value = '')");

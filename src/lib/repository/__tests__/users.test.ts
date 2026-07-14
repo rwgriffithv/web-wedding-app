@@ -163,11 +163,23 @@ describe("users repository", () => {
 
     expect(getUserById(user.id)!.total_page_views).toBe(0);
 
-    incrementPageViews(user.id);
+    incrementPageViews(user.id, 0);
     expect(getUserById(user.id)!.total_page_views).toBe(1);
 
-    incrementPageViews(user.id);
+    incrementPageViews(user.id, 0);
     expect(getUserById(user.id)!.total_page_views).toBe(2);
+  });
+
+  it("incrementPageViews respects debounce window", async () => {
+    const { createUser, incrementPageViews, getUserById } = await import("@/lib/repository/users");
+    const user = createUser("debounce", "pass1234", "Debounce User", "party");
+
+    incrementPageViews(user.id, 0);
+    expect(getUserById(user.id)!.total_page_views).toBe(1);
+
+    const blocked = incrementPageViews(user.id, 1440);
+    expect(blocked).toBe(false);
+    expect(getUserById(user.id)!.total_page_views).toBe(1);
   });
 
   it("getPartyActivity returns party users ordered by last login", async () => {

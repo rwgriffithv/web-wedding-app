@@ -121,7 +121,7 @@ After logging in as admin (`/admin`):
 
 ### 3. Share Access
 
-- **Party codes** — Print on invitations. Each party uses one code to RSVP for all members.
+- **Party codes** — Print on invitations. Each party uses one code to RSVP for all members. The party code is both the username and password for that party's login — this is by design, as guests receive codes via invitations and admins need visibility to manage delivery.
 - **Guest account** — A shared view-only account (`guest`/`guest`) for browsing without RSVP.
 - **Admin account** — Only you and your partner need this.
 
@@ -141,7 +141,7 @@ See [docs/architecture/deployment-pipeline.md](docs/architecture/deployment-pipe
 | Language | TypeScript 5.4 (strict, no `any`) |
 | Database | SQLite via better-sqlite3 (WAL mode) |
 | Auth | Cookie-based HMAC-signed JSON sessions |
-| Styling | Plain CSS with custom properties |
+| Styling | Plain CSS with custom properties (no Tailwind, no CSS-in-JS) |
 
 ### Directory Structure
 

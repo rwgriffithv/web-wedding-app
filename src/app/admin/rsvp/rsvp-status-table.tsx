@@ -82,7 +82,7 @@ export function RsvpStatusTable({ guests }: RsvpStatusTableProps) {
 
   return (
     <>
-      <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem", alignItems: "center", flexWrap: "wrap" }}>
+      <div className="flex-row gap-2 mb-2 items-center flex-wrap">
         <input
           type="text"
           placeholder="Search by name or party..."
@@ -90,7 +90,7 @@ export function RsvpStatusTable({ guests }: RsvpStatusTableProps) {
           onChange={e => setSearch(e.target.value)}
           className="admin-table-search"
         />
-        <div style={{ display: "flex", gap: "0.5rem", fontSize: "0.8rem" }}>
+        <div className="flex-row gap-1" style={{ fontSize: "0.8rem" }}>
           <button
             className={`btn btn-sm ${statusFilter === "all" ? "btn-primary" : "btn-ghost"}`}
             onClick={() => setStatusFilter("all")}
@@ -121,13 +121,13 @@ export function RsvpStatusTable({ guests }: RsvpStatusTableProps) {
       <table className="admin-table">
         <thead>
           <tr>
-            <th onClick={() => toggleSort("name")} style={{ cursor: "pointer" }}>
+            <th onClick={() => toggleSort("name")} className="cursor-pointer">
               Name{sortIndicator("name")}
             </th>
-            <th onClick={() => toggleSort("party")} style={{ cursor: "pointer" }}>
+            <th onClick={() => toggleSort("party")} className="cursor-pointer">
               Party{sortIndicator("party")}
             </th>
-            <th onClick={() => toggleSort("status")} style={{ cursor: "pointer" }}>
+            <th onClick={() => toggleSort("status")} className="cursor-pointer">
               Status{sortIndicator("status")}
             </th>
             <th>Plus One</th>
