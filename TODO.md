@@ -112,13 +112,34 @@ This is an ordered list of features to implement along with a simple sub-bullet 
 * Now I would like to add a "Help/Questions" page. This should be in the lower right hand of the website as a question mark button with a "help" label. This will load a /help page with two tabs: [FAQ, My Party's Questions]. The FAQ section will list FAQ questions and answers (labeled with stylized "Q" and "A") that the admin enters as "FAQ items" in the new "Help" section of the admin dashboard. The "My Party's Quesions" tab will have a list of questions made by that party (logged in) and answered by the administrator using the same components as the FAQ "Q" and "A" elements (if possible), as well as a form (at the top of the page) for asking a new question. The questions will be ordered top to bottom, most recent first. The admin dashboarad "Help" section will need a way to search and sort and view the questions made by each Party and submit answers to their questions. A sortable and filter-able feature there should be the number of total questions and number of unanswered questions. The filter that is useful would be having any unanswered questions. A very important part of the text input here is sanitization! Do not let users inject arbitrary sql commands or any malicious text or data. The sanitization must be industry standard. profane words are allowed, just make sure the text is clean for the software to parse. Make sure the code is well structure, consistent, and coherent. It will be audited. Make sure it reuses and follows style with the rest of the codebase (especially the admin dashboard pieces) as well. The Help page should have similar stylling to the rest of the website (font, spacing, etc.). Please make database edits clean and if migration is needed provide an idempotent script in ./scripts. Make sure to updatae unit tests and e2e tests (fixes and additions) as necessary. If the user is not a "party" user, make sure there is text that renders under the "My Party's Questions" tab that shows it is only available if you login with a party code (just like the RSVP page shows).
   * status: done
 
-* Please fix the ordering of sections in the admin dashboard sidebar. "Schedule" should come after "Parties" and "Lodging" should come after "dress code". Also make sure the text area configuration on each of these dashboard sections is at the top (Schedule seemed to have it in the wrong place).
+* There seems to be some instability with the radio buttons when RSVP'ing. When a user clicks submit, the radio buttons revert to their previous state (before submitting). The request goes to the backend properly and the radio buttons display properly after refreshing, but this is confusing. Please fix this. Also, I fear some changes have made the page unusable for IOS users again. Please thoroughly assess this and fix it if needed. IOS and safari continues to be an issue. Make sure there is no weird redirection or errors there, as well as proper formatting and radio button behavior (without degrading chrome, android, and desktop functionality). There will a be thorough audit of this feature, please make sure you follow best practices and are consistent and coherent with other code, style, and device compaibility.
+  * status: done
+
+* Please fix the ordering of sections in the admin dashboard sidebar. "Schedule" should come after "Parties" and "Lodging" should come after "dress code". Also please add a new tab to the Guide page at the end called "Gifts". Give it a configurable text field just like the other tabs. There should be a gifts admin dashboard page after the other guide-related admin dashboard sections (Lodging should be before it). Make sure it uses the same configurable text area component.
   * status: not done
 
-* Please add a new tab to the Guide page at the end called "Gifts". Give it a configurable text field just like the other tabs.
-  * status: not done
-
-* There seems to be some instability with the radio buttons when RSVP'ing. When a user clicks submit, the radio buttons revert to their previous state (before submitting). The request goes to the backend properly and the radio buttons display properly after refreshing, but this is confusing. Please fix this. Also, I fear some changes have made the page unusable for IOS users again. Please thoroughly assess this and fix it if needed. IOS and safari continues to be an issue. Make sure there is no weird redirection or errors there, as well as proper formatting and radio button behavior (without degrading chrome, android, and desktop functionality).
+* Please fix this persistent issue that has plagued some users. I cannot figure out why they have issues, but they log in successfully with a party code, click the RSVP page from the pill, and then are booted back out to the login page. I can't figure it out, I desperately need your help, this subset of users cannot RSVP! Here are the console logs from one of these users:
+```
+MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 close listeners added. Use emitter.setMaxListeners() to increase limit
+n	@	contentscript.js:14083
+contentscript.js:14083 MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 end listeners added. Use emitter.setMaxListeners() to increase limit
+n	@	contentscript.js:14083
+2
+contentscript.js:14083 ObjectMultiplex - orphaned data for stream "app-init-liveness"
+warn	@	contentscript.js:14083
+2
+contentscript.js:14083 ObjectMultiplex - orphaned data for stream "background-liveness"
+warn	@	contentscript.js:14083
+login:1 Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/v4513226…' violates the following Content Security Policy directive: "script-src 'self' 'unsafe-inline'". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.
+content-script.js:22 Document already loaded, running initialization immediately
+content-script.js:4 Attempting to initialize AdUnit
+content-script.js:6 AdUnit initialized successfully
+favicon.ico:1 
+ Failed to load resource: the server responded with a status of 404 ()
+feature_collector.js:23 using deprecated parameters for the initialization function; pass a single object instead
+N	@	feature_collector.js:23
+```
+Please help!
   * status: not done
 
 * The admin dashboard does not seem to render very well on mobile. Some things are misaligned, flow too wide on the page and result in scrolling, and the hamburger menu dropdown results in a weird vertical scrolling that is more like a collapsible element than a real hamburger menu. Please review the design of the mobile rendering of the admin dashboard and see if there are alternative implementations of the hamburger menu as well as making horizontal scrolling of the tables more coherent and better looking.

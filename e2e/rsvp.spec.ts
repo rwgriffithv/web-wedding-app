@@ -27,6 +27,34 @@ test.describe.serial("RSVP flows", () => {
     await expect(page.getByText(/response submitted/i).or(page.getByText(/response updated/i))).toBeVisible();
   });
 
+  test("radio state persists after submission without page reload", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Party Code" }).click();
+    await page.fill("input[name=code]", "DEMO-1234");
+    await page.getByRole("button", { name: "Continue with Party Code" }).click();
+    await expect(page).toHaveURL(/\/home/);
+    await page.goto("/rsvp");
+
+    const member = page.locator(".rsvp-member").first();
+    const yesRadio = member.locator("input[name^=attending_][value=yes]");
+    const submitBtn = member.locator("button[type=submit]");
+
+    await expect(yesRadio).toBeEnabled({ timeout: 5000 });
+    await yesRadio.check();
+    await submitBtn.click();
+    await expect(member.getByText(/response submitted/i).or(member.getByText(/response updated/i))).toBeVisible();
+
+    await expect(yesRadio).toBeChecked();
+
+    const noRadio = member.locator("input[name^=attending_][value=no]");
+    await noRadio.check();
+    await submitBtn.click();
+    await expect(member.getByText(/response updated/i)).toBeVisible();
+
+    await expect(noRadio).toBeChecked();
+    await expect(yesRadio).not.toBeChecked();
+  });
+
   test("invalid party code shows error", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Party Code" }).click();

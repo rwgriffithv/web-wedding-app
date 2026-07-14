@@ -8,7 +8,10 @@ import { getPartyById } from "@/lib/repository/party";
 import { submitResponse } from "@/lib/repository/rsvp";
 import { getString } from "@/lib/form-data";
 
-interface RsvpState { success?: boolean; error?: string }
+export interface RsvpState {
+  success?: boolean;
+  error?: string;
+}
 
 export async function submitRsvp(prevState: RsvpState | null, formData: FormData): Promise<RsvpState> {
   const session = await parseSession();
@@ -52,8 +55,18 @@ export async function submitRsvp(prevState: RsvpState | null, formData: FormData
 
 async function rsvpMember(memberId: number, name: string, attending: string, formData: FormData): Promise<RsvpState> {
   const isAttending = attending === "yes";
-  const plusOneRaw = isAttending ? getString(formData, `plus_one_${memberId}`) : undefined;
-  const plusOne = plusOneRaw && plusOneRaw.length > 0 ? plusOneRaw.slice(0, 200) : undefined;
+  let plusOne: string | undefined;
+
+  if (isAttending) {
+    const bringPlusOne = getString(formData, `bring_plus_one_${memberId}`);
+    if (bringPlusOne === "yes") {
+      const plusOneRaw = getString(formData, `plus_one_${memberId}`);
+      if (!plusOneRaw) {
+        return { success: false, error: "Please enter your plus-one's name." };
+      }
+      plusOne = plusOneRaw.slice(0, 200);
+    }
+  }
 
   try {
     submitResponse(memberId, name, isAttending, plusOne);

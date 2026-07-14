@@ -1,16 +1,17 @@
 "use client";
 
 import { useState, useEffect, useActionState } from "react";
-import { submitRsvp } from "./actions";
+import { submitRsvp, type RsvpState } from "./actions";
+import type { RsvpResponse } from "@/lib/types";
 
 interface RsvpFormProps {
   memberId: number;
   canBringPlusOne: boolean;
-  existingResponse?: { guest_name: string; attending: number; plus_one_name: string | null };
+  existingResponse?: Pick<RsvpResponse, "guest_name" | "attending" | "plus_one_name">;
   isLocked?: boolean;
 }
 
-const initialState: { success?: boolean; error?: string } | null = null;
+const initialState: RsvpState | null = null;
 
 export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked }: RsvpFormProps) {
   const [state, dispatch, isPending] = useActionState(submitRsvp, initialState);
@@ -18,12 +19,22 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
   const [bringPlusOne, setBringPlusOne] = useState(
     existingResponse?.plus_one_name ? "yes" : "no"
   );
+  const [plusOneName, setPlusOneName] = useState(existingResponse?.plus_one_name ?? "");
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   useEffect(() => {
     if (attending === "no") setBringPlusOne("no");
   }, [attending]);
 
-  const hasResponse = !!existingResponse;
+  useEffect(() => {
+    if (bringPlusOne === "no") setPlusOneName("");
+  }, [bringPlusOne]);
+
+  useEffect(() => {
+    if (state?.success) setHasSubmitted(true);
+  }, [state]);
+
+  const hasResponse = !!existingResponse || hasSubmitted;
 
   return (
     <form action={dispatch} className="rsvp-form">
@@ -33,12 +44,29 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
         <div className="form-group">
           <label id={`attending-label-${memberId}`}>Attending?</label>
           <div className="radio-group" role="radiogroup" aria-labelledby={`attending-label-${memberId}`}>
-            <label>
-              <input type="radio" name={`attending_${memberId}`} value="yes" checked={attending === "yes"} onChange={() => setAttending("yes")} required disabled={isLocked} />
+            <label htmlFor={`attending_${memberId}_yes`}>
+              <input
+                type="radio"
+                id={`attending_${memberId}_yes`}
+                name={`attending_${memberId}`}
+                value="yes"
+                checked={attending === "yes"}
+                onChange={() => setAttending("yes")}
+                required
+                disabled={isLocked}
+              />
               Yes
             </label>
-            <label>
-              <input type="radio" name={`attending_${memberId}`} value="no" checked={attending === "no"} onChange={() => setAttending("no")} disabled={isLocked} />
+            <label htmlFor={`attending_${memberId}_no`}>
+              <input
+                type="radio"
+                id={`attending_${memberId}_no`}
+                name={`attending_${memberId}`}
+                value="no"
+                checked={attending === "no"}
+                onChange={() => setAttending("no")}
+                disabled={isLocked}
+              />
               No
             </label>
           </div>
@@ -48,9 +76,10 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
           <div className="form-group">
             <label id={`plusone-label-${memberId}`}>Plus-one?</label>
             <div className="radio-group" role="radiogroup" aria-labelledby={`plusone-label-${memberId}`}>
-              <label>
+              <label htmlFor={`bring_plus_one_${memberId}_yes`}>
                 <input
                   type="radio"
+                  id={`bring_plus_one_${memberId}_yes`}
                   name={`bring_plus_one_${memberId}`}
                   value="yes"
                   checked={bringPlusOne === "yes"}
@@ -59,9 +88,10 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
                 />
                 Yes
               </label>
-              <label>
+              <label htmlFor={`bring_plus_one_${memberId}_no`}>
                 <input
                   type="radio"
+                  id={`bring_plus_one_${memberId}_no`}
                   name={`bring_plus_one_${memberId}`}
                   value="no"
                   checked={bringPlusOne === "no"}
@@ -82,10 +112,12 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
             id={`plus_one_${memberId}`}
             name={`plus_one_${memberId}`}
             type="text"
-            defaultValue={existingResponse?.plus_one_name ?? ""}
+            value={plusOneName}
+            onChange={(e) => setPlusOneName(e.target.value)}
             placeholder="Guest's name"
             style={{ maxWidth: "300px" }}
             disabled={isLocked || attending === "no"}
+            required
           />
         </div>
       )}
@@ -101,7 +133,11 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
       {isLocked ? (
         <p className="text-muted text-sm mt-1" style={{ fontStyle: "italic" }}>RSVP is closed.</p>
       ) : (
-        <button type="submit" className="btn btn-primary btn-sm mt-1" disabled={isPending}>
+        <button
+          type="submit"
+          className="btn btn-primary btn-sm mt-1"
+          disabled={isPending || (bringPlusOne === "yes" && plusOneName.trim() === "")}
+        >
           {isPending ? "Saving..." : hasResponse ? "Update" : "Submit"}
         </button>
       )}

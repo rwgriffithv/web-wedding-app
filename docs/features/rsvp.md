@@ -86,11 +86,14 @@ The server action `submitRsvp()` reads `member_id` from the form data, then vali
 export async function submitRsvp(prevState, formData) {
   // 1. Parse session
   // 2. Validate authorization (admin/party/guest check)
-  // 3. Upsert rsvp_responses row
-  // 4. revalidatePath("/rsvp")
-  // 5. Return { success: true }
+  // 3. Validate plus-one name if bring_plus_one=yes
+  // 4. Upsert rsvp_responses row
+  // 5. revalidatePath("/rsvp")
+  // 6. Return { success: true } or { error: "..." }
 }
 ```
+
+The action validates inputs and returns `{ success, error }`. The client component manages its own radio state locally — no sync-from-action needed since the user's selections are already correct.
 
 The RSVP repository function `submitResponse()` does an `INSERT OR REPLACE` to handle both new submissions and updates.
 
