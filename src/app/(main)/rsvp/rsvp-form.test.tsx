@@ -131,7 +131,7 @@ describe("RsvpForm — radio state persistence", () => {
     expect(plusOneYes.checked).toBe(false);
   });
 
-  it("submit button disabled when plus-one=yes but name is empty", async () => {
+  it("plus-one name input has required attribute for native validation", async () => {
     mockSubmit.mockResolvedValue({ success: true });
 
     render(
@@ -144,21 +144,15 @@ describe("RsvpForm — radio state persistence", () => {
 
     // Select attending Yes and plus-one Yes
     const allYesRadios = screen.getAllByRole("radio", { name: "Yes" });
-    const attendYes = allYesRadios[0];
-    const plusOneYes = allYesRadios[1];
-    fireEvent.click(attendYes);
+    fireEvent.click(allYesRadios[0]);
+    fireEvent.click(allYesRadios[1]);
 
-    fireEvent.click(plusOneYes);
-
-    // Submit button should be disabled (no name entered)
-    expect(getSubmitButton()).toBeDisabled();
-
-    // Enter a name
-    const nameInput = screen.getByPlaceholderText("Guest's name");
-    fireEvent.change(nameInput, { target: { value: "Alice" } });
-
-    // Submit button should now be enabled
+    // Submit button should be enabled (native required validation handles empty name)
     expect(getSubmitButton()).not.toBeDisabled();
+
+    // Plus-one name input should have required attribute
+    const nameInput = screen.getByPlaceholderText("Guest's name");
+    expect(nameInput).toBeRequired();
   });
 
   it("existing response pre-fills correct radio state", () => {

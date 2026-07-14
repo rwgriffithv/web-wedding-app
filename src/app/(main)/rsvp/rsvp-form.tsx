@@ -148,7 +148,7 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
         <button
           type="submit"
           className="btn btn-primary btn-sm mt-1"
-          disabled={isPending || (bringPlusOne === "yes" && plusOneName.trim() === "")}
+          disabled={isPending}
         >
           {isPending ? "Saving..." : hasResponse ? "Update" : "Submit"}
         </button>
