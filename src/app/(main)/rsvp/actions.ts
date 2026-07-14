@@ -13,7 +13,7 @@ export interface RsvpState {
   error?: string;
 }
 
-export async function submitRsvp(prevState: RsvpState | null, formData: FormData): Promise<RsvpState> {
+export async function submitRsvp(_prevState: RsvpState | null, formData: FormData): Promise<RsvpState> {
   const session = await parseSession();
   if (!session) return { success: false, error: "Not authenticated." };
 

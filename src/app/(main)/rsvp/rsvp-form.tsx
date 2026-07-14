@@ -38,10 +38,15 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setIsPending(true);
-    const formData = new FormData(e.currentTarget);
-    const result = await submitRsvp(null, formData);
-    setState(result);
-    setIsPending(false);
+    try {
+      const formData = new FormData(e.currentTarget);
+      const result = await submitRsvp(null, formData);
+      setState(result);
+    } catch {
+      setState({ success: false, error: "Something went wrong. Please try again." });
+    } finally {
+      setIsPending(false);
+    }
   }
 
   return (
@@ -123,7 +128,6 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
             value={plusOneName}
             onChange={(e) => setPlusOneName(e.target.value)}
             placeholder="Guest's name"
-            style={{ maxWidth: "300px" }}
             disabled={isLocked || attending === "no"}
             required
           />
@@ -139,7 +143,7 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
         <p className="text-error text-sm mt-1" role="alert">{state.error}</p>
       )}
       {isLocked ? (
-        <p className="text-muted text-sm mt-1" style={{ fontStyle: "italic" }}>RSVP is closed.</p>
+        <p className="text-muted text-sm mt-1 italic">RSVP is closed.</p>
       ) : (
         <button
           type="submit"

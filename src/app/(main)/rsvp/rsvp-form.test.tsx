@@ -8,7 +8,7 @@ vi.mock("./actions", () => ({
   submitRsvp: (...args: unknown[]) => mockSubmit(...args),
 }));
 
-function getRadio(name: string, value: string) {
+function getRadio(name: string) {
   return screen.getByRole("radio", { name }) as HTMLInputElement;
 }
 
@@ -25,7 +25,7 @@ describe("RsvpForm — radio state persistence", () => {
     mockSubmit.mockResolvedValue({ success: true });
 
     render(<RsvpForm memberId={1} canBringPlusOne={false} />);
-    const yes = getRadio("Yes", "yes");
+    const yes = getRadio("Yes");
 
     fireEvent.click(yes);
     expect(yes.checked).toBe(true);
@@ -43,8 +43,8 @@ describe("RsvpForm — radio state persistence", () => {
     mockSubmit.mockResolvedValue({ success: true });
 
     render(<RsvpForm memberId={1} canBringPlusOne={false} />);
-    const yes = getRadio("Yes", "yes");
-    const no = getRadio("No", "no");
+    const yes = getRadio("Yes");
+    const no = getRadio("No");
     const form = getSubmitButton().closest("form")!;
 
     // First submit: Yes

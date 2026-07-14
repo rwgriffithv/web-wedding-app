@@ -593,6 +593,10 @@ a:hover { text-decoration: underline; }
   margin-bottom: 0;
 }
 
+.rsvp-form input[type="text"] {
+  max-width: 300px;
+}
+
 .rsvp-form .plus-one-section {
   margin-top: 0.5rem;
   padding-top: 0.5rem;
