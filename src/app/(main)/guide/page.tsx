@@ -14,6 +14,7 @@ const TABS = [
   { id: "schedule", label: "Schedule" },
   { id: "dress-code", label: "Dress Code" },
   { id: "lodging", label: "Lodging" },
+  { id: "gifts", label: "Gifts" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -32,6 +33,7 @@ export default async function GuidePage({ searchParams }: GuidePageProps) {
   const dressCodeImages = getImages();
   const lodgingOptions = getLodgingOptions();
   const lodgingText = getConfig("lodging_text");
+  const giftsText = getConfig("gifts_text");
 
   return (
     <div className="page-content">
@@ -106,6 +108,16 @@ export default async function GuidePage({ searchParams }: GuidePageProps) {
                 </div>
               ))}
             </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === "gifts" && (
+        <div id="guide-panel-gifts" role="tabpanel" aria-labelledby="guide-tab-gifts">
+          {giftsText ? (
+            <p className="guide-tab-text">{giftsText}</p>
+          ) : (
+            <p className="empty-state">Gift information coming soon.</p>
           )}
         </div>
       )}

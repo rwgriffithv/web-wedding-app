@@ -116,6 +116,9 @@ This is an ordered list of features to implement along with a simple sub-bullet 
   * status: done
 
 * Please fix the ordering of sections in the admin dashboard sidebar. "Schedule" should come after "Parties" and "Lodging" should come after "dress code". Also please add a new tab to the Guide page at the end called "Gifts". Give it a configurable text field just like the other tabs. There should be a gifts admin dashboard page after the other guide-related admin dashboard sections (Lodging should be before it). Make sure it uses the same configurable text area component.
+  * status: done
+
+* Please add a new section/row to the admin dashboard main section below the invited/expected/etc counts called "help questions". There is a number for "answered" and then "unanswered". The styling should be similar to that of the invited/expected/etc section but distinct. The unanswered count background should be a warning color to grab attention if it is more than 0.
   * status: not done
 
 * Please fix this persistent issue that has plagued some users. I cannot figure out why they have issues, but they log in successfully with a party code, click the RSVP page from the pill, and then are booted back out to the login page. I can't figure it out, I desperately need your help, this subset of users cannot RSVP! Here are the console logs from one of these users:

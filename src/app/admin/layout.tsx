@@ -29,10 +29,11 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
         <Link href="/admin/users">Users</Link>
         <Link href="/admin/guests">Guests</Link>
         <Link href="/admin/parties">Parties</Link>
-        <Link href="/admin/lodging">Lodging</Link>
-        <Link href="/admin/dress-code">Dress Code</Link>
-        <Link href="/admin/rsvp">RSVP</Link>
         <Link href="/admin/schedule">Schedule</Link>
+        <Link href="/admin/dress-code">Dress Code</Link>
+        <Link href="/admin/lodging">Lodging</Link>
+        <Link href="/admin/gifts">Gifts</Link>
+        <Link href="/admin/rsvp">RSVP</Link>
         <Link href="/admin/media">Media</Link>
         <Link href="/admin/help">Help</Link>
         <div style={{ flex: 1 }} />
