@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { submitQuestion } from "./actions";
 import { CharCount } from "@/components/char-count";
 import { MAX_QUESTION_LENGTH } from "@/lib/constants";
