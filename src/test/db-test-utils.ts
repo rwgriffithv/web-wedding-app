@@ -2,8 +2,11 @@ import Database from "better-sqlite3";
 import { DDL } from "@/lib/schema";
 
 const TABLES = [
+  "questions",
+  "faq_items",
   "rsvp_responses",
   "media_items",
+  "media_tabs",
   "lodging_options",
   "dress_code_images",
   "schedule_items",

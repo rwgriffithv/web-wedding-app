@@ -3,10 +3,9 @@
 import { useState, useRef, useEffect, useActionState } from "react";
 import { updateFaq, deleteFaq, moveFaq } from "./actions";
 import { CharCount } from "@/components/char-count";
+import { MAX_QUESTION_LENGTH, MAX_ANSWER_LENGTH } from "@/lib/constants";
 import type { FaqItem } from "@/lib/db";
 
-const MAX_QUESTION = 2000;
-const MAX_ANSWER = 5000;
 const initialEditState = null as { success?: boolean; error?: string } | null;
 
 export function FaqList({ items }: { items: FaqItem[] }) {
@@ -67,11 +66,11 @@ export function FaqList({ items }: { items: FaqItem[] }) {
                       name="question"
                       rows={2}
                       required
-                      maxLength={MAX_QUESTION}
+                      maxLength={MAX_QUESTION_LENGTH}
                       value={editValues[item.id]?.question ?? item.question}
                       onChange={(e) => setEditValues(prev => ({ ...prev, [item.id]: { ...prev[item.id], question: e.target.value } }))}
                     />
-                    <CharCount current={(editValues[item.id]?.question ?? item.question).length} max={MAX_QUESTION} />
+                    <CharCount current={(editValues[item.id]?.question ?? item.question).length} max={MAX_QUESTION_LENGTH} />
                   </div>
                   <div className="form-group">
                     <label htmlFor={`edit_answer_${item.id}`}>Answer</label>
@@ -80,11 +79,11 @@ export function FaqList({ items }: { items: FaqItem[] }) {
                       name="answer"
                       rows={4}
                       required
-                      maxLength={MAX_ANSWER}
+                      maxLength={MAX_ANSWER_LENGTH}
                       value={editValues[item.id]?.answer ?? item.answer}
                       onChange={(e) => setEditValues(prev => ({ ...prev, [item.id]: { ...prev[item.id], answer: e.target.value } }))}
                     />
-                    <CharCount current={(editValues[item.id]?.answer ?? item.answer).length} max={MAX_ANSWER} />
+                    <CharCount current={(editValues[item.id]?.answer ?? item.answer).length} max={MAX_ANSWER_LENGTH} />
                   </div>
                   <div className="flex-row gap-1">
                     <button type="submit" className="btn btn-primary btn-sm" disabled={isPendingEdit}>

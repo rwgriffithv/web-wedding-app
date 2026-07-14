@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef, useActionState } from "react";
 import { answerQuestion } from "./actions";
 import { CharCount } from "@/components/char-count";
+import { MAX_ANSWER_LENGTH } from "@/lib/constants";
 import type { QuestionWithParty } from "@/lib/repository/questions";
 
-const MAX_ANSWER = 5000;
 const initialAnswerState = null as { success?: boolean; error?: string } | null;
 
 export function QuestionList({ questions, stats }: { questions: QuestionWithParty[]; stats: { total: number; unanswered: number } }) {
@@ -119,12 +119,12 @@ export function QuestionList({ questions, stats }: { questions: QuestionWithPart
                       name="answer"
                       rows={2}
                       required
-                      maxLength={MAX_ANSWER}
+                      maxLength={MAX_ANSWER_LENGTH}
                       placeholder="Type your answer..."
                       value={answerTexts[q.id] || ""}
                       onChange={(e) => setAnswerTexts(prev => ({ ...prev, [q.id]: e.target.value }))}
                     />
-                    <CharCount current={(answerTexts[q.id] || "").length} max={MAX_ANSWER} />
+                    <CharCount current={(answerTexts[q.id] || "").length} max={MAX_ANSWER_LENGTH} />
                   </div>
                   <button type="submit" className="btn btn-primary btn-sm" disabled={isPendingAnswer}>
                     {isPendingAnswer ? "Answering..." : "Submit Answer"}
