@@ -55,22 +55,20 @@ export function MyQuestions({ questions }: { questions: Question[] }) {
       {questions.length === 0 ? (
         <p className="empty-state">You haven&apos;t asked any questions yet.</p>
       ) : (
-        <div className="admin-item-list">
+        <div className="faq-list">
           {questions.map(q => (
-            <div className="admin-item" key={q.id}>
-              <div className="admin-item-content">
-                <div>
-                  <span className="text-muted text-sm">
-                    {new Date(q.created_at + "Z").toLocaleDateString()}
-                  </span>
-                </div>
-                <div><strong>Q:</strong> {q.question}</div>
-                {q.answer ? (
-                  <div className="text-muted"><strong>A:</strong> {q.answer}</div>
-                ) : (
-                  <div className="text-muted italic">Awaiting response...</div>
-                )}
+            <div className="faq-item" key={q.id}>
+              <div>
+                <span className="text-muted text-sm">
+                  {new Date(q.created_at + "Z").toLocaleDateString()}
+                </span>
               </div>
+              <div className="help-question"><strong>Q:</strong> {q.question}</div>
+              {q.answer ? (
+                <div className="help-answer"><strong>A:</strong> {q.answer}</div>
+              ) : (
+                <div className="help-answer">Awaiting response...</div>
+              )}
             </div>
           ))}
         </div>

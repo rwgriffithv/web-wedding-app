@@ -9,10 +9,10 @@ export function FaqContent({ items }: { items: FaqItem[] }) {
     <div className="faq-list">
       {items.map(item => (
         <div className="faq-item" key={item.id}>
-          <div className="faq-question">
+          <div className="help-question">
             <strong>Q:</strong> {item.question}
           </div>
-          <div className="faq-answer">
+          <div className="help-answer">
             <strong>A:</strong> {item.answer}
           </div>
         </div>
