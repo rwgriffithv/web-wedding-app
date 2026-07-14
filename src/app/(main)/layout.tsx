@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { parseSession } from "@/lib/auth";
+import { getAllConfig } from "@/lib/repository/site-config";
 import { Navigation } from "@/components/navigation";
 import { PageViewTracker } from "@/components/page-view-tracker";
+import { BannerText } from "@/components/banner-text";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -11,9 +13,13 @@ export default async function MainLayout({ children }: MainLayoutProps) {
   const session = await parseSession();
   if (!session) redirect("/");
 
+  const config = Object.fromEntries(getAllConfig().map((c) => [c.key, c.value]));
+  const bannerText = config.banner_text || "";
+
   return (
     <>
       {session.type === "party" && <PageViewTracker />}
+      {bannerText && <BannerText text={bannerText} />}
       {children}
       <Navigation isAdmin={session.type === "admin"} />
     </>

@@ -108,6 +108,16 @@ export function SiteConfigForm({ config }: SiteConfigFormProps) {
           )}
         </div>
       </fieldset>
+      <fieldset className="admin-fieldset form-group">
+        <legend>Banner</legend>
+        <div className="form-group">
+          <label htmlFor="banner_text">Banner Text</label>
+          <textarea id="banner_text" name="banner_text" rows={2} defaultValue={config.banner_text} placeholder="Optional announcement text (scrolls if too long for one line)" />
+          <p className="text-muted text-xs" style={{ marginTop: "0.25rem" }}>
+            Optional banner displayed on all pages. Leave empty to hide.
+          </p>
+        </div>
+      </fieldset>
       {state?.success && <p className="text-success text-sm mb-1" role="status">Saved successfully.</p>}
       {state?.error && <p className="text-error text-sm mb-1" role="alert">{state.error}</p>}
       <button type="submit" className="btn btn-primary" disabled={isPending}>{isPending ? "Saving..." : "Save Changes"}</button>

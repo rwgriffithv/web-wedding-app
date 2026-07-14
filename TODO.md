@@ -145,6 +145,9 @@ N	@	feature_collector.js:23
 Please help!
   * status: done
 
+* Now add a new field to the site config of the admin dashboard for an optional banner text that displays overlayed ontop of the home page (it could be every page other than login and admin if you prefer that). The banner will have a transparent background, and if the text is too long for the width of the screen (to fit on one line) it will slowly scroll the text horizontally as an automatic animation. The banner background should be a slightly attention grabbing color, though transparent. orange may work or something like it. Put an exclamation point at each edge of the banner that doesn't scroll as well.
+  * status: done
+
 * Is there a way to add IP banning as an option to the admin dashboard with detection for multiple login failures where it tracks how many times an IP has tried to login and failed by getting rate limitted? I would like some trackign like that in a "Security" section of the admin dashboard and then on the main dashboard section add a warning status with a counter for the number of suspicious IPs detected and not banned. I would also want a counter for the total number of IPs banned. It would be similar counter and warning system to the questionsi answered and questions unanswered system.
   * status: not done
 

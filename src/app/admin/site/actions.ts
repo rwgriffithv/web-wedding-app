@@ -28,6 +28,7 @@ const CONFIG_SCHEMA: Record<string, ConfigField> = {
   home_time:                  { maxLength: 50 },
   home_location:              { maxLength: 500 },
   home_background_video:      { maxLength: 1000 },
+  banner_text:                { maxLength: 500 },
 };
 
 const CONFIG_KEYS = Object.keys(CONFIG_SCHEMA) as (keyof typeof CONFIG_SCHEMA)[];
