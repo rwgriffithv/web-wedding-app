@@ -20,6 +20,7 @@ export function QuestionList({ questions, stats }: { questions: QuestionWithPart
   useEffect(() => {
     if (answerState?.success && !answerHandledRef.current) {
       answerHandledRef.current = true;
+      setAnswerTexts({});
       setFilter("all");
     }
     if (!answerState?.success) {
