@@ -5,7 +5,7 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 
-export const MEDIA_DIR = process.env.MEDIA_DIR || path.join(process.cwd(), "data", "media");
+export const MEDIA_DIR = process.env.MEDIA_DIR || path.join(/* turbopackIgnore: true */ process.cwd(), "data", "media");
 const MEDIA_DIR_SEP = MEDIA_DIR.endsWith(path.sep) ? MEDIA_DIR : MEDIA_DIR + path.sep;
 
 export const THUMBNAILS_DIR = path.join(MEDIA_DIR, "thumbnails");
@@ -21,13 +21,7 @@ export const ALLOWED_EXTENSIONS = new Set([
 
 export const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"]);
 
-export const VIDEO_EXTENSIONS = new Set([".mp4", ".webm", ".mov"]);
-
-export function detectMediaType(url: string): "image" | "video" {
-  const ext = url.split(".").pop()?.split("?")[0]?.toLowerCase();
-  if (ext && VIDEO_EXTENSIONS.has(`.${ext}`)) return "video";
-  return "image";
-}
+export { VIDEO_EXTENSIONS, detectMediaType } from "./media-detect";
 
 export const MIME_TYPES: Record<string, string> = {
   ".jpg": "image/jpeg",

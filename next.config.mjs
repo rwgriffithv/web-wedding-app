@@ -20,7 +20,7 @@ const nextConfig = {
               "default-src 'self'",
               "img-src 'self' blob: data: https:",
               "media-src 'self' https:",
-              "script-src 'self' 'unsafe-inline'",
+              "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com",
               "style-src 'self' 'unsafe-inline'",
               "font-src 'self'",
               "connect-src 'self'",

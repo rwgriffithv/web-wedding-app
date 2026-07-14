@@ -91,7 +91,7 @@ Three session types:
 | `party` | Party code login | `/(main)/*` + RSVP for party members |
 | `viewer` | Username/password login | `/(main)/*` only |
 
-Auth is enforced at the layout level (`isAdmin()` guard) and in every Server Action. `SafeUser` type (`Omit<User, "password">`) is returned by all repository functions except `getUserByUsername`.
+Auth is enforced at the layout level (`isAdmin()` guard) and in every Server Action. `SafeUser` type (`Omit<User, "password">`) is returned by all repository functions except `getUserWithPassword` and `getPartyUserWithPassword`.
 
 ## Technology Stack
 

@@ -9,34 +9,32 @@ import { deleteThumbnail } from "@/lib/media";
 
 interface SiteConfigState { success?: boolean; error?: string }
 
-const CONFIG_KEYS = [
-  "landing_title", "landing_background",
-  "rate_limit_max_attempts", "rate_limit_window_seconds",
-  "session_max_hours",
-  "rsvp_rate_limit_max", "rsvp_rate_limit_window",
-  "question_rate_limit_max", "question_rate_limit_window",
-  "home_title", "home_subtitle", "home_date", "home_time", "home_location", "home_background_video",
-  "rsvp_deadline",
-];
+interface ConfigField {
+  maxLength: number;
+  numeric?: { max: number };
+  date?: boolean;
+}
 
-const MAX_LENGTHS: Record<string, number> = {
-  landing_title: 200,
-  home_title: 200,
-  home_subtitle: 500,
-  home_date: 50,
-  home_time: 50,
-  home_location: 500,
-  landing_background: 2000,
-  home_background_video: 2000,
-  rate_limit_max_attempts: 10,
-  rate_limit_window_seconds: 10,
-  session_max_hours: 10,
-  rsvp_rate_limit_max: 10,
-  rsvp_rate_limit_window: 10,
-  question_rate_limit_max: 10,
-  question_rate_limit_window: 10,
-  rsvp_deadline: 50,
+const CONFIG_SCHEMA: Record<string, ConfigField> = {
+  landing_title:              { maxLength: 200 },
+  landing_background:         { maxLength: 2000 },
+  rate_limit_max_attempts:    { maxLength: 10, numeric: { max: 1000 } },
+  rate_limit_window_seconds:  { maxLength: 10, numeric: { max: 1000 } },
+  session_max_hours:          { maxLength: 10, numeric: { max: 24 } },
+  rsvp_rate_limit_max:        { maxLength: 10, numeric: { max: 1000 } },
+  rsvp_rate_limit_window:     { maxLength: 10, numeric: { max: 1000 } },
+  question_rate_limit_max:    { maxLength: 10, numeric: { max: 1000 } },
+  question_rate_limit_window: { maxLength: 10, numeric: { max: 1000 } },
+  home_title:                 { maxLength: 200 },
+  home_subtitle:              { maxLength: 500 },
+  home_date:                  { maxLength: 50 },
+  home_time:                  { maxLength: 50 },
+  home_location:              { maxLength: 500 },
+  home_background_video:      { maxLength: 1000 },
+  rsvp_deadline:              { maxLength: 50, date: true },
 };
+
+const CONFIG_KEYS = Object.keys(CONFIG_SCHEMA) as (keyof typeof CONFIG_SCHEMA)[];
 
 export async function saveSiteConfig(prevState: SiteConfigState | null, formData: FormData): Promise<SiteConfigState> {
   if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
@@ -44,27 +42,30 @@ export async function saveSiteConfig(prevState: SiteConfigState | null, formData
   try {
     const entries: [string, string][] = [];
     for (const key of CONFIG_KEYS) {
+      const field = CONFIG_SCHEMA[key];
       const value = getString(formData, key) ?? "";
-      const maxLen = MAX_LENGTHS[key] ?? 2000;
-      if (value.length > maxLen) {
-        return { success: false, error: `"${key}" must be ${maxLen} characters or fewer.` };
+
+      if (value.length > field.maxLength) {
+        return { success: false, error: `"${key}" must be ${field.maxLength} characters or fewer.` };
       }
-      if (key === "rate_limit_max_attempts" || key === "rate_limit_window_seconds" || key === "session_max_hours" || key === "rsvp_rate_limit_max" || key === "rsvp_rate_limit_window" || key === "question_rate_limit_max" || key === "question_rate_limit_window") {
+
+      if (field.numeric) {
         if (!value) {
           return { success: false, error: `"${key}" is required.` };
         }
         const num = parseInt(value, 10);
-        const maxVal = key === "session_max_hours" ? 24 : 1000;
-        if (!Number.isFinite(num) || num <= 0 || num > maxVal) {
-          return { success: false, error: `"${key}" must be a positive number (1–${maxVal}).` };
+        if (!Number.isFinite(num) || num <= 0 || num > field.numeric.max) {
+          return { success: false, error: `"${key}" must be a positive number (1–${field.numeric.max}).` };
         }
       }
-      if (key === "rsvp_deadline" && value) {
+
+      if (field.date && value) {
         const date = new Date(value);
         if (isNaN(date.getTime())) {
-          return { success: false, error: `"rsvp_deadline" must be a valid date.` };
+          return { success: false, error: `"${key}" must be a valid date.` };
         }
       }
+
       entries.push([key, value]);
     }
     setConfigs(entries);

@@ -20,7 +20,7 @@ export function FileUpload({ onUpload, accept, label }: FileUploadProps) {
 
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || uploading) return;
 
     setUploading(true);
     setError(null);

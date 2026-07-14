@@ -17,8 +17,8 @@ export interface RsvpState {
 const rsvpRateLimiter = createRateLimiter("rsvp", 10, 60_000);
 
 function getRsvpRateLimitConfig() {
-  const max = parseInt(getConfig("rsvp_rate_limit_max") ?? "10", 10);
-  const window = parseInt(getConfig("rsvp_rate_limit_window") ?? "60", 10);
+  const max = parseInt(getConfig("rsvp_rate_limit_max"), 10);
+  const window = parseInt(getConfig("rsvp_rate_limit_window"), 10);
   return {
     maxAttempts: Number.isFinite(max) && max > 0 ? max : 10,
     windowMs: (Number.isFinite(window) && window > 0 ? window : 60) * 1000,

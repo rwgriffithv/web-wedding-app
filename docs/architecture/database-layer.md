@@ -221,7 +221,7 @@ All interfaces defined in `src/lib/types.ts`, re-exported from `src/lib/db.ts`:
 | Type | Description |
 |---|---|
 | `User` | Full user record (includes password) |
-| `SafeUser` | `Omit<User, "password">` — returned by all repo functions except `getUserByUsername` |
+| `SafeUser` | `Omit<User, "password">` — returned by all repo functions except `getUserWithPassword` and `getPartyUserWithPassword` |
 | `Guest` | RSVP-able person (no auth fields) |
 | `Party` | Group with access code |
 | `SiteConfig` | Key-value config entry |
@@ -238,7 +238,7 @@ All SQL queries live in typed modules under `src/lib/repository/`. See [conventi
 
 | File | Key Functions |
 |---|---|
-| `users.ts` | `getUserByUsername()`, `getUserById()`, `getAllUsers()`, `createUser()`, `updateUser()`, `deleteUser()`, `createPartyUser()`, `deleteUsersByPartyId()`, `recordLogin()`, `incrementPageViews()`, `getPartyActivity()` |
+| `users.ts` | `getUserWithPassword()`, `getPartyUserWithPassword()`, `getUserById()`, `getAllUsers()`, `createUser()`, `updateUser()`, `deleteUser()`, `createPartyUser()`, `deleteUsersByPartyId()`, `recordLogin()`, `incrementPageViews()`, `getPartyActivity()` |
 | `party.ts` | `getAllParties()`, `getPartyById()`, `getPartyByCode()`, `createParty()`, `updateParty()`, `deleteParty()`, `deleteEmptyParty()` |
 | `guests.ts` | `getGuestById()`, `getAllGuests()`, `getGuestsByPartyId()`, `createGuest()`, `updateGuest()`, `deleteGuest()` |
 | `rsvp.ts` | `getResponseByGuest()`, `getAllResponses()`, `getRecentResponses()`, `getResponsesByGuests()`, `getAllGuestsRsvpStatus()`, `submitResponse()`, `getResponseCount()` |

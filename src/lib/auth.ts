@@ -17,12 +17,12 @@ function getSessionSecret(): string {
   return getEnvConfig().sessionSecret;
 }
 
-function signSession(payload: string, expiresInSeconds?: number): string {
-  const obj = JSON.parse(payload) as Record<string, unknown>;
+function signSession(obj: Record<string, unknown>, expiresInSeconds?: number): string {
+  const payload = { ...obj };
   if (expiresInSeconds && expiresInSeconds > 0) {
-    obj.exp = Date.now() + expiresInSeconds * 1000;
+    payload.exp = Date.now() + expiresInSeconds * 1000;
   }
-  const signed = JSON.stringify(obj);
+  const signed = JSON.stringify(payload);
   const secret = getSessionSecret();
   const hmac = crypto.createHmac("sha256", secret).update(signed).digest("hex");
   return Buffer.from(`${signed}.${hmac}`).toString("base64url");
@@ -84,7 +84,7 @@ export async function isAdmin(): Promise<boolean> {
 }
 
 export function createSession(data: { userId?: number; partyId?: number; type: "admin" | "viewer" | "party" }, expiresInSeconds?: number): string {
-  return signSession(JSON.stringify(data), expiresInSeconds);
+  return signSession(data, expiresInSeconds);
 }
 
 export async function destroySession(): Promise<void> {

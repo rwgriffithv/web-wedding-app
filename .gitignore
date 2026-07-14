@@ -57,7 +57,7 @@ backups/
 # =========================
 # Build Artifacts
 # =========================
-tsconfig.tsbuildinfo
+*.tsbuildinfo
 
 # =========================
 # Scripting / Local Testing

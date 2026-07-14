@@ -31,12 +31,10 @@ function Digit({ value, label }: { value: number; label: string }) {
   );
 }
 
-const INVALID_DATE_FALLBACK: TimeDelta = { total: 0, days: 0, hours: 0, minutes: 0, seconds: 0 };
-
 export function CountdownTimer({ targetDate }: { targetDate: string }) {
   const targetMs = useRef(new Date(targetDate).getTime()).current;
   const isValid = !Number.isNaN(targetMs);
-  const [delta, setDelta] = useState<TimeDelta>(() => isValid ? calcTimeDelta(targetMs) : INVALID_DATE_FALLBACK);
+  const [delta, setDelta] = useState<TimeDelta | null>(null);
 
   useEffect(() => {
     if (!isValid) return;
@@ -46,6 +44,10 @@ export function CountdownTimer({ targetDate }: { targetDate: string }) {
   }, [targetMs, isValid]);
 
   if (!isValid) {
+    return <div className="countdown" suppressHydrationWarning><span className="countdown-prefix">T-</span><span className="countdown-digit">--</span></div>;
+  }
+
+  if (!delta) {
     return <div className="countdown" suppressHydrationWarning><span className="countdown-prefix">T-</span><span className="countdown-digit">--</span></div>;
   }
 

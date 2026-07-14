@@ -5,7 +5,7 @@ import { addItem, createTabInline } from "./actions";
 import { SearchableSelect } from "@/components/searchable-select";
 import { FileUpload } from "@/components/file-upload";
 import { FileBrowser } from "@/components/file-browser";
-import { detectMediaType } from "@/lib/media";
+import { detectMediaType } from "@/lib/media-detect";
 import type { MediaTab } from "@/lib/db";
 
 const initialState: { success?: boolean; error?: string; tabId?: number; slug?: string } | null = null;

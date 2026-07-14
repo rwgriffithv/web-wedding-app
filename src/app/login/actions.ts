@@ -12,18 +12,16 @@ import { getString } from "@/lib/form-data";
 
 interface LoginState { error?: string }
 
-const SESSION_MAX_SECONDS = 24 * 60 * 60;
-
 function getSessionMaxSeconds(): number {
-  const hours = parseInt(getConfig("session_max_hours") ?? "24", 10);
+  const hours = parseInt(getConfig("session_max_hours"), 10);
   return (Number.isFinite(hours) && hours > 0 ? Math.min(hours, 24) : 24) * 60 * 60;
 }
 
 const rateLimiter = createRateLimiter("login", 5, 60_000);
 
 function getRateLimitConfig() {
-  const max = parseInt(getConfig("rate_limit_max_attempts") ?? "5", 10);
-  const window = parseInt(getConfig("rate_limit_window_seconds") ?? "60", 10);
+  const max = parseInt(getConfig("rate_limit_max_attempts"), 10);
+  const window = parseInt(getConfig("rate_limit_window_seconds"), 10);
   return {
     maxAttempts: Number.isFinite(max) && max > 0 ? max : 5,
     windowMs: (Number.isFinite(window) && window > 0 ? window : 60) * 1000,
@@ -66,7 +64,8 @@ export async function login(formData: FormData): Promise<LoginState> {
   if (user.type === "party" && user.party_id) {
     sessionData.partyId = user.party_id;
   }
-  store.set(SESSION_COOKIE, createSession(sessionData, getSessionMaxSeconds()), { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: SESSION_MAX_SECONDS });
+  const sessionMaxAge = getSessionMaxSeconds();
+  store.set(SESSION_COOKIE, createSession(sessionData, sessionMaxAge), { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: sessionMaxAge });
 
   redirect(user.type === "admin" ? "/admin" : "/home");
 }
@@ -103,7 +102,8 @@ export async function loginByPartyCode(formData: FormData): Promise<LoginState> 
   recordLogin(partyUser.id);
 
   const store = await cookies();
-  store.set(SESSION_COOKIE, createSession({ userId: partyUser.id, partyId: party.id, type: "party" }, getSessionMaxSeconds()), { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: SESSION_MAX_SECONDS });
+  const sessionMaxAge = getSessionMaxSeconds();
+  store.set(SESSION_COOKIE, createSession({ userId: partyUser.id, partyId: party.id, type: "party" }, sessionMaxAge), { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: sessionMaxAge });
 
   redirect("/home");
 }

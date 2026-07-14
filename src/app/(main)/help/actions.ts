@@ -13,8 +13,8 @@ interface HelpState { success?: boolean; error?: string }
 const questionRateLimiter = createRateLimiter("question", 5, 60_000);
 
 function getQuestionRateLimitConfig() {
-  const max = parseInt(getConfig("question_rate_limit_max") ?? "5", 10);
-  const window = parseInt(getConfig("question_rate_limit_window") ?? "60", 10);
+  const max = parseInt(getConfig("question_rate_limit_max"), 10);
+  const window = parseInt(getConfig("question_rate_limit_window"), 10);
   return {
     maxAttempts: Number.isFinite(max) && max > 0 ? max : 5,
     windowMs: (Number.isFinite(window) && window > 0 ? window : 60) * 1000,
