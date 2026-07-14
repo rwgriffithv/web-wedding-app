@@ -93,3 +93,29 @@ export async function banViolationIpAction(_prevState: SecurityState | null, for
     return { error: "Failed to ban IP." };
   }
 }
+
+export async function saveSessionSettings(prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
+  if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+
+  try {
+    const sessionMaxHours = getString(formData, "session_max_hours") ?? "";
+    const pageViewDebounceMinutes = getString(formData, "page_view_debounce_minutes") ?? "";
+
+    const hoursNum = parseInt(sessionMaxHours, 10);
+    const minutesNum = parseInt(pageViewDebounceMinutes, 10);
+
+    if (!Number.isFinite(hoursNum) || hoursNum < 1 || hoursNum > 24) {
+      return { error: "Session expiry must be between 1 and 24 hours." };
+    }
+    if (!Number.isFinite(minutesNum) || minutesNum < 1 || minutesNum > 1440) {
+      return { error: "Page view debounce must be between 1 and 1440 minutes." };
+    }
+
+    setConfig("session_max_hours", String(hoursNum));
+    setConfig("page_view_debounce_minutes", String(minutesNum));
+    revalidatePath("/admin/security");
+    return { success: true };
+  } catch {
+    return { error: "Failed to save session settings." };
+  }
+}

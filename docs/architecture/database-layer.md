@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS site_config (
 );
 ```
 
-Common keys: `landing_title`, `landing_background`, `home_title`, `home_subtitle`, `home_date`, `home_time`, `home_location`, `home_background_video`, `dress_code_text`.
+Common keys: `landing_title`, `landing_background`, `home_title`, `home_date`, `home_time`, `home_venue`, `home_location`, `home_background_video`, `dress_code_text`.
 
 ### `lodging_options`
 

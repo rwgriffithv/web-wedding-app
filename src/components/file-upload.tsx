@@ -11,9 +11,10 @@ interface FileUploadProps {
   onUpload: (result: UploadResult) => void;
   accept?: string;
   label?: string;
+  size?: "sm" | "md";
 }
 
-export function FileUpload({ onUpload, accept, label }: FileUploadProps) {
+export function FileUpload({ onUpload, accept, label, size = "md" }: FileUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -51,7 +52,7 @@ export function FileUpload({ onUpload, accept, label }: FileUploadProps) {
   return (
     <div className="flex-row items-center gap-2">
       <input ref={inputRef} id={inputId} type="file" accept={accept} onChange={handleChange} className="sr-only" />
-      <label htmlFor={inputId} className="btn btn-ghost" onClick={() => inputRef.current?.click()}>
+      <label htmlFor={inputId} className={`btn btn-ghost${size === "sm" ? " btn-sm" : ""}`} onClick={() => inputRef.current?.click()}>
         {uploading ? "Uploading..." : (label || "Upload")}
       </label>
       {error && <span className="text-error text-xs" role="alert">{error}</span>}

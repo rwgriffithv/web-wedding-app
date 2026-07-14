@@ -91,4 +91,42 @@ test.describe("rate limiting", () => {
     // The ban-ip section summary is present
     await expect(page.locator("summary").filter({ hasText: "Ban IP" })).toBeVisible();
   });
+
+  test("admin security page has session settings section", async ({ page }) => {
+    await page.goto("/login");
+    await page.getByRole("button", { name: "User sign in" }).click();
+    await page.fill("input[name=username]", "admin");
+    await page.fill("input[name=password]", "admin");
+    await page.locator("button[type=submit]").click();
+    await page.waitForURL("/admin");
+
+    await page.goto("/admin/security");
+
+    // Open the Session & Tracking section (collapsed by default)
+    await page.locator("summary").filter({ hasText: "Session & Tracking" }).click();
+
+    // Session expiry input is present with default value
+    await expect(page.getByLabel("Session Expiry (hours)")).toBeVisible();
+
+    // Page view debounce input is present with default value
+    await expect(page.getByLabel("Page View Debounce (minutes)")).toBeVisible();
+  });
+
+  test("admin security page session settings has save button", async ({ page }) => {
+    await page.goto("/login");
+    await page.getByRole("button", { name: "User sign in" }).click();
+    await page.fill("input[name=username]", "admin");
+    await page.fill("input[name=password]", "admin");
+    await page.locator("button[type=submit]").click();
+    await page.waitForURL("/admin");
+
+    await page.goto("/admin/security");
+
+    // Open the Session & Tracking section (collapsed by default)
+    await page.locator("summary").filter({ hasText: "Session & Tracking" }).click();
+
+    // The session settings section has a Save button
+    const sessionSection = page.locator("details").filter({ hasText: "Session & Tracking" });
+    await expect(sessionSection.getByRole("button", { name: "Save" })).toBeVisible();
+  });
 });

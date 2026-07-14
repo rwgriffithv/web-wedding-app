@@ -6,6 +6,7 @@ import { BanList } from "./ban-list";
 import { AutoBanForm } from "./auto-ban-form";
 import { BanIpForm } from "./ban-ip-form";
 import { ViolationList } from "./violation-list";
+import { SessionSettingsForm } from "./session-settings-form";
 
 export default function AdminSecurityPage() {
   const bannedIps = getBannedIps();
@@ -15,8 +16,8 @@ export default function AdminSecurityPage() {
 
   return (
     <>
-      <Header title="Security" description="Manage IP banning and rate-limit violations." />
-      <details className="admin-section" open>
+      <Header title="Security" description="Manage IP banning, rate limiting, and session settings." />
+      <details className="admin-section">
         <summary>Auto-Ban Settings</summary>
         <div className="admin-section-body">
           <AutoBanForm threshold={String(threshold)} windowSeconds={String(autoBanWindow)} />
@@ -30,6 +31,15 @@ export default function AdminSecurityPage() {
             maxKey="rate_limit_max_attempts"
             windowKey="rate_limit_window_seconds"
             description="Rate limiting for login attempts per IP+user. Changes take effect on next request."
+          />
+        </div>
+      </details>
+      <details className="admin-section">
+        <summary>Session & Tracking</summary>
+        <div className="admin-section-body">
+          <SessionSettingsForm
+            sessionMaxHours={config.session_max_hours || "24"}
+            pageViewDebounceMinutes={config.page_view_debounce_minutes || "15"}
           />
         </div>
       </details>

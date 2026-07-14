@@ -30,3 +30,48 @@ test("login with invalid credentials shows error", async ({ page }) => {
   await page.locator("button[type=submit]").click();
   await expect(page.getByText("Invalid username or password.")).toBeVisible();
 });
+
+test("home page displays title, formatted date, location, and schedule range", async ({ page }) => {
+  await switchToCredentials(page);
+  await page.fill("input[name=username]", "DEMO-1234");
+  await page.fill("input[name=password]", "DEMO-1234");
+  await page.locator("button[type=submit]").click();
+  await page.waitForURL(/\/home/, { timeout: 10000 });
+
+  // Title is present
+  await expect(page.locator(".home-content h1")).toHaveText("Our Wedding");
+
+  // Formatted date is present (seed date is August 15, 2026)
+  await expect(page.getByText(/August 15, 2026/)).toBeVisible();
+
+  // Location is present (seed location)
+  await expect(page.getByText("Venue Name, City")).toBeVisible();
+
+  // Schedule range is present (seed schedule: 3:00 PM – 9:00 PM)
+  await expect(page.getByText("3:00 PM – 9:00 PM")).toBeVisible();
+});
+
+test("home page content order: date before location before schedule", async ({ page }) => {
+  await switchToCredentials(page);
+  await page.fill("input[name=username]", "DEMO-1234");
+  await page.fill("input[name=password]", "DEMO-1234");
+  await page.locator("button[type=submit]").click();
+  await page.waitForURL(/\/home/, { timeout: 10000 });
+
+  const content = page.locator(".home-content");
+  const dateEl = content.getByText(/August 15, 2026/);
+  const locationEl = content.getByText("Venue Name, City");
+  const scheduleEl = content.getByText("3:00 PM – 9:00 PM");
+
+  // Date appears before location
+  const dateBox = await dateEl.boundingBox();
+  const locationBox = await locationEl.boundingBox();
+  expect(dateBox).not.toBeNull();
+  expect(locationBox).not.toBeNull();
+  expect(dateBox!.y).toBeLessThan(locationBox!.y);
+
+  // Location appears before schedule range
+  const scheduleBox = await scheduleEl.boundingBox();
+  expect(scheduleBox).not.toBeNull();
+  expect(locationBox!.y).toBeLessThan(scheduleBox!.y);
+});

@@ -51,10 +51,11 @@ const defaults: [string, string][] = [
   ["landing_title", "We're Getting Married!"],
   ["landing_background", ""],
   ["home_title", "Our Wedding"],
-  ["home_subtitle", "Together with our families"],
-  ["home_date", "August 15, 2026"],
+  ["home_date", "2026-08-15"],
+  ["home_venue", ""],
   ["home_location", "Venue Name, City"],
   ["home_background_video", ""],
+  ["banner_text", ""],
   ["dress_code_text", "Please dress in formal attire. Our wedding will feature a black-tie optional dress code. We recommend suits and cocktail dresses."],
   ["schedule_text", ""],
   ["lodging_text", ""],
@@ -84,10 +85,12 @@ if (existingParty.count === 0) {
     insertConfig.run("landing_title", "We're Getting Married!");
     insertConfig.run("landing_background", "");
     insertConfig.run("home_title", "Our Wedding");
-    insertConfig.run("home_subtitle", "Together with our families");
-    insertConfig.run("home_date", "August 15, 2026");
+    insertConfig.run("home_date", "2026-08-15");
+    insertConfig.run("home_time", "15:00");
+    insertConfig.run("home_venue", "");
     insertConfig.run("home_location", "Venue Name, City");
     insertConfig.run("home_background_video", "");
+    insertConfig.run("banner_text", "");
     insertConfig.run("dress_code_text", "Please dress in formal attire. Our wedding will feature a black-tie optional dress code. We recommend suits and cocktail dresses.");
 
     const insertLodging = db.prepare("INSERT INTO lodging_options (title, image_url, url, sort_order) VALUES (?, ?, ?, ?)");

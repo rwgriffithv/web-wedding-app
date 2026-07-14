@@ -3,8 +3,8 @@
 import { useRef, useState, useEffect, useActionState } from "react";
 import { addItem, createTabInline } from "./actions";
 import { SearchableSelect } from "@/components/searchable-select";
-import { FileUpload } from "@/components/file-upload";
 import { FileBrowser } from "@/components/file-browser";
+import { MediaInput } from "@/components/media-input";
 import { detectMediaType } from "@/lib/media-detect";
 import type { MediaTab } from "@/lib/db";
 
@@ -79,31 +79,23 @@ export function MediaForm({ tabs }: { tabs: MediaTab[] }) {
       <input type="hidden" name="type" ref={typeInputRef} defaultValue="image" />
       <div className="form-group">
         <label htmlFor="url">URL</label>
-        <div className="flex-row items-center gap-1">
-          <input
-            ref={urlRef}
-            id="url"
-            name="url"
-            type="text"
-            required
-            placeholder="https://example.com/photo.jpg or /api/media/file.jpg"
-            className="flex-1"
-            onBlur={(e) => {
-              if (typeInputRef.current && e.target.value) {
-                typeInputRef.current.value = detectMediaType(e.target.value);
-              }
-            }}
-          />
-          <FileUpload
-            onUpload={(result) => {
-              if (urlRef.current) urlRef.current.value = result.url;
-              if (typeInputRef.current && result.type) typeInputRef.current.value = result.type;
-            }}
-            accept="image/*,video/*"
-            label="Upload"
-          />
-          <button type="button" className="btn btn-sm" onClick={() => setShowBrowser(true)}>Local</button>
-        </div>
+        <MediaInput
+          inputRef={urlRef}
+          id="url"
+          name="url"
+          placeholder="https://example.com/photo.jpg or /api/media/file.jpg"
+          accept="image/*,video/*"
+          onUpload={(result) => {
+            if (urlRef.current) urlRef.current.value = result.url;
+            if (typeInputRef.current && result.type) typeInputRef.current.value = result.type;
+          }}
+          onBrowse={() => setShowBrowser(true)}
+          onBlur={(e) => {
+            if (typeInputRef.current && e.target.value) {
+              typeInputRef.current.value = detectMediaType(e.target.value);
+            }
+          }}
+        />
       </div>
       <div className="form-group">
         <label htmlFor="title">Title</label>

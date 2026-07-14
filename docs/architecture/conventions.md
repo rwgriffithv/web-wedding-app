@@ -231,6 +231,26 @@ backdrop-filter: blur(10px);
 - Admin-only forms use `.admin-form` for consistent left-aligned labels
 - Admin forms use `.admin-fieldset` for the 3-fieldset layout (Login, Home, RSVP)
 
+### Admin Collapsible Sections (`<details>`)
+
+Admin pages use `<details className="admin-section">` for collapsible cards. The `open` attribute controls the default state.
+
+| Content type | Default | Rationale |
+|---|---|---|
+| Data lists / tables | **open** | Primary content — why you navigated to the page |
+| "Add new" forms | **open** | Action-oriented — likely why you're there |
+| Settings / config forms | **collapsed** | Set once, rarely revisited; would clutter the page |
+| Reference / informational | **collapsed** | Supplementary, not always needed |
+| Conditional sections (`count > 0`) | **collapsed** | Secondary by nature; only relevant when data exists |
+
+Consistent examples across the codebase:
+
+- **Schedule, Lodging, Dress Code, Media pages**: all sections open (forms + lists)
+- **RSVP page**: Settings and Rate Limiting collapsed, Status table open
+- **Help page**: Rate Limiting collapsed, Add FAQ / FAQ Items / Questions open
+- **Security page**: Auto-Ban / Login Rate Limiting / Session & Tracking collapsed, Violations and Banned IPs open, Ban IP collapsed
+- **Users page**: Add User and Users list open, System Accounts and Activity collapsed
+
 ---
 
 ## File Organization

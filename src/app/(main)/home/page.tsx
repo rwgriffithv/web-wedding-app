@@ -8,9 +8,9 @@ export const revalidate = 60;
 export default function HomePage() {
   const config = Object.fromEntries(getAllConfig().map((c) => [c.key, c.value]));
   const title = config.home_title || "";
-  const subtitle = config.home_subtitle || "";
   const date = config.home_date || "";
   const time = config.home_time || "";
+  const venue = config.home_venue || "";
   const location = config.home_location || "";
   const video = config.home_background_video || "";
   const poster = config.home_background_video_poster || "";
@@ -22,10 +22,17 @@ export default function HomePage() {
     : null;
 
   let weddingDateStr: string | null = null;
+  let formattedDate: string | null = null;
   if (date) {
     const parsed = new Date(date);
     if (!Number.isNaN(parsed.getTime())) {
       weddingDateStr = parsed.toISOString().slice(0, 10) + "T" + (time || "12:00");
+      formattedDate = parsed.toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
     }
   }
 
@@ -41,10 +48,11 @@ export default function HomePage() {
       <div className="home-overlay" />
       <div className="home-content">
         <h1>{title}</h1>
-        <p className="subtitle">{subtitle}</p>
-        {(date || location) && <p className="date-location">{date}{date && location && " \u2014 "}{location}</p>}
+        {formattedDate && <p className="subtitle">{formattedDate}</p>}
+        {venue && <p className="date-location">{venue}</p>}
+        {location && <p className="date-location">{location}</p>}
         {weddingDateStr && <CountdownTimer targetDate={weddingDateStr} />}
-        {scheduleRange && <p className="schedule-range">{scheduleRange}</p>}
+        {scheduleRange && <p className="date-location">{scheduleRange}</p>}
       </div>
     </div>
   );

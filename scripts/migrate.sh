@@ -162,6 +162,14 @@ try {
   }
 }
 
+// ── Migration 10: idx_media_tabs_sort_order ──
+db.exec('CREATE INDEX IF NOT EXISTS idx_media_tabs_sort_order ON media_tabs(sort_order)');
+console.log('  ✓ Index idx_media_tabs_sort_order ensured.');
+
+// ── Migration 11: idx_media_section ──
+db.exec('CREATE INDEX IF NOT EXISTS idx_media_section ON media_items(section)');
+console.log('  ✓ Index idx_media_section ensured.');
+
 db.close();
 "
 
