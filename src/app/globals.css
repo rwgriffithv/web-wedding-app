@@ -478,12 +478,14 @@ a:hover { text-decoration: underline; }
 }
 
 /* Dress Code */
-.dress-code-text {
+.guide-tab-text {
   font-size: 1.125rem;
   line-height: 1.8;
   margin-bottom: 2rem;
   max-width: 650px;
   white-space: pre-wrap;
+  color: var(--color-muted);
+  font-style: italic;
 }
 
 .mood-board {
@@ -491,6 +493,25 @@ a:hover { text-decoration: underline; }
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1rem;
   grid-auto-flow: dense;
+}
+
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.faq-item {
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 1.5rem;
+}
+
+.faq-question {
+  margin-bottom: 0.5rem;
+}
+
+.faq-answer {
+  color: var(--color-muted);
 }
 
 .mood-board-item {
@@ -892,15 +913,15 @@ a:hover { text-decoration: underline; }
 .badge-yes { background: #d1fae5; color: #065f46; }
 .badge-no { background: #fee2e2; color: #991b1b; }
 
-.admin-form { max-width: 500px; }
-.admin-form .form-group { margin-bottom: 1rem; }
-.admin-form label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.375rem; }
-.admin-form input, .admin-form textarea, .admin-form select {
+.styled-form { max-width: 500px; }
+.styled-form .form-group { margin-bottom: 1rem; }
+.styled-form label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.375rem; }
+.styled-form input, .styled-form textarea, .styled-form select {
   width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--color-border);
   border-radius: var(--radius); font-size: 0.875rem;
 }
-.admin-form input:focus, .admin-form textarea:focus, .admin-form select:focus { outline: none; border-color: var(--color-primary); }
-.admin-form textarea { min-height: 100px; resize: vertical; }
+.styled-form input:focus, .styled-form textarea:focus, .styled-form select:focus { outline: none; border-color: var(--color-primary); }
+.styled-form textarea { min-height: 100px; resize: vertical; }
 
 .admin-fieldset {
   border: 1px solid var(--color-border);
@@ -959,6 +980,19 @@ a:hover { text-decoration: underline; }
 .admin-list-item .item-info .item-title { font-weight: 600; font-size: 0.9rem; }
 .admin-list-item .item-info .item-meta { font-size: 0.8rem; color: var(--color-muted); }
 .admin-list-item .item-actions { display: flex; gap: 0.5rem; }
+
+/* Admin Item Lists (FAQ, Questions) */
+.admin-item-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.admin-item {
+  padding: 1rem; border: 1px solid var(--color-border); border-radius: var(--radius);
+  background: var(--color-surface);
+}
+.admin-item-content { display: flex; flex-direction: column; gap: 0.375rem; }
+.admin-item-actions { display: flex; gap: 0.375rem; align-items: center; margin-top: 0.75rem; flex-wrap: wrap; }
+.admin-item-confirm {
+  display: flex; align-items: center; gap: 0.5rem; margin-top: 0.75rem;
+  padding: 0.75rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius);
+}
 
 /* Media tab actions (inside summary) */
 .media-tab-actions { display: flex; gap: 0.5rem; margin-left: auto; }
@@ -1071,8 +1105,14 @@ footer { border-top: 1px solid var(--color-border); padding: 2rem 0; text-align:
 .text-error { color: var(--color-error); }
 .text-success { color: var(--color-success); }
 .w-full { width: 100%; }
+.mt-0_25 { margin-top: 0.25rem; }
 .mt-1 { margin-top: 0.5rem; }
+.ml-1 { margin-left: 0.5rem; }
 .mb-1 { margin-bottom: 0.5rem; }
+.mb-2 { margin-bottom: 1rem; }
+.mb-4 { margin-bottom: 2rem; }
 .text-center { text-align: center; }
 .flex-1 { flex: 1; }
 .inline-flex { display: inline-flex; }
+.display-inline { display: inline; }
+.italic { font-style: italic; }
