@@ -31,6 +31,11 @@ describe("auth", () => {
     expect(parsed).toEqual({ userId: 1, type: "admin" });
   });
 
+  it("token contains no raw JSON characters", () => {
+    const token = createSession({ userId: 1, type: "admin" });
+    expect(token).not.toMatch(/[{}":,]/);
+  });
+
   it("hashes and verifies passwords", () => {
     const hash = hashPassword("my-password");
     expect(hash).toContain(":");
@@ -65,5 +70,28 @@ describe("isAdmin", () => {
 
     const { isAdmin } = await import("./auth");
     expect(await isAdmin()).toBe(true);
+  });
+
+  it("rejects corrupted token", async () => {
+    const mod = await import("next/headers");
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: "not-a-valid-token" }), set: vi.fn() } as never);
+
+    const { isAdmin } = await import("./auth");
+    expect(await isAdmin()).toBe(false);
+  });
+
+  it("rejects token with tampered payload", async () => {
+    const token = createSession({ userId: 2, type: "admin" });
+    const decoded = Buffer.from(token, "base64url").toString();
+    const lastDot = decoded.lastIndexOf(".");
+    const payload = decoded.slice(0, lastDot);
+    const sig = decoded.slice(lastDot + 1);
+    const tampered = Buffer.from(payload + "X." + sig).toString("base64url");
+
+    const mod = await import("next/headers");
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: tampered }), set: vi.fn() } as never);
+
+    const { isAdmin } = await import("./auth");
+    expect(await isAdmin()).toBe(false);
   });
 });
