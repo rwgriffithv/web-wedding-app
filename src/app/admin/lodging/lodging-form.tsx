@@ -5,7 +5,7 @@ import { addOption } from "./actions";
 import { FileUpload } from "@/components/file-upload";
 import { FileBrowser } from "@/components/file-browser";
 
-const initialState = null as { success?: boolean; error?: string } | null;
+const initialState: { success?: boolean; error?: string } | null = null;
 
 export function LodgingForm() {
   const [state, dispatch, isPending] = useActionState(addOption, initialState);
@@ -13,7 +13,7 @@ export function LodgingForm() {
   const [showBrowser, setShowBrowser] = useState(false);
 
   return (
-    <form action={dispatch} className="admin-form">
+    <form action={dispatch} className="styled-form">
       {showBrowser && (
         <FileBrowser
           onSelect={(url) => { if (imageUrlRef.current) imageUrlRef.current.value = url; }}

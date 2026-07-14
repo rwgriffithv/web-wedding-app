@@ -3,13 +3,13 @@
 import { useActionState } from "react";
 import { addUser } from "./actions";
 
-const initialState = null as { success?: boolean; error?: string } | null;
+const initialState: { success?: boolean; error?: string } | null = null;
 
 export function UserForm() {
   const [state, dispatch, isPending] = useActionState(addUser, initialState);
 
   return (
-    <form action={dispatch} className="admin-form">
+    <form action={dispatch} className="styled-form">
       <div className="form-group">
         <label htmlFor="display_name">Display Name</label>
         <input id="display_name" name="display_name" type="text" required />

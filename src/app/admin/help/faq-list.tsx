@@ -6,7 +6,7 @@ import { CharCount } from "@/components/char-count";
 import { MAX_QUESTION_LENGTH, MAX_ANSWER_LENGTH } from "@/lib/constants";
 import type { FaqItem } from "@/lib/db";
 
-const initialEditState = null as { success?: boolean; error?: string } | null;
+const initialEditState: { success?: boolean; error?: string } | null = null;
 
 export function FaqList({ items }: { items: FaqItem[] }) {
   const [search, setSearch] = useState("");

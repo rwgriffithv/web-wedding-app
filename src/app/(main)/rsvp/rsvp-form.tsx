@@ -10,7 +10,7 @@ interface RsvpFormProps {
   isLocked?: boolean;
 }
 
-const initialState = null as { success?: boolean; error?: string } | null;
+const initialState: { success?: boolean; error?: string } | null = null;
 
 export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked }: RsvpFormProps) {
   const [state, dispatch, isPending] = useActionState(submitRsvp, initialState);

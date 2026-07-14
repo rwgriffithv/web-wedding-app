@@ -3,13 +3,13 @@
 import { useActionState } from "react";
 import { addItem } from "./actions";
 
-const initialState = null as { success?: boolean; error?: string } | null;
+const initialState: { success?: boolean; error?: string } | null = null;
 
 export function ScheduleForm() {
   const [state, dispatch, isPending] = useActionState(addItem, initialState);
 
   return (
-    <form action={dispatch} className="admin-form">
+    <form action={dispatch} className="styled-form">
       <div className="form-group">
         <label htmlFor="time">Time</label>
         <input id="time" name="time" type="text" required placeholder="e.g. 3:00 PM" />

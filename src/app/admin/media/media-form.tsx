@@ -7,7 +7,7 @@ import { FileUpload } from "@/components/file-upload";
 import { FileBrowser } from "@/components/file-browser";
 import type { MediaTab } from "@/lib/db";
 
-const initialState = null as { success?: boolean; error?: string; tabId?: number; slug?: string } | null;
+const initialState: { success?: boolean; error?: string; tabId?: number; slug?: string } | null = null;
 
 const VIDEO_EXTS = [".mp4", ".webm", ".mov"];
 
@@ -76,7 +76,7 @@ export function MediaForm({ tabs }: { tabs: MediaTab[] }) {
   };
 
   return (
-    <form ref={formRef} action={handleSubmit} className="admin-form">
+    <form ref={formRef} action={handleSubmit} className="styled-form">
       {showBrowser && (
         <FileBrowser
           onSelect={(url) => setUrlAndDetectType(url)}

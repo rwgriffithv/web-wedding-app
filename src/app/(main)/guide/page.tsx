@@ -27,9 +27,11 @@ export default async function GuidePage({ searchParams }: GuidePageProps) {
   const activeTab: TabId = isValidTab(params.tab) ? params.tab : "schedule";
 
   const scheduleItems = getScheduleItems();
-  const dressCodeText = getConfig("dress_code_text");
+  const scheduleText = getConfig("guide_tab_schedule_text");
+  const dressCodeText = getConfig("guide_tab_dress_code_text");
   const dressCodeImages = getImages();
   const lodgingOptions = getLodgingOptions();
+  const lodgingText = getConfig("guide_tab_lodging_text");
 
   return (
     <div className="page-content">
@@ -43,6 +45,7 @@ export default async function GuidePage({ searchParams }: GuidePageProps) {
             href={tab.id === "schedule" ? "/guide" : `/guide?tab=${tab.id}`}
             className={`content-tab${activeTab === tab.id ? " active" : ""}`}
             role="tab"
+            tabIndex={0}
             aria-selected={activeTab === tab.id}
             aria-controls={`guide-panel-${tab.id}`}
           >
@@ -53,6 +56,7 @@ export default async function GuidePage({ searchParams }: GuidePageProps) {
 
       {activeTab === "schedule" && (
         <div id="guide-panel-schedule" role="tabpanel" aria-labelledby="guide-tab-schedule">
+          {scheduleText && <p className="guide-tab-text">{scheduleText}</p>}
           {scheduleItems.length > 0 ? (
             <div className="schedule-timeline">
               {scheduleItems.map((item) => (
@@ -75,7 +79,7 @@ export default async function GuidePage({ searchParams }: GuidePageProps) {
             <p className="empty-state">Dress Code coming soon.</p>
           ) : (
             <>
-              <div className="dress-code-text">{dressCodeText}</div>
+              {dressCodeText && <p className="guide-tab-text">{dressCodeText}</p>}
               {dressCodeImages.length > 0 && (
                 <MoodBoard images={dressCodeImages} />
               )}
@@ -86,6 +90,7 @@ export default async function GuidePage({ searchParams }: GuidePageProps) {
 
       {activeTab === "lodging" && (
         <div id="guide-panel-lodging" role="tabpanel" aria-labelledby="guide-tab-lodging">
+          {lodgingText && <p className="guide-tab-text">{lodgingText}</p>}
           {lodgingOptions.length === 0 ? (
             <p className="empty-state">Lodging options coming soon.</p>
           ) : (

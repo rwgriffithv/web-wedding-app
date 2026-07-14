@@ -6,7 +6,7 @@ import { CharCount } from "@/components/char-count";
 import { MAX_QUESTION_LENGTH } from "@/lib/constants";
 import type { Question } from "@/lib/db";
 
-const initialState = null as { success?: boolean; error?: string } | null;
+const initialState: { success?: boolean; error?: string } | null = null;
 
 export function MyQuestions({ questions }: { questions: Question[] }) {
   const [state, dispatch, isPending] = useActionState(submitQuestion, initialState);

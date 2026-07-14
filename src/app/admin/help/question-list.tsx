@@ -6,7 +6,7 @@ import { CharCount } from "@/components/char-count";
 import { MAX_ANSWER_LENGTH } from "@/lib/constants";
 import type { QuestionWithParty } from "@/lib/repository/questions";
 
-const initialAnswerState = null as { success?: boolean; error?: string } | null;
+const initialAnswerState: { success?: boolean; error?: string } | null = null;
 
 export function QuestionList({ questions, stats }: { questions: QuestionWithParty[]; stats: { total: number; unanswered: number } }) {
   const [search, setSearch] = useState("");
@@ -14,8 +14,8 @@ export function QuestionList({ questions, stats }: { questions: QuestionWithPart
   const [sort, setSort] = useState<"date" | "party">("date");
   const [answerState, dispatchAnswer, isPendingAnswer] = useActionState(answerQuestion, initialAnswerState);
   const [answerTexts, setAnswerTexts] = useState<Record<number, string>>({});
+  const [lastAnsweredId, setLastAnsweredId] = useState<number | null>(null);
   const answerHandledRef = useRef(false);
-  const lastAnsweredIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (answerState?.success && !answerHandledRef.current) {
@@ -113,7 +113,7 @@ export function QuestionList({ questions, stats }: { questions: QuestionWithPart
                 )}
               </div>
               {!q.answer && (
-                <form action={(fd) => { lastAnsweredIdRef.current = q.id; dispatchAnswer(fd); }} className="styled-form w-full mt-1">
+                <form action={(fd) => { setLastAnsweredId(q.id); dispatchAnswer(fd); }} className="styled-form w-full mt-1">
                   <input type="hidden" name="question_id" value={q.id} />
                   <div className="form-group">
                     <textarea
@@ -130,7 +130,7 @@ export function QuestionList({ questions, stats }: { questions: QuestionWithPart
                   <button type="submit" className="btn btn-primary btn-sm" disabled={isPendingAnswer}>
                     {isPendingAnswer ? "Answering..." : "Submit Answer"}
                   </button>
-                  {answerState?.error && lastAnsweredIdRef.current === q.id && (
+                  {answerState?.error && lastAnsweredId === q.id && (
                     <p className="text-error text-sm mt-1" role="alert">{answerState.error}</p>
                   )}
                 </form>

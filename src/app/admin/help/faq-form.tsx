@@ -5,7 +5,7 @@ import { addFaq } from "./actions";
 import { CharCount } from "@/components/char-count";
 import { MAX_QUESTION_LENGTH, MAX_ANSWER_LENGTH } from "@/lib/constants";
 
-const initialState = null as { success?: boolean; error?: string } | null;
+const initialState: { success?: boolean; error?: string } | null = null;
 
 export function FaqForm() {
   const [state, dispatch, isPending] = useActionState(addFaq, initialState);

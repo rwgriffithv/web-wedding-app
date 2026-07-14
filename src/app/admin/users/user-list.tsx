@@ -9,7 +9,7 @@ interface UserListProps {
   isPrimaryAdmin: boolean;
 }
 
-const initialState = null as { success?: boolean; error?: string } | null;
+const initialState: { success?: boolean; error?: string } | null = null;
 
 export function UserList({ user, isPrimaryAdmin }: UserListProps) {
   const [state, dispatch, isPending] = useActionState(updateUser, initialState);
