@@ -75,7 +75,7 @@ export function createSession(data: { userId?: number; partyId?: number; type: "
 
 export async function destroySession(): Promise<void> {
   const store = await cookies();
-  store.set(SESSION_COOKIE, "", { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 0 });
+  store.set(SESSION_COOKIE, "", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 0 });
 }
 
 const SALT_LENGTH = 32;

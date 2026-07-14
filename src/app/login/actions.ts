@@ -59,7 +59,7 @@ export async function login(prevState: LoginState | null, formData: FormData): P
   if (user.type === "party" && user.party_id) {
     sessionData.partyId = user.party_id;
   }
-  store.set("session", createSession(sessionData), { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 });
+  store.set("session", createSession(sessionData), { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 });
 
   redirect(user.type === "admin" ? "/admin" : "/home");
 }
@@ -96,7 +96,7 @@ export async function loginByPartyCode(prevState: LoginState | null, formData: F
   recordLogin(partyUser.id);
 
   const store = await cookies();
-  store.set("session", createSession({ userId: partyUser.id, partyId: party.id, type: "party" }), { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 });
+  store.set("session", createSession({ userId: partyUser.id, partyId: party.id, type: "party" }), { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 });
 
   redirect("/home");
 }

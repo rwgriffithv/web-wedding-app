@@ -143,7 +143,7 @@ feature_collector.js:23 using deprecated parameters for the initialization funct
 N	@	feature_collector.js:23
 ```
 Please help!
-  * status: not done
+  * status: done
 
 * The admin dashboard does not seem to render very well on mobile. Some things are misaligned, flow too wide on the page and result in scrolling, and the hamburger menu dropdown results in a weird vertical scrolling that is more like a collapsible element than a real hamburger menu. Please review the design of the mobile rendering of the admin dashboard and see if there are alternative implementations of the hamburger menu as well as making horizontal scrolling of the tables more coherent and better looking.
   * status: not done
