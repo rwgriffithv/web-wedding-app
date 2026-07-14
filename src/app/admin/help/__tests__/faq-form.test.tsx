@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { FaqForm } from "./faq-form";
+import { FaqForm } from "../faq-form";
 
 const mockAddFaq = vi.fn();
 
-vi.mock("./actions", () => ({
+vi.mock("../actions", () => ({
   addFaq: (...args: unknown[]) => mockAddFaq(...args),
 }));
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act } from "@testing-library/react";
-import { CountdownTimer } from "./countdown-timer";
+import { CountdownTimer } from "../countdown-timer";
 
 describe("CountdownTimer", () => {
   beforeEach(() => {

@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { RsvpForm } from "./rsvp-form";
+import { RsvpForm } from "../rsvp-form";
 
 const mockSubmit = vi.fn();
 
-vi.mock("./actions", () => ({
+vi.mock("../actions", () => ({
   submitRsvp: (...args: unknown[]) => mockSubmit(...args),
 }));
 
@@ -185,6 +185,42 @@ describe("RsvpForm — radio state persistence", () => {
     );
 
     expect(screen.getByRole("button", { name: "Update" })).toBeDefined();
+  });
+
+  it("shows rate limit error when too many submissions", async () => {
+    mockSubmit.mockResolvedValue({
+      success: false,
+      error: "Your party has made too many submissions. Please wait before trying again.",
+    });
+
+    render(<RsvpForm memberId={1} canBringPlusOne={false} />);
+    fireEvent.click(getRadio("Yes"));
+    fireEvent.submit(getSubmitButton().closest("form")!);
+
+    await waitFor(() => {
+      expect(screen.getByText(/too many submissions/i)).toBeVisible();
+    });
+  });
+
+  it("form remains interactive after rate limit error", async () => {
+    mockSubmit.mockResolvedValueOnce({
+      success: false,
+      error: "Your party has made too many submissions. Please wait before trying again.",
+    }).mockResolvedValueOnce({ success: true });
+
+    render(<RsvpForm memberId={1} canBringPlusOne={false} />);
+    const yes = getRadio("Yes");
+
+    // First submit: rate limit error
+    fireEvent.click(yes);
+    fireEvent.submit(getSubmitButton().closest("form")!);
+    await waitFor(() => {
+      expect(screen.getByText(/too many submissions/i)).toBeVisible();
+    });
+
+    // Form should still be interactive
+    expect(getSubmitButton()).not.toBeDisabled();
+    expect(yes.checked).toBe(true);
   });
 
   it("displays server error without changing radio state", async () => {

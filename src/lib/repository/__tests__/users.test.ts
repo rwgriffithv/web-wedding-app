@@ -182,6 +182,43 @@ describe("users repository", () => {
     expect(getUserById(user.id)!.total_page_views).toBe(1);
   });
 
+  it("incrementPageViews throws for non-existent user", async () => {
+    const { incrementPageViews } = await import("@/lib/repository/users");
+    expect(() => incrementPageViews(999999, 15)).toThrow("User 999999 not found");
+  });
+
+  it("incrementPageViews always counts when debounceMinutes is 0", async () => {
+    const { createUser, incrementPageViews, getUserById } = await import("@/lib/repository/users");
+    const user = createUser("nodebounce", "pass1234", "No Debounce", "party");
+
+    incrementPageViews(user.id, 0);
+    incrementPageViews(user.id, 0);
+    incrementPageViews(user.id, 0);
+    incrementPageViews(user.id, 0);
+    incrementPageViews(user.id, 0);
+    expect(getUserById(user.id)!.total_page_views).toBe(5);
+  });
+
+  it("incrementPageViews updates last_page_view_at", async () => {
+    const { createUser, incrementPageViews, getUserById } = await import("@/lib/repository/users");
+    const user = createUser("lastview", "pass1234", "Last View", "party");
+
+    expect(getUserById(user.id)!.last_page_view_at).toBeNull();
+
+    incrementPageViews(user.id, 15);
+    const updated = getUserById(user.id)!;
+    expect(updated.last_page_view_at).not.toBeNull();
+    expect(new Date(updated.last_page_view_at!).getTime()).toBeGreaterThan(0);
+  });
+
+  it("incrementPageViews returns true when counted, false when debounced", async () => {
+    const { createUser, incrementPageViews } = await import("@/lib/repository/users");
+    const user = createUser("returnval", "pass1234", "Return Val", "party");
+
+    expect(incrementPageViews(user.id, 15)).toBe(true);
+    expect(incrementPageViews(user.id, 15)).toBe(false);
+  });
+
   it("getPartyActivity returns party users ordered by last login", async () => {
     const { createUser, recordLogin, getPartyActivity } = await import("@/lib/repository/users");
     db.prepare("INSERT INTO parties (name, code) VALUES ('ActParty', 'ACTP-123456')").run();

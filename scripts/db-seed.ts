@@ -31,7 +31,7 @@ const setConfig = (key: string, value: string) => {
   upsertConfig.run(value, key);
 };
 
-setConfig("rate_limit_max_attempts", "5");
+setConfig("rate_limit_max_attempts", "100");
 setConfig("rate_limit_window_seconds", "60");
 
 // Ensure default config values exist for existing databases (only fills empty/null values)

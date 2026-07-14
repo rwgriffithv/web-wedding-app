@@ -240,7 +240,14 @@ src/app/admin/{entity}/
 ├── page.tsx          # Server Component — reads data, renders layout
 ├── actions.ts        # Server Actions — auth, validation, mutations
 ├── {entity}-form.tsx # Client Component — form with useActionState (if needed)
-└── {entity}-list.tsx # Client Component — list with inline editing (if needed)
+├── {entity}-list.tsx # Client Component — list with inline editing (if needed)
+└── __tests__/
+    └── {entity}-form.test.tsx
+
+src/components/
+├── {component}.tsx
+└── __tests__/
+    └── {component}.test.tsx
 
 src/lib/repository/
 ├── {entity}.ts       # SQL queries, typed returns, transactions
@@ -251,6 +258,18 @@ src/lib/repository/
 - `page.tsx` imports from `repository/` directly (Server Component, no client boundary)
 - `actions.ts` imports from `repository/` (Server Actions, also server-only)
 - `*-form.tsx` and `*-list.tsx` use `"use client"` — never import from `repository/` directly; they call actions
+
+### Test Files
+
+All test files go in `__tests__/` subdirectories, never colocated with source files. This keeps source directories clean and applies consistently across all layers of the codebase.
+
+- Component tests: `src/components/__tests__/{component}.test.tsx`
+- Route tests: `src/app/(main)/{route}/__tests__/{component}.test.tsx`
+- Admin route tests: `src/app/admin/{entity}/__tests__/{entity}-form.test.tsx`
+- Repository tests: `src/lib/repository/__tests__/{entity}.test.ts`
+- Library tests: `src/lib/__tests__/{module}.test.ts`
+
+Tests import from their sibling directory using `../` relative paths. Vitest picks up `*.test.ts(x)` files from anywhere in the project.
 
 ## Database Migrations
 

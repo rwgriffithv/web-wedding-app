@@ -1,11 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
-import { createSession, verifyPassword, hashPassword } from "./auth";
+import { createSession, verifyPassword, hashPassword } from "../auth";
 
 vi.mock("next/headers", () => ({
   cookies: vi.fn(),
 }));
 
-vi.mock("./repository/users", () => ({
+vi.mock("../repository/users", () => ({
   getUserById: vi.fn().mockImplementation((id: number) => {
     if (id === 2) return { id: 2, username: "admin", type: "admin", display_name: "Admin", party_id: null, created_at: "", last_login_at: null, total_page_views: 0, password_changed_at: null, last_page_view_at: null };
     return undefined;
@@ -16,7 +16,7 @@ vi.mock("./repository/users", () => ({
   incrementPageViews: vi.fn(),
 }));
 
-vi.mock("./repository/party", () => ({
+vi.mock("../repository/party", () => ({
   getPartyById: vi.fn(),
   getPartyByCode: vi.fn(),
 }));
@@ -58,7 +58,7 @@ describe("isAdmin", () => {
     const mod = await import("next/headers");
     vi.mocked(mod.cookies).mockReturnValue({ get: () => undefined, set: vi.fn() } as never);
 
-    const { isAdmin } = await import("./auth");
+    const { isAdmin } = await import("../auth");
     expect(await isAdmin()).toBe(false);
   });
 
@@ -68,7 +68,7 @@ describe("isAdmin", () => {
     const mod = await import("next/headers");
     vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
 
-    const { isAdmin } = await import("./auth");
+    const { isAdmin } = await import("../auth");
     expect(await isAdmin()).toBe(true);
   });
 
@@ -76,7 +76,7 @@ describe("isAdmin", () => {
     const mod = await import("next/headers");
     vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: "not-a-valid-token" }), set: vi.fn() } as never);
 
-    const { isAdmin } = await import("./auth");
+    const { isAdmin } = await import("../auth");
     expect(await isAdmin()).toBe(false);
   });
 
@@ -91,7 +91,7 @@ describe("isAdmin", () => {
     const mod = await import("next/headers");
     vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: tampered }), set: vi.fn() } as never);
 
-    const { isAdmin } = await import("./auth");
+    const { isAdmin } = await import("../auth");
     expect(await isAdmin()).toBe(false);
   });
 });

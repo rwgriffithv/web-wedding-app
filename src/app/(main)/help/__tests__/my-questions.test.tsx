@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { MyQuestions } from "./my-questions";
+import { MyQuestions } from "../my-questions";
 import type { Question } from "@/lib/db";
 
 const mockSubmit = vi.fn();
 
-vi.mock("./actions", () => ({
+vi.mock("../actions", () => ({
   submitQuestion: (...args: unknown[]) => mockSubmit(...args),
 }));
 
@@ -106,6 +106,61 @@ describe("MyQuestions — form state persistence", () => {
     await waitFor(() => {
       expect(screen.getByText("Server error.")).toBeVisible();
     });
+  });
+
+  it("shows rate limit error when too many requests", async () => {
+    mockSubmit.mockResolvedValue({
+      success: false,
+      error: "Your party has made too many requests. Please wait before trying again.",
+    });
+
+    render(<MyQuestions questions={emptyQuestions} />);
+    fireEvent.change(getTextarea(), { target: { value: "Help me" } });
+    fireEvent.submit(getSubmitButton().closest("form")!);
+
+    await waitFor(() => {
+      expect(screen.getByText(/too many requests/i)).toBeVisible();
+    });
+  });
+
+  it("form remains interactive after rate limit error", async () => {
+    mockSubmit.mockResolvedValueOnce({
+      success: false,
+      error: "Your party has made too many requests. Please wait before trying again.",
+    }).mockResolvedValueOnce({ success: true });
+
+    render(<MyQuestions questions={emptyQuestions} />);
+    const textarea = getTextarea();
+
+    // First submit: rate limit error
+    fireEvent.change(textarea, { target: { value: "Help me" } });
+    fireEvent.submit(getSubmitButton().closest("form")!);
+    await waitFor(() => {
+      expect(screen.getByText(/too many requests/i)).toBeVisible();
+    });
+
+    // Textarea should retain text, button should be enabled
+    expect(textarea.value).toBe("Help me");
+    expect(getSubmitButton()).not.toBeDisabled();
+  });
+
+  it("textarea retains text after rate limit error", async () => {
+    mockSubmit.mockResolvedValue({
+      success: false,
+      error: "Your party has made too many requests. Please wait before trying again.",
+    });
+
+    render(<MyQuestions questions={emptyQuestions} />);
+    const textarea = getTextarea();
+
+    fireEvent.change(textarea, { target: { value: "My question" } });
+    fireEvent.submit(getSubmitButton().closest("form")!);
+
+    await waitFor(() => {
+      expect(screen.getByText(/too many requests/i)).toBeVisible();
+    });
+
+    expect(textarea.value).toBe("My question");
   });
 
   it("submit button disabled while pending", async () => {

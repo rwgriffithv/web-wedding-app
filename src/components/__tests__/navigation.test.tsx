@@ -1,12 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { Navigation } from "./navigation";
+import { Navigation } from "../navigation";
 
 vi.mock("next/navigation", () => ({
   Link: ({ children, href }: { children: React.ReactNode; href: string }) => <a href={href}>{children}</a>,
 }));
 
-vi.mock("./logout-button", () => ({
+vi.mock("../logout-button", () => ({
   LogoutButton: () => <button type="submit">Logout</button>,
 }));
 

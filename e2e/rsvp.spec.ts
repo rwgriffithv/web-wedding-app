@@ -89,10 +89,11 @@ test.describe.serial("RSVP flows", () => {
     await page.fill("input[name=password]", "admin");
     await page.locator("button[type=submit]").click();
     await expect(page).toHaveURL(/\/admin/);
-    await page.goto("/admin/site");
+    await page.goto("/admin/rsvp");
+    await page.getByText("RSVP Settings").click();
     const deadlineInput = page.locator("input[name=rsvp_deadline]");
     await deadlineInput.fill("2020-01-01T00:00");
-    await page.getByRole("button", { name: "Save" }).click();
+    await page.getByRole("button", { name: "Save Deadline" }).click();
     await expect(page.getByText(/saved/i)).toBeVisible();
 
     // Logout, login as party, verify locked
@@ -113,9 +114,10 @@ test.describe.serial("RSVP flows", () => {
     await page.fill("input[name=password]", "admin");
     await page.locator("button[type=submit]").click();
     await expect(page).toHaveURL(/\/admin/);
-    await page.goto("/admin/site");
+    await page.goto("/admin/rsvp");
+    await page.getByText("RSVP Settings").click();
     await deadlineInput.clear();
-    await page.getByRole("button", { name: "Save" }).click();
+    await page.getByRole("button", { name: "Save Deadline" }).click();
     await expect(page.getByText(/saved/i)).toBeVisible();
   });
 
