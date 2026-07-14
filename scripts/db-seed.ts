@@ -14,15 +14,26 @@ const adminPassword = process.env.ADMIN_PASSWORD || "admin";
 
 db.exec(DDL);
 
-// Idempotent column migrations for existing databases
-const columns = db.pragma("table_info(users)") as { name: string }[];
-const columnNames = new Set(columns.map((c) => c.name));
-if (!columnNames.has("password_changed_at")) {
+// Idempotent schema migrations for existing databases (mirrors scripts/migrate.sh)
+function columnExists(table: string, col: string): boolean {
+  const cols = db.pragma(`table_info(${table})`) as { name: string }[];
+  return cols.some(c => c.name === col);
+}
+
+if (!columnExists("users", "password_changed_at")) {
   db.exec("ALTER TABLE users ADD COLUMN password_changed_at TEXT");
 }
-if (!columnNames.has("last_page_view_at")) {
+if (!columnExists("users", "last_page_view_at")) {
   db.exec("ALTER TABLE users ADD COLUMN last_page_view_at TEXT");
 }
+if (!columnExists("parties", "invited")) {
+  db.exec("ALTER TABLE parties ADD COLUMN invited INTEGER NOT NULL DEFAULT 0");
+}
+if (!columnExists("guests", "unexpected")) {
+  db.exec("ALTER TABLE guests ADD COLUMN unexpected INTEGER NOT NULL DEFAULT 0");
+}
+
+// faq_items and questions tables are already created by DDL above
 
 const insertConfig = db.prepare("INSERT OR IGNORE INTO site_config (key, value) VALUES (?, ?)");
 const upsertConfig = db.prepare("UPDATE site_config SET value = ? WHERE key = ?");
