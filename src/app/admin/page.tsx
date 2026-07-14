@@ -10,21 +10,12 @@ export default function AdminDashboardPage() {
       <Header title="Dashboard" description="Overview of your wedding website." />
       <div className="stat-rows">
         {(["invited", "expected", "confirmed"] as const).map(key => (
-          <div key={key}>
+          <div key={key} className="stat-row">
             <h3 className="stat-row-title">{key === "invited" ? "Invited" : key === "expected" ? "Expected" : "Confirmed"}</h3>
-            <div className="stat-row-cards">
-              <div className="stat-card">
-                <div className="value">{counts[key].guests}</div>
-                <div className="label">Guests</div>
-              </div>
-              <div className="stat-card">
-                <div className="value">{counts[key].plus_ones}</div>
-                <div className="label">Plus Ones</div>
-              </div>
-              <div className="stat-card">
-                <div className="value">{counts[key].total}</div>
-                <div className="label">Total</div>
-              </div>
+            <div className="stat-row-figures">
+              <span className="stat-figure"><span className="stat-number">{counts[key].guests}</span> Guests</span>
+              <span className="stat-figure"><span className="stat-number">{counts[key].plus_ones}</span> Plus Ones</span>
+              <span className="stat-figure"><span className="stat-number">{counts[key].total}</span> Total</span>
             </div>
           </div>
         ))}
