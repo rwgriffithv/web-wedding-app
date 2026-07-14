@@ -14,8 +14,8 @@ export function QuestionList({ questions, stats }: { questions: QuestionWithPart
   const [sort, setSort] = useState<"date" | "party">("date");
   const [answerState, dispatchAnswer, isPendingAnswer] = useActionState(answerQuestion, initialAnswerState);
   const [answerTexts, setAnswerTexts] = useState<Record<number, string>>({});
-  const [lastAnsweredId, setLastAnsweredId] = useState<number | null>(null);
   const answerHandledRef = useRef(false);
+  const lastAnsweredIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (answerState?.success && !answerHandledRef.current) {
@@ -113,7 +113,7 @@ export function QuestionList({ questions, stats }: { questions: QuestionWithPart
                 )}
               </div>
               {!q.answer && (
-                <form action={(fd) => { setLastAnsweredId(q.id); dispatchAnswer(fd); }} className="styled-form w-full mt-1">
+                <form action={(fd) => { lastAnsweredIdRef.current = q.id; dispatchAnswer(fd); }} className="styled-form w-full mt-1">
                   <input type="hidden" name="question_id" value={q.id} />
                   <div className="form-group">
                     <textarea
@@ -130,7 +130,7 @@ export function QuestionList({ questions, stats }: { questions: QuestionWithPart
                   <button type="submit" className="btn btn-primary btn-sm" disabled={isPendingAnswer}>
                     {isPendingAnswer ? "Answering..." : "Submit Answer"}
                   </button>
-                  {answerState?.error && lastAnsweredId === q.id && (
+                  {answerState?.error && lastAnsweredIdRef.current === q.id && (
                     <p className="text-error text-sm mt-1" role="alert">{answerState.error}</p>
                   )}
                 </form>
