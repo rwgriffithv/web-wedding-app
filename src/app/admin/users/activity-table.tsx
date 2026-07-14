@@ -50,30 +50,32 @@ export function ActivityTable({ users }: ActivityTableProps) {
   const arrow = (key: SortKey) => sortKey === key ? (sortDir === "desc" ? " \u2193" : " \u2191") : "";
 
   return (
-    <table className="activity-table">
-      <thead>
-        <tr>
-          <th>Party Name</th>
-          <th className="sortable" onClick={() => toggleSort("last_login_at")}>
-            Last Login{arrow("last_login_at")}
-          </th>
-          <th className="sortable" onClick={() => toggleSort("total_page_views")}>
-            Total Views{arrow("total_page_views")}
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {sorted.length === 0 && (
-          <tr><td colSpan={3} className="empty-state">No party users yet.</td></tr>
-        )}
-        {sorted.map((u) => (
-          <tr key={u.id}>
-            <td>{u.display_name}</td>
-            <td>{formatDateTime(u.last_login_at)}</td>
-            <td>{u.total_page_views}</td>
+    <div className="admin-table-wrapper">
+      <table className="activity-table">
+        <thead>
+          <tr>
+            <th>Party Name</th>
+            <th className="sortable" onClick={() => toggleSort("last_login_at")}>
+              Last Login{arrow("last_login_at")}
+            </th>
+            <th className="sortable" onClick={() => toggleSort("total_page_views")}>
+              Total Views{arrow("total_page_views")}
+            </th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {sorted.length === 0 && (
+            <tr><td colSpan={3} className="empty-state">No party users yet.</td></tr>
+          )}
+          {sorted.map((u) => (
+            <tr key={u.id}>
+              <td>{u.display_name}</td>
+              <td>{formatDateTime(u.last_login_at)}</td>
+              <td>{u.total_page_views}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

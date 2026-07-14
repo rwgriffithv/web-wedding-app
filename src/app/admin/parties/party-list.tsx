@@ -60,33 +60,35 @@ export function PartyList({ parties }: PartyListProps) {
         />
       </div>
 
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th className="w-2" />
-            <th onClick={() => toggleSort("name")} className="cursor-pointer">
-              Name{sortIndicator("name")}
-            </th>
-            <th>Code</th>
-            <th onClick={() => toggleSort("invited")} className="cursor-pointer">
-              Invited{sortIndicator("invited")}
-            </th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.length === 0 && (
+      <div className="admin-table-wrapper">
+        <table className="admin-table">
+          <thead>
             <tr>
-              <td colSpan={5} className="empty-state">
-                {search ? "No parties match your search." : "No parties yet. Create one from the Guests page."}
-              </td>
+              <th className="w-2" />
+              <th onClick={() => toggleSort("name")} className="cursor-pointer">
+                Name{sortIndicator("name")}
+              </th>
+              <th>Code</th>
+              <th onClick={() => toggleSort("invited")} className="cursor-pointer">
+                Invited{sortIndicator("invited")}
+              </th>
+              <th>Actions</th>
             </tr>
-          )}
-          {filtered.map(party => (
-            <PartyRow key={party.id} party={party} guests={party.guests} />
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={5} className="empty-state">
+                  {search ? "No parties match your search." : "No parties yet. Create one from the Guests page."}
+                </td>
+              </tr>
+            )}
+            {filtered.map(party => (
+              <PartyRow key={party.id} party={party} guests={party.guests} />
+            ))}
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }

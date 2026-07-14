@@ -165,7 +165,7 @@ export function PartyRow({ party, guests }: PartyRowProps) {
                 e.preventDefault();
               }
             }}
-            className="inline"
+
           >
             <input type="hidden" name="party_id" value={party.id} />
             <button type="submit" className="btn btn-sm btn-danger" disabled={deletePending}>

@@ -118,48 +118,50 @@ export function RsvpStatusTable({ guests }: RsvpStatusTableProps) {
         </div>
       </div>
 
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th onClick={() => toggleSort("name")} className="cursor-pointer">
-              Name{sortIndicator("name")}
-            </th>
-            <th onClick={() => toggleSort("party")} className="cursor-pointer">
-              Party{sortIndicator("party")}
-            </th>
-            <th onClick={() => toggleSort("status")} className="cursor-pointer">
-              Status{sortIndicator("status")}
-            </th>
-            <th>Plus One</th>
-            <th>Responded</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.length === 0 && (
+      <div className="admin-table-wrapper">
+        <table className="admin-table">
+          <thead>
             <tr>
-              <td colSpan={5} className="empty-state">
-                {search || statusFilter !== "all" ? "No guests match your filters." : "No guests yet."}
-              </td>
+              <th onClick={() => toggleSort("name")} className="cursor-pointer">
+                Name{sortIndicator("name")}
+              </th>
+              <th onClick={() => toggleSort("party")} className="cursor-pointer">
+                Party{sortIndicator("party")}
+              </th>
+              <th onClick={() => toggleSort("status")} className="cursor-pointer">
+                Status{sortIndicator("status")}
+              </th>
+              <th>Plus One</th>
+              <th>Responded</th>
             </tr>
-          )}
-          {filtered.map(g => {
-            const status = getStatus(g);
-            return (
-              <tr key={g.guest_id}>
-                <td>{g.display_name}</td>
-                <td>{g.party_name}</td>
-                <td>
-                  <span className={`badge ${status === "yes" ? "badge-yes" : status === "no" ? "badge-no" : "badge-guest"}`}>
-                    {getStatusLabel(status)}
-                  </span>
+          </thead>
+          <tbody>
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={5} className="empty-state">
+                  {search || statusFilter !== "all" ? "No guests match your filters." : "No guests yet."}
                 </td>
-                <td>{g.plus_one_name || "\u2014"}</td>
-                <td>{g.responded_at ? new Date(`${g.responded_at}Z`).toLocaleDateString() : "\u2014"}</td>
               </tr>
-            );
-          })}
-        </tbody>
-      </table>
+            )}
+            {filtered.map(g => {
+              const status = getStatus(g);
+              return (
+                <tr key={g.guest_id}>
+                  <td>{g.display_name}</td>
+                  <td>{g.party_name}</td>
+                  <td>
+                    <span className={`badge ${status === "yes" ? "badge-yes" : status === "no" ? "badge-no" : "badge-guest"}`}>
+                      {getStatusLabel(status)}
+                    </span>
+                  </td>
+                  <td>{g.plus_one_name || "\u2014"}</td>
+                  <td>{g.responded_at ? new Date(`${g.responded_at}Z`).toLocaleDateString() : "\u2014"}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }

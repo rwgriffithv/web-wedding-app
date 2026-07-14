@@ -79,33 +79,35 @@ export function GuestTable({ guests, parties }: GuestTableProps) {
             />
           </div>
 
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th onClick={() => toggleSort("name")} className="cursor-pointer">
-                  Name{sortIndicator("name")}
-                </th>
-                <th onClick={() => toggleSort("party")} className="cursor-pointer">
-                  Party{sortIndicator("party")}
-                </th>
-                <th>+1</th>
-                <th>Unexpected</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 && (
+          <div className="admin-table-wrapper">
+            <table className="admin-table">
+              <thead>
                 <tr>
-                  <td colSpan={5} className="empty-state">
-                    {search ? "No guests match your search." : "No guests yet."}
-                  </td>
+                  <th onClick={() => toggleSort("name")} className="cursor-pointer">
+                    Name{sortIndicator("name")}
+                  </th>
+                  <th onClick={() => toggleSort("party")} className="cursor-pointer">
+                    Party{sortIndicator("party")}
+                  </th>
+                  <th>+1</th>
+                  <th>Unexpected</th>
+                  <th>Actions</th>
                 </tr>
-              )}
-              {filtered.map(g => (
-                <GuestRow key={g.id} guest={g} parties={parties} />
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="empty-state">
+                      {search ? "No guests match your search." : "No guests yet."}
+                    </td>
+                  </tr>
+                )}
+                {filtered.map(g => (
+                  <GuestRow key={g.id} guest={g} parties={parties} />
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </details>
     </>

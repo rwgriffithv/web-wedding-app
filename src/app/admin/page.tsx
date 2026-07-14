@@ -33,30 +33,32 @@ export default function AdminDashboardPage() {
       </div>
 
       <h2 className="text-base font-semibold mb-3">Recent RSVPs</h2>
-      <table className="admin-table">
-        <caption className="sr-only">Recent RSVP Responses</caption>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Attending</th>
-            <th>Plus One</th>
-            <th>Submitted</th>
-          </tr>
-        </thead>
-        <tbody>
-          {responses.map((r) => (
-            <tr key={r.id}>
-              <td>{r.guest_name}</td>
-              <td><span className={`badge ${r.attending ? "badge-yes" : "badge-no"}`}>{r.attending ? "Yes" : "No"}</span></td>
-              <td>{r.plus_one_name || "—"}</td>
-              <td>{new Date(`${r.created_at}Z`).toLocaleDateString()}</td>
+      <div className="admin-table-wrapper">
+        <table className="admin-table">
+          <caption className="sr-only">Recent RSVP Responses</caption>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Attending</th>
+              <th>Plus One</th>
+              <th>Submitted</th>
             </tr>
-          ))}
-          {responses.length === 0 && (
-            <tr><td colSpan={4} style={{ color: "var(--color-muted)", fontStyle: "italic" }}>No RSVPs yet.</td></tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {responses.map((r) => (
+              <tr key={r.id}>
+                <td>{r.guest_name}</td>
+                <td><span className={`badge ${r.attending ? "badge-yes" : "badge-no"}`}>{r.attending ? "Yes" : "No"}</span></td>
+                <td>{r.plus_one_name || "—"}</td>
+                <td>{new Date(`${r.created_at}Z`).toLocaleDateString()}</td>
+              </tr>
+            ))}
+            {responses.length === 0 && (
+              <tr><td colSpan={4} className="empty-state" style={{ color: "var(--color-muted)", fontStyle: "italic" }}>No RSVPs yet.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }

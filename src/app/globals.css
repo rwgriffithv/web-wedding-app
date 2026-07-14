@@ -1027,20 +1027,18 @@ a:hover {
   position: relative;
 }
 
-.sidebar-toggle-input {
-  display: none;
-}
-
-.sidebar-toggle-label {
+/* Sidebar Hamburger Button (mobile only) */
+.sidebar-hamburger {
   display: none;
   position: fixed;
-  top: 1rem;
-  left: 1rem;
+  top: 0.75rem;
+  left: 0.75rem;
   z-index: 100;
   width: 44px;
   height: 44px;
   padding: 0.625rem;
   background: var(--color-sidebar);
+  border: none;
   border-radius: var(--radius);
   cursor: pointer;
   flex-direction: column;
@@ -1058,18 +1056,24 @@ a:hover {
   transition: transform 0.2s, opacity 0.2s;
 }
 
-.sidebar-toggle-input:checked~.sidebar-toggle-label .hamburger-bar:nth-child(1) {
-  transform: translateY(7px) rotate(45deg);
-}
-
-.sidebar-toggle-input:checked~.sidebar-toggle-label .hamburger-bar:nth-child(2) {
+/* Admin Sidebar Backdrop */
+.admin-sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 90;
   opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
 }
 
-.sidebar-toggle-input:checked~.sidebar-toggle-label .hamburger-bar:nth-child(3) {
-  transform: translateY(-7px) rotate(-45deg);
+.admin-sidebar-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
 }
 
+/* Desktop Sidebar */
 .admin-sidebar {
   width: 240px;
   background: var(--color-sidebar);
@@ -1106,47 +1110,74 @@ a:hover {
 
 .admin-main {
   flex: 1;
+  min-width: 0;
   padding: 2rem;
 }
 
 @media (max-width: 768px) {
-  .admin-layout {
-    flex-direction: column;
-  }
-
-  .sidebar-toggle-label {
+  .sidebar-hamburger {
     display: flex;
   }
 
-  .admin-sidebar {
-    width: 100%;
-    padding: 0;
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease, padding 0.3s ease;
+  .admin-sidebar-backdrop {
+    display: block;
   }
 
-  .sidebar-toggle-input:checked~.admin-sidebar {
-    max-height: 600px;
+  .admin-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 95;
+    width: 280px;
+    max-width: 85vw;
+    height: 100vh;
+    height: 100dvh;
     padding: 1.5rem;
+    padding-top: 4.5rem;
+    overflow-y: auto;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .admin-sidebar.open {
+    transform: translateX(0);
   }
 
   .admin-sidebar h2 {
-    margin-top: 2.5rem;
-  }
-
-  .admin-sidebar a {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
-  }
-
-  .admin-sidebar div[style] {
-    display: none;
+    margin-top: 0;
   }
 
   .admin-main {
     padding: 1rem;
     padding-top: 4rem;
+  }
+
+  .admin-main > * {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .admin-table-search {
+    max-width: 100%;
+  }
+
+  .admin-list-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .admin-list-item .item-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .admin-list-item .item-info .flex-row {
+    flex-wrap: wrap;
+  }
+
+  .admin-list-item form.flex-row {
+    flex-wrap: wrap;
   }
 }
 
@@ -1336,10 +1367,19 @@ a:hover {
 
   .stat-row-figures {
     gap: 0.5rem;
+    flex-wrap: wrap;
   }
 
   .stat-separator {
     display: none;
+  }
+
+  .form-row.flex-row {
+    flex-direction: column;
+  }
+
+  .form-row.flex-row .form-group {
+    width: 100%;
   }
 }
 
@@ -1697,6 +1737,13 @@ footer {
   background: var(--color-surface);
 }
 
+/* Admin Table Wrapper (horizontal scroll on mobile) */
+.admin-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .admin-table-search {
   width: 100%;
   max-width: 400px;
@@ -1759,6 +1806,11 @@ footer {
 .flex-row {
   display: flex;
   flex-direction: row;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
 }
 
 .flex-wrap {
@@ -1859,6 +1911,10 @@ footer {
 
 .w-2 {
   width: 2rem;
+}
+
+.font-mono {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace);
 }
 
 .opacity-muted {

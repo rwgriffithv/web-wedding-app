@@ -35,32 +35,34 @@ function LodgingListItem({ option, index, total }: { option: LodgingOption; inde
           height={60}
           style={{ objectFit: "cover", borderRadius: "4px" }}
         />
-        <div className="flex-1">
+        <div className="flex-1" style={{ minWidth: 0 }}>
           {editing ? (
             <form action={editDispatch} className="flex-col gap-1">
               <input type="hidden" name="option_id" value={option.id} />
               <input type="hidden" name="image_url" defaultValue={option.image_url} />
-              <div className="flex-row items-center gap-1">
+              <div className="flex-row items-center gap-1 flex-wrap">
                 <input
                   name="title"
                   type="text"
                   value={titleValue}
                   onChange={e => setTitleValue(e.target.value)}
                   placeholder="Title"
-                  className="table-inline-input flex-1"
+                  className="table-inline-input"
+                  style={{ flex: "1 1 120px", minWidth: "80px" }}
                 />
               </div>
-              <div className="flex-row items-center gap-1">
+              <div className="flex-row items-center gap-1 flex-wrap">
                 <input
                   name="url"
                   type="text"
                   value={urlValue}
                   onChange={e => setUrlValue(e.target.value)}
                   placeholder="Booking URL"
-                  className="table-inline-input flex-1"
+                  className="table-inline-input"
+                  style={{ flex: "1 1 120px", minWidth: "80px" }}
                 />
               </div>
-              <div className="flex-row items-center gap-1">
+              <div className="flex-row items-center gap-1 flex-wrap">
                 <button type="submit" className="btn btn-sm btn-primary" disabled={editPending || !hasChanges}>{editPending ? "Saving..." : "Save"}</button>
                 <button type="button" className="btn btn-sm btn-ghost" onClick={() => { setEditing(false); setTitleValue(option.title); setUrlValue(option.url); }}>Cancel</button>
                 {editState?.error && <span className="table-error">{editState.error}</span>}

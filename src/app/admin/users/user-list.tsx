@@ -25,22 +25,18 @@ export function UserList({ user, isPrimaryAdmin }: UserListProps) {
         </div>
       </div>
       {!isPrimaryAdmin && (
-        <div className="flex-row gap-1 items-end flex-wrap">
-          <form action={dispatch} className="flex-row gap-1 items-end flex-wrap">
+        <div className="flex-row gap-1 items-start flex-wrap">
+          <form action={dispatch} className="flex-col gap-1">
             <input type="hidden" name="user_id" value={user.id} />
-            <div>
-              <input name="username" defaultValue={user.username} placeholder="Username" aria-label="Username" className="table-inline-input" style={{ width: "100px" }} />
-            </div>
-            <div>
-              <input name="password" placeholder="New password" type="password" minLength={1} aria-label="New password" className="table-inline-input" style={{ width: "100px" }} />
-            </div>
-            <div>
+            <div className="flex-row flex-wrap gap-1">
+              <input name="username" defaultValue={user.username} placeholder="Username" aria-label="Username" className="table-inline-input" style={{ width: "120px" }} />
+              <input name="password" placeholder="New password" type="password" minLength={1} aria-label="New password" className="table-inline-input" style={{ width: "120px" }} />
               <select name="type" defaultValue={user.type} aria-label="User type" className="table-inline-select">
                 <option value="admin">Admin</option>
                 <option value="viewer">Viewer</option>
               </select>
+              <button type="submit" className="btn btn-sm btn-primary" disabled={isPending}>{isPending ? "Saving..." : "Save"}</button>
             </div>
-            <button type="submit" className="btn btn-sm btn-primary" disabled={isPending}>{isPending ? "Saving..." : "Save"}</button>
             {state?.success && <span className="text-success text-sm" role="status">Saved</span>}
             {state?.error && <span className="text-error text-sm" role="alert">{state.error}</span>}
           </form>
