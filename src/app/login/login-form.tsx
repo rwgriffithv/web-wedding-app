@@ -3,6 +3,10 @@
 import { useState, type FormEvent } from "react";
 import { login, loginByPartyCode } from "./actions";
 
+function isRedirectError(err: unknown): boolean {
+  return err instanceof Error && "digest" in err && typeof (err as { digest: string }).digest === "string" && (err as { digest: string }).digest.startsWith("NEXT_REDIRECT");
+}
+
 function CredentialsForm() {
   const [state, setState] = useState<{ error?: string } | null>(null);
   const [isPending, setIsPending] = useState(false);
@@ -14,7 +18,8 @@ function CredentialsForm() {
       const formData = new FormData(e.currentTarget);
       const result = await login(null, formData);
       setState(result);
-    } catch {
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
       setState({ error: "Something went wrong. Please try again." });
     } finally {
       setIsPending(false);
@@ -52,7 +57,8 @@ function PartyCodeForm() {
       const formData = new FormData(e.currentTarget);
       const result = await loginByPartyCode(null, formData);
       setState(result);
-    } catch {
+    } catch (err) {
+      if (isRedirectError(err)) throw err;
       setState({ error: "Something went wrong. Please try again." });
     } finally {
       setIsPending(false);

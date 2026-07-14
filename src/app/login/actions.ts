@@ -101,7 +101,7 @@ export async function loginByPartyCode(prevState: LoginState | null, formData: F
   redirect("/home");
 }
 
-export async function logout(_prevState: unknown, _formData: FormData): Promise<null> {
+export async function logout(): Promise<void> {
   await destroySession();
   redirect("/");
 }
