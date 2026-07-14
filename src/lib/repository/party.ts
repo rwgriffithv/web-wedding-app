@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { getDb, type Party } from "@/lib/db";
-import { createPartyUser, deleteUsersByPartyId, updateUser, getUserByPartyId } from "./users";
+import { createPartyUser, deleteUsersByPartyId, updateUser, getPartyUserWithPassword } from "./users";
 
 function generatePartyCode(name: string): string {
   const prefix = name
@@ -53,7 +53,7 @@ export function updateParty(id: number, data: { name?: string; code?: string; in
 
     db.prepare("UPDATE parties SET name = ?, code = ?, invited = ? WHERE id = ?").run(newName, newCode, newInvited, id);
 
-    const partyUser = getUserByPartyId(id);
+    const partyUser = getPartyUserWithPassword(id);
     if (partyUser) {
       updateUser(partyUser.id, { username: newCode, password: newCode, display_name: newName });
     }

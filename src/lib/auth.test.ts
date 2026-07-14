@@ -10,8 +10,8 @@ vi.mock("./repository/users", () => ({
     if (id === 2) return { id: 2, username: "admin", type: "admin", display_name: "Admin", party_id: null, created_at: "", last_login_at: null, total_page_views: 0 };
     return undefined;
   }),
-  getUserByUsername: vi.fn(),
-  getUserByPartyId: vi.fn(),
+  getUserWithPassword: vi.fn(),
+  getPartyUserWithPassword: vi.fn(),
   recordLogin: vi.fn(),
   incrementPageViews: vi.fn(),
 }));

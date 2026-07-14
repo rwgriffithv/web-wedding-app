@@ -31,9 +31,10 @@ export function CopyButton({ text, title = "Copy to clipboard" }: CopyButtonProp
       className="btn btn-sm btn-ghost copy-btn"
       onClick={(e) => { e.preventDefault(); handleCopy(); }}
       title={title}
+      aria-label={copied ? "Copied to clipboard" : title}
     >
       {copied ? (
-        <span className="text-success text-xs">Copied!</span>
+        <span className="text-success text-xs" aria-live="polite">Copied!</span>
       ) : (
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />

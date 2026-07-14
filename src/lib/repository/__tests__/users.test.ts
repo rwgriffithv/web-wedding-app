@@ -20,7 +20,7 @@ describe("users repository", () => {
     expect(user.username).toBe("alice");
     expect(user.display_name).toBe("Alice Admin");
     expect(user.type).toBe("admin");
-    expect(user.password).not.toBe("password123");
+    expect((user as Record<string, unknown>).password).not.toBe("password123");
     expect(user.id).toBeGreaterThan(0);
 
     const found = getUserById(user.id);
@@ -29,17 +29,17 @@ describe("users repository", () => {
   });
 
   it("looks up user by username", async () => {
-    const { createUser, getUserByUsername } = await import("@/lib/repository/users");
+    const { createUser, getUserWithPassword } = await import("@/lib/repository/users");
     createUser("bob", "pass1234", "Bob Viewer", "viewer");
 
-    const found = getUserByUsername("bob");
+    const found = getUserWithPassword("bob");
     expect(found).toBeDefined();
     expect(found!.type).toBe("viewer");
   });
 
   it("returns undefined for unknown username", async () => {
-    const { getUserByUsername } = await import("@/lib/repository/users");
-    expect(getUserByUsername("nonexistent")).toBeUndefined();
+    const { getUserWithPassword } = await import("@/lib/repository/users");
+    expect(getUserWithPassword("nonexistent")).toBeUndefined();
   });
 
   it("returns undefined for unknown id", async () => {
@@ -61,13 +61,13 @@ describe("users repository", () => {
   });
 
   it("looks up user by party id", async () => {
-    const { createUser, getUserByPartyId } = await import("@/lib/repository/users");
+    const { createUser, getPartyUserWithPassword } = await import("@/lib/repository/users");
     db.prepare("INSERT INTO parties (name, code) VALUES ('Test', 'TEST-123456')").run();
     const party = db.prepare("SELECT * FROM parties WHERE code = 'TEST-123456'").get() as { id: number };
 
     createUser("party-user", "pass1234", "Party User", "party", party.id);
 
-    const found = getUserByPartyId(party.id);
+    const found = getPartyUserWithPassword(party.id);
     expect(found).toBeDefined();
     expect(found!.type).toBe("party");
   });
@@ -82,12 +82,12 @@ describe("users repository", () => {
   });
 
   it("updates password (hashed)", async () => {
-    const { createUser, updateUser, getUserByUsername } = await import("@/lib/repository/users");
+    const { createUser, updateUser, getUserWithPassword } = await import("@/lib/repository/users");
     createUser("pwduser", "pass1234", "Test User", "viewer");
-    const originalHash = getUserByUsername("pwduser")!.password;
+    const originalHash = getUserWithPassword("pwduser")!.password;
 
-    updateUser(getUserByUsername("pwduser")!.id, { password: "newpassword" });
-    const updated = getUserByUsername("pwduser")!;
+    updateUser(getUserWithPassword("pwduser")!.id, { password: "newpassword" });
+    const updated = getUserWithPassword("pwduser")!;
     expect(updated.password).not.toBe("newpassword");
     expect(updated.password).not.toBe(originalHash);
   });
@@ -121,12 +121,12 @@ describe("users repository", () => {
   });
 
   it("createPartyUser creates party-type user with code as credentials", async () => {
-    const { createPartyUser, getUserByUsername } = await import("@/lib/repository/users");
+    const { createPartyUser, getUserWithPassword } = await import("@/lib/repository/users");
     db.prepare("INSERT INTO parties (name, code) VALUES ('Party', 'PRTY-123456')").run();
     const party = db.prepare("SELECT * FROM parties WHERE code = 'PRTY-123456'").get() as { id: number; code: string; name: string };
 
     createPartyUser(party.code, party.name, party.id);
-    const found = getUserByUsername(party.code);
+    const found = getUserWithPassword(party.code);
     expect(found).toBeDefined();
     expect(found!.type).toBe("party");
     expect(found!.username).toBe(party.code);
@@ -134,15 +134,15 @@ describe("users repository", () => {
   });
 
   it("deletePartyUser removes all party users for a party", async () => {
-    const { createPartyUser, deleteUsersByPartyId, getUserByPartyId } = await import("@/lib/repository/users");
+    const { createPartyUser, deleteUsersByPartyId, getPartyUserWithPassword } = await import("@/lib/repository/users");
     db.prepare("INSERT INTO parties (name, code) VALUES ('DelParty', 'DELP-123456')").run();
     const party = db.prepare("SELECT * FROM parties WHERE code = 'DELP-123456'").get() as { id: number; code: string; name: string };
 
     createPartyUser(party.code, party.name, party.id);
-    expect(getUserByPartyId(party.id)).toBeDefined();
+    expect(getPartyUserWithPassword(party.id)).toBeDefined();
 
     deleteUsersByPartyId(party.id);
-    expect(getUserByPartyId(party.id)).toBeUndefined();
+    expect(getPartyUserWithPassword(party.id)).toBeUndefined();
   });
 
   it("recordLogin sets last_login_at", async () => {

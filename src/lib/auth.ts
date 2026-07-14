@@ -4,22 +4,28 @@ import { getEnvConfig } from "./config";
 import { getUserById } from "./repository/users";
 import { getPartyById } from "./repository/party";
 
-const SESSION_COOKIE = "session";
+export const SESSION_COOKIE = "session";
 
 interface Session {
   userId?: number;
   partyId?: number;
   type: "admin" | "viewer" | "party";
+  exp?: number;
 }
 
 function getSessionSecret(): string {
   return getEnvConfig().sessionSecret;
 }
 
-function signSession(payload: string): string {
+function signSession(payload: string, expiresInSeconds?: number): string {
+  const obj = JSON.parse(payload) as Record<string, unknown>;
+  if (expiresInSeconds && expiresInSeconds > 0) {
+    obj.exp = Date.now() + expiresInSeconds * 1000;
+  }
+  const signed = JSON.stringify(obj);
   const secret = getSessionSecret();
-  const hmac = crypto.createHmac("sha256", secret).update(payload).digest("hex");
-  return Buffer.from(`${payload}.${hmac}`).toString("base64url");
+  const hmac = crypto.createHmac("sha256", secret).update(signed).digest("hex");
+  return Buffer.from(`${signed}.${hmac}`).toString("base64url");
 }
 
 function verifySession(token: string): Session | null {
@@ -39,7 +45,9 @@ function verifySession(token: string): Session | null {
   const sigBuf = Buffer.from(signature);
   if (hmacBuf.length !== sigBuf.length || !crypto.timingSafeEqual(hmacBuf, sigBuf)) return null;
   try {
-    return JSON.parse(payload) as Session;
+    const session = JSON.parse(payload) as Session;
+    if (session.exp && Date.now() > session.exp) return null;
+    return session;
   } catch {
     return null;
   }
@@ -75,8 +83,8 @@ export async function isAdmin(): Promise<boolean> {
   return session?.type === "admin";
 }
 
-export function createSession(data: { userId?: number; partyId?: number; type: "admin" | "viewer" | "party" }): string {
-  return signSession(JSON.stringify(data));
+export function createSession(data: { userId?: number; partyId?: number; type: "admin" | "viewer" | "party" }, expiresInSeconds?: number): string {
+  return signSession(JSON.stringify(data), expiresInSeconds);
 }
 
 export async function destroySession(): Promise<void> {

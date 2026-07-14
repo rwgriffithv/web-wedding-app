@@ -2,8 +2,8 @@
 
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { createSession, destroySession, verifyPassword } from "@/lib/auth";
-import { getUserByUsername, getUserByPartyId, recordLogin } from "@/lib/repository/users";
+import { createSession, destroySession, verifyPassword, SESSION_COOKIE } from "@/lib/auth";
+import { getUserWithPassword, getPartyUserWithPassword, recordLogin } from "@/lib/repository/users";
 import { getPartyByCode } from "@/lib/repository/party";
 import { getGuestsByPartyId } from "@/lib/repository/guests";
 import { createRateLimiter } from "@/lib/rate-limit";
@@ -12,11 +12,18 @@ import { getString } from "@/lib/form-data";
 
 interface LoginState { error?: string }
 
+const SESSION_MAX_SECONDS = 24 * 60 * 60;
+
+function getSessionMaxSeconds(): number {
+  const hours = parseInt(getConfig("session_max_hours") ?? "24", 10);
+  return (Number.isFinite(hours) && hours > 0 ? Math.min(hours, 24) : 24) * 60 * 60;
+}
+
 const rateLimiter = createRateLimiter("login", 5, 60_000);
 
 function getRateLimitConfig() {
-  const max = parseInt(getConfig("rate_limit_max_attempts") ?? process.env.RATE_LIMIT_MAX ?? "5", 10);
-  const window = parseInt(getConfig("rate_limit_window_seconds") ?? process.env.RATE_LIMIT_WINDOW_SEC ?? "60", 10);
+  const max = parseInt(getConfig("rate_limit_max_attempts") ?? "5", 10);
+  const window = parseInt(getConfig("rate_limit_window_seconds") ?? "60", 10);
   return {
     maxAttempts: Number.isFinite(max) && max > 0 ? max : 5,
     windowMs: (Number.isFinite(window) && window > 0 ? window : 60) * 1000,
@@ -43,7 +50,7 @@ export async function login(formData: FormData): Promise<LoginState> {
     return { error: "Too many attempts. Please wait before trying again." };
   }
 
-  const user = getUserByUsername(username);
+  const user = getUserWithPassword(username);
 
   if (!user || !verifyPassword(password, user.password)) {
     return { error: "Invalid username or password." };
@@ -59,7 +66,7 @@ export async function login(formData: FormData): Promise<LoginState> {
   if (user.type === "party" && user.party_id) {
     sessionData.partyId = user.party_id;
   }
-  store.set("session", createSession(sessionData), { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 });
+  store.set(SESSION_COOKIE, createSession(sessionData, getSessionMaxSeconds()), { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: SESSION_MAX_SECONDS });
 
   redirect(user.type === "admin" ? "/admin" : "/home");
 }
@@ -88,7 +95,7 @@ export async function loginByPartyCode(formData: FormData): Promise<LoginState> 
     return { error: "This party code has no members assigned yet." };
   }
 
-  const partyUser = getUserByPartyId(party.id);
+  const partyUser = getPartyUserWithPassword(party.id);
   if (!partyUser) {
     return { error: "Party login not configured. Please contact the administrator." };
   }
@@ -96,7 +103,7 @@ export async function loginByPartyCode(formData: FormData): Promise<LoginState> 
   recordLogin(partyUser.id);
 
   const store = await cookies();
-  store.set("session", createSession({ userId: partyUser.id, partyId: party.id, type: "party" }), { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 });
+  store.set(SESSION_COOKIE, createSession({ userId: partyUser.id, partyId: party.id, type: "party" }, getSessionMaxSeconds()), { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: SESSION_MAX_SECONDS });
 
   redirect("/home");
 }

@@ -57,5 +57,8 @@ export function createRateLimiter(
       entry.count++;
       return true;
     },
+    reset(): void {
+      store.clear();
+    },
   };
 }

@@ -5,7 +5,7 @@ interface HeaderProps {
 
 export function Header({ title, description }: HeaderProps) {
   return (
-    <header style={{ marginBottom: "2rem" }}>
+    <header className="mb-8">
       <h1>{title}</h1>
       {description && <p className="meta">{description}</p>}
     </header>

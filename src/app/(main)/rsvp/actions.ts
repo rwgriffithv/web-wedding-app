@@ -6,11 +6,23 @@ import { getConfig } from "@/lib/repository/site-config";
 import { getGuestById } from "@/lib/repository/guests";
 import { getPartyById } from "@/lib/repository/party";
 import { submitResponse } from "@/lib/repository/rsvp";
+import { createRateLimiter } from "@/lib/rate-limit";
 import { getString } from "@/lib/form-data";
 
 export interface RsvpState {
   success?: boolean;
   error?: string;
+}
+
+const rsvpRateLimiter = createRateLimiter("rsvp", 10, 60_000);
+
+function getRsvpRateLimitConfig() {
+  const max = parseInt(getConfig("rsvp_rate_limit_max") ?? "10", 10);
+  const window = parseInt(getConfig("rsvp_rate_limit_window") ?? "60", 10);
+  return {
+    maxAttempts: Number.isFinite(max) && max > 0 ? max : 10,
+    windowMs: (Number.isFinite(window) && window > 0 ? window : 60) * 1000,
+  };
 }
 
 export async function submitRsvp(_prevState: RsvpState | null, formData: FormData): Promise<RsvpState> {
@@ -42,6 +54,10 @@ export async function submitRsvp(_prevState: RsvpState | null, formData: FormDat
     if (!session.partyId) return { success: false, error: "Invalid party session." };
     const party = getPartyById(session.partyId);
     if (!party) return { success: false, error: "Party not found." };
+
+    if (!rsvpRateLimiter.check(`party:${session.partyId}`, getRsvpRateLimitConfig())) {
+      return { success: false, error: "Too many submissions. Please wait before trying again." };
+    }
 
     const member = getGuestById(memberId);
     if (!member || member.party_id !== session.partyId) {

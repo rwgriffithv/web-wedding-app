@@ -105,7 +105,7 @@ describe("RsvpForm — radio state persistence", () => {
 
     // Plus-one radio should still be "Yes"
     const plusOneYesAfter = screen.getAllByRole("radio", { name: "Yes" })[1];
-    expect(plusOneYesAfter.checked).toBe(true);
+    expect((plusOneYesAfter as HTMLInputElement).checked).toBe(true);
   });
 
   it("attending=no resets plus-one selection", async () => {
@@ -121,14 +121,14 @@ describe("RsvpForm — radio state persistence", () => {
 
     // Plus-one should start as Yes (from existing response)
     const plusOneYes = screen.getAllByRole("radio", { name: "Yes" })[1];
-    expect(plusOneYes.checked).toBe(true);
+    expect((plusOneYes as HTMLInputElement).checked).toBe(true);
 
     // Select attending No
     const attendNo = screen.getAllByRole("radio", { name: "No" })[0];
     fireEvent.click(attendNo);
 
     // Plus-one should be reset — the Yes radio for plus-one should be unchecked
-    expect(plusOneYes.checked).toBe(false);
+    expect((plusOneYes as HTMLInputElement).checked).toBe(false);
   });
 
   it("plus-one name input has required attribute for native validation", async () => {
@@ -168,8 +168,8 @@ describe("RsvpForm — radio state persistence", () => {
 
     const attendYes = screen.getAllByRole("radio", { name: "Yes" })[0];
     const plusOneYes = screen.getAllByRole("radio", { name: "Yes" })[1];
-    expect(attendYes.checked).toBe(true);
-    expect(plusOneYes.checked).toBe(true);
+    expect((attendYes as HTMLInputElement).checked).toBe(true);
+    expect((plusOneYes as HTMLInputElement).checked).toBe(true);
     expect(screen.getByDisplayValue("Bob")).toBeDefined();
   });
 
@@ -212,7 +212,7 @@ describe("RsvpForm — radio state persistence", () => {
     });
 
     // Radio should still be checked
-    expect(attendYes.checked).toBe(true);
-    expect(plusOneYes.checked).toBe(true);
+    expect((attendYes as HTMLInputElement).checked).toBe(true);
+    expect((plusOneYes as HTMLInputElement).checked).toBe(true);
   });
 });

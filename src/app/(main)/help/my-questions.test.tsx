@@ -129,8 +129,8 @@ describe("MyQuestions — form state persistence", () => {
 
   it("displays existing questions", () => {
     const questions: Question[] = [
-      { id: 1, party_id: 1, question: "What time is the ceremony?", answer: "2 PM", created_at: "2026-07-14" },
-      { id: 2, party_id: 1, question: "Is there parking?", answer: null, created_at: "2026-07-14" },
+      { id: 1, party_id: 1, question: "What time is the ceremony?", answer: "2 PM", created_at: "2026-07-14", answered_at: "2026-07-14" },
+      { id: 2, party_id: 1, question: "Is there parking?", answer: null, created_at: "2026-07-14", answered_at: null },
     ];
 
     render(<MyQuestions questions={questions} />);

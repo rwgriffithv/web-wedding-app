@@ -8,7 +8,7 @@ function toSafeUser(row: User): SafeUser {
   return safe;
 }
 
-export function getUserByUsername(username: string): User | undefined {
+export function getUserWithPassword(username: string): User | undefined {
   const db = getDb();
   return db.prepare("SELECT * FROM users WHERE username = ?").get(username) as User | undefined;
 }
@@ -25,7 +25,7 @@ export function getAllUsers(): SafeUser[] {
   return rows.map(toSafeUser);
 }
 
-export function getUserByPartyId(partyId: number): User | undefined {
+export function getPartyUserWithPassword(partyId: number): User | undefined {
   const db = getDb();
   return db.prepare("SELECT * FROM users WHERE party_id = ? AND type = 'party'").get(partyId) as User | undefined;
 }

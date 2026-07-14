@@ -46,12 +46,14 @@ export function FileUpload({ onUpload, accept, label }: FileUploadProps) {
     }
   };
 
+  const inputId = `file-upload-${label?.replace(/\s+/g, "-").toLowerCase() ?? "input"}`;
+
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-      <input ref={inputRef} type="file" accept={accept} onChange={handleChange} className="sr-only" />
-      <button type="button" className="btn btn-ghost" onClick={() => inputRef.current?.click()} disabled={uploading}>
+    <div className="flex-row items-center gap-2">
+      <input ref={inputRef} id={inputId} type="file" accept={accept} onChange={handleChange} className="sr-only" />
+      <label htmlFor={inputId} className="btn btn-ghost" onClick={() => inputRef.current?.click()}>
         {uploading ? "Uploading..." : (label || "Upload")}
-      </button>
+      </label>
       {error && <span className="text-error text-xs" role="alert">{error}</span>}
     </div>
   );

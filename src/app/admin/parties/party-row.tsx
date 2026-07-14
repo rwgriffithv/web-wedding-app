@@ -25,8 +25,14 @@ export function PartyRow({ party, guests }: PartyRowProps) {
   const [, deleteDispatch, deletePending] = useActionState(removeParty, initialState);
 
   useEffect(() => {
-    if (editState?.success) setEditing(false);
-  }, [editState]);
+    if (editState?.success) {
+      setEditing(false);
+    } else if (editState?.error) {
+      setName(party.name);
+      setCode(party.code);
+      setInvited(party.invited);
+    }
+  }, [editState, party.name, party.code, party.invited]);
 
   const handleSave = () => {
     const formData = new FormData();
@@ -68,8 +74,7 @@ export function PartyRow({ party, guests }: PartyRowProps) {
             <input
               value={code}
               onChange={e => setCode(e.target.value)}
-              className="table-inline-input"
-              style={{ fontFamily: "monospace" }}
+              className="table-inline-input font-mono"
             />
           </td>
           <td>
@@ -156,12 +161,11 @@ export function PartyRow({ party, guests }: PartyRowProps) {
           <form
             action={deleteDispatch}
             onSubmit={e => {
-              e.preventDefault();
-              if (confirm(`Delete "${party.name}"? All ${guests.length} guest${guests.length !== 1 ? "s" : ""} in this party will be removed.`)) {
-                handleDelete();
+              if (!confirm(`Delete "${party.name}"? All ${guests.length} guest${guests.length !== 1 ? "s" : ""} in this party will be removed.`)) {
+                e.preventDefault();
               }
             }}
-            style={{ display: "inline" }}
+            className="inline"
           >
             <input type="hidden" name="party_id" value={party.id} />
             <button type="submit" className="btn btn-sm btn-danger" disabled={deletePending}>

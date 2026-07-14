@@ -12,6 +12,9 @@ interface SiteConfigState { success?: boolean; error?: string }
 const CONFIG_KEYS = [
   "landing_title", "landing_background",
   "rate_limit_max_attempts", "rate_limit_window_seconds",
+  "session_max_hours",
+  "rsvp_rate_limit_max", "rsvp_rate_limit_window",
+  "question_rate_limit_max", "question_rate_limit_window",
   "home_title", "home_subtitle", "home_date", "home_time", "home_location", "home_background_video",
   "rsvp_deadline",
 ];
@@ -27,6 +30,11 @@ const MAX_LENGTHS: Record<string, number> = {
   home_background_video: 2000,
   rate_limit_max_attempts: 10,
   rate_limit_window_seconds: 10,
+  session_max_hours: 10,
+  rsvp_rate_limit_max: 10,
+  rsvp_rate_limit_window: 10,
+  question_rate_limit_max: 10,
+  question_rate_limit_window: 10,
   rsvp_deadline: 50,
 };
 
@@ -41,13 +49,14 @@ export async function saveSiteConfig(prevState: SiteConfigState | null, formData
       if (value.length > maxLen) {
         return { success: false, error: `"${key}" must be ${maxLen} characters or fewer.` };
       }
-      if (key === "rate_limit_max_attempts" || key === "rate_limit_window_seconds") {
+      if (key === "rate_limit_max_attempts" || key === "rate_limit_window_seconds" || key === "session_max_hours" || key === "rsvp_rate_limit_max" || key === "rsvp_rate_limit_window" || key === "question_rate_limit_max" || key === "question_rate_limit_window") {
         if (!value) {
           return { success: false, error: `"${key}" is required.` };
         }
         const num = parseInt(value, 10);
-        if (!Number.isFinite(num) || num <= 0 || num > 1000) {
-          return { success: false, error: `"${key}" must be a positive number (1–1000).` };
+        const maxVal = key === "session_max_hours" ? 24 : 1000;
+        if (!Number.isFinite(num) || num <= 0 || num > maxVal) {
+          return { success: false, error: `"${key}" must be a positive number (1–${maxVal}).` };
         }
       }
       if (key === "rsvp_deadline" && value) {

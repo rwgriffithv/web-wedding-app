@@ -5,17 +5,10 @@ import { addItem, createTabInline } from "./actions";
 import { SearchableSelect } from "@/components/searchable-select";
 import { FileUpload } from "@/components/file-upload";
 import { FileBrowser } from "@/components/file-browser";
+import { detectMediaType } from "@/lib/media";
 import type { MediaTab } from "@/lib/db";
 
 const initialState: { success?: boolean; error?: string; tabId?: number; slug?: string } | null = null;
-
-const VIDEO_EXTS = [".mp4", ".webm", ".mov"];
-
-function detectType(url: string): "image" | "video" {
-  const ext = url.split(".").pop()?.split("?")[0]?.toLowerCase();
-  if (ext && VIDEO_EXTS.includes(`.${ext}`)) return "video";
-  return "image";
-}
 
 export function MediaForm({ tabs }: { tabs: MediaTab[] }) {
   const [state, dispatch, isPending] = useActionState(addItem, initialState);
@@ -60,7 +53,7 @@ export function MediaForm({ tabs }: { tabs: MediaTab[] }) {
 
   const setUrlAndDetectType = (url: string) => {
     if (urlRef.current) urlRef.current.value = url;
-    if (typeInputRef.current) typeInputRef.current.value = detectType(url);
+    if (typeInputRef.current) typeInputRef.current.value = detectMediaType(url);
   };
 
   const handleSubmit = (formData: FormData) => {
@@ -69,7 +62,7 @@ export function MediaForm({ tabs }: { tabs: MediaTab[] }) {
       if (slug) formData.set("section", slug);
     }
     if (typeInputRef.current && urlRef.current?.value) {
-      typeInputRef.current.value = detectType(urlRef.current.value);
+      typeInputRef.current.value = detectMediaType(urlRef.current.value);
     }
     if (typeInputRef.current) formData.set("type", typeInputRef.current.value);
     dispatch(formData);
@@ -97,7 +90,7 @@ export function MediaForm({ tabs }: { tabs: MediaTab[] }) {
             className="flex-1"
             onBlur={(e) => {
               if (typeInputRef.current && e.target.value) {
-                typeInputRef.current.value = detectType(e.target.value);
+                typeInputRef.current.value = detectMediaType(e.target.value);
               }
             }}
           />

@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { LogoutButton } from "./logout-button";
 
-export function Navigation({ isAdmin }: { isAdmin?: boolean }) {
+interface NavigationProps {
+  isAdmin?: boolean;
+}
+
+export function Navigation({ isAdmin }: NavigationProps) {
   return (
     <div className="wedding-nav-wrapper">
       <nav className="wedding-nav" aria-label="Main navigation">

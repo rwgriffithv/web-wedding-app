@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 interface ErrorDisplayProps {
   error: Error & { digest?: string };
   reset: () => void;
@@ -8,9 +10,9 @@ interface ErrorDisplayProps {
 }
 
 export function ErrorDisplay({ error, reset, message = "An unexpected error occurred. Please try again.", className = "page-content" }: ErrorDisplayProps) {
-  console.error(error);
+  useEffect(() => { console.error(error); }, [error]);
   return (
-    <div className={className} style={{ textAlign: "center", paddingTop: "4rem" }}>
+    <div className={`${className} text-center pt-16`}>
       <h1>Something went wrong</h1>
       <p style={{ color: "var(--color-muted)", marginBottom: "1rem" }}>{message}</p>
       {error.digest && (

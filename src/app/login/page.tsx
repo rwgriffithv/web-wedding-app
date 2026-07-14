@@ -17,17 +17,8 @@ export default async function LoginPage() {
   if (background) {
     if (background.startsWith("/api/media/")) {
       safeBackground = "url(/api/login-background)";
-    } else {
-      try {
-        const parsed = new URL(background, "https://placeholder.com");
-        if (parsed.protocol === "https:" || parsed.protocol === "http:") {
-          if (!/[);{]/.test(background)) {
-            safeBackground = `url(${background})`;
-          }
-        }
-      } catch {
-        // invalid URL, keep fallback
-      }
+    } else if (background.startsWith("https://")) {
+      safeBackground = `url(${background})`;
     }
   }
 

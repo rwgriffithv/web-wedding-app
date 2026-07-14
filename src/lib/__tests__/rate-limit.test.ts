@@ -9,6 +9,7 @@ beforeEach(() => {
 describe("rate limiter", () => {
   it("allows requests within the limit", () => {
     const limiter = createRateLimiter("test-allow", 3, 60_000);
+    limiter.reset();
 
     expect(limiter.check("user1")).toBe(true);
     expect(limiter.check("user1")).toBe(true);
@@ -17,6 +18,7 @@ describe("rate limiter", () => {
 
   it("blocks after max attempts", () => {
     const limiter = createRateLimiter("test-block", 2, 60_000);
+    limiter.reset();
 
     expect(limiter.check("user1")).toBe(true);
     expect(limiter.check("user1")).toBe(true);
@@ -25,6 +27,7 @@ describe("rate limiter", () => {
 
   it("resets after window expires", () => {
     const limiter = createRateLimiter("test-reset", 1, 10_000);
+    limiter.reset();
 
     expect(limiter.check("user1")).toBe(true);
     expect(limiter.check("user1")).toBe(false);
@@ -36,6 +39,7 @@ describe("rate limiter", () => {
 
   it("different keys are independent", () => {
     const limiter = createRateLimiter("test-independent", 1, 60_000);
+    limiter.reset();
 
     expect(limiter.check("user1")).toBe(true);
     expect(limiter.check("user1")).toBe(false);
@@ -44,6 +48,7 @@ describe("rate limiter", () => {
 
   it("clears store when max size exceeded", () => {
     const limiter = createRateLimiter("test-maxsize", 5, 60_000);
+    limiter.reset();
 
     for (let i = 0; i < 10_001; i++) {
       limiter.check(`key-${i}`);

@@ -145,7 +145,7 @@ export function GuestRow({ guest, parties }: GuestRowProps) {
         <form
           action={deleteDispatch}
           onSubmit={e => { if (!confirm("Delete this guest?")) e.preventDefault(); }}
-          style={{ display: "inline" }}
+          className="inline"
         >
           <input type="hidden" name="guest_id" value={guest.id} />
           <button type="submit" className="btn btn-sm btn-danger" disabled={deletePending}>

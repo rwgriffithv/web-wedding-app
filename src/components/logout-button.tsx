@@ -21,7 +21,7 @@ export function LogoutButton() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <button type="submit" disabled={isPending}>{isPending ? "Logging out..." : "Logout"}</button>
+      <button type="submit" className="btn btn-sm btn-ghost" disabled={isPending}>{isPending ? "Logging out..." : "Logout"}</button>
     </form>
   );
 }

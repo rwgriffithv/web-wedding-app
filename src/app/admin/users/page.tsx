@@ -37,7 +37,7 @@ export default function AdminUsersPage() {
         <details className="admin-section">
           <summary>System Accounts &mdash; Party Users ({partyUsers.length})</summary>
           <div className="admin-section-body">
-            <p className="text-muted text-sm" style={{ marginBottom: "0.75rem" }}>
+            <p className="text-muted text-sm mb-3">
               These accounts are created automatically when parties are added. Their username and password match the party code used to log in. Manage them from the <a href="/admin/parties">Parties</a> page.
             </p>
             <div className="admin-list">
@@ -46,7 +46,7 @@ export default function AdminUsersPage() {
                   <div className="item-info">
                     <div className="item-title">{u.display_name}</div>
                     <div className="item-meta">
-                      <span style={{ fontFamily: "monospace" }}>{u.username}</span> &middot; Type: party
+                      <span className="font-mono">{u.username}</span> &middot; Type: party
                     </div>
                   </div>
                 </div>
@@ -58,7 +58,7 @@ export default function AdminUsersPage() {
       <details className="admin-section">
         <summary>Activity</summary>
         <div className="admin-section-body">
-          <p className="text-muted text-sm" style={{ marginBottom: "0.75rem" }}>
+          <p className="text-muted text-sm mb-3">
             Login and page view activity for party users. Click column headers to sort.
           </p>
           <ActivityTable users={activityUsers} />
