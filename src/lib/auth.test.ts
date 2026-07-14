@@ -24,10 +24,11 @@ vi.mock("./repository/party", () => ({
 describe("auth", () => {
   it("creates a signed session token from a user", () => {
     const token = createSession({ userId: 1, type: "admin" });
-    expect(token).toContain(".");
-    const [payload] = token.split(".");
-    const decoded = JSON.parse(payload);
-    expect(decoded).toEqual({ userId: 1, type: "admin" });
+    const decoded = Buffer.from(token, "base64url").toString();
+    expect(decoded).toContain(".");
+    const [payload] = decoded.split(".");
+    const parsed = JSON.parse(payload);
+    expect(parsed).toEqual({ userId: 1, type: "admin" });
   });
 
   it("hashes and verifies passwords", () => {

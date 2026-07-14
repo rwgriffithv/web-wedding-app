@@ -19,14 +19,20 @@ function getSessionSecret(): string {
 function signSession(payload: string): string {
   const secret = getSessionSecret();
   const hmac = crypto.createHmac("sha256", secret).update(payload).digest("hex");
-  return `${payload}.${hmac}`;
+  return Buffer.from(`${payload}.${hmac}`).toString("base64url");
 }
 
 function verifySession(token: string): Session | null {
-  const lastDot = token.lastIndexOf(".");
+  let decoded: string;
+  try {
+    decoded = Buffer.from(token, "base64url").toString();
+  } catch {
+    return null;
+  }
+  const lastDot = decoded.lastIndexOf(".");
   if (lastDot === -1) return null;
-  const payload = token.slice(0, lastDot);
-  const signature = token.slice(lastDot + 1);
+  const payload = decoded.slice(0, lastDot);
+  const signature = decoded.slice(lastDot + 1);
   const secret = getSessionSecret();
   const hmac = crypto.createHmac("sha256", secret).update(payload).digest("hex");
   const hmacBuf = Buffer.from(hmac);
@@ -75,7 +81,7 @@ export function createSession(data: { userId?: number; partyId?: number; type: "
 
 export async function destroySession(): Promise<void> {
   const store = await cookies();
-  store.set(SESSION_COOKIE, "", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 0 });
+  store.set(SESSION_COOKIE, "", { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 0 });
 }
 
 const SALT_LENGTH = 32;

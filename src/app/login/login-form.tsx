@@ -1,13 +1,28 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState, type FormEvent } from "react";
 import { login, loginByPartyCode } from "./actions";
 
 function CredentialsForm() {
-  const [state, dispatch, isPending] = useActionState(login, null);
+  const [state, setState] = useState<{ error?: string } | null>(null);
+  const [isPending, setIsPending] = useState(false);
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setIsPending(true);
+    try {
+      const formData = new FormData(e.currentTarget);
+      const result = await login(null, formData);
+      setState(result);
+    } catch {
+      setState({ error: "Something went wrong. Please try again." });
+    } finally {
+      setIsPending(false);
+    }
+  }
 
   return (
-    <form action={dispatch}>
+    <form onSubmit={handleSubmit}>
       <div className="form-group">
         <label htmlFor="username">Username</label>
         <input id="username" name="username" type="text" required placeholder="Your username" />
@@ -27,10 +42,25 @@ function CredentialsForm() {
 }
 
 function PartyCodeForm() {
-  const [state, dispatch, isPending] = useActionState(loginByPartyCode, null);
+  const [state, setState] = useState<{ error?: string } | null>(null);
+  const [isPending, setIsPending] = useState(false);
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setIsPending(true);
+    try {
+      const formData = new FormData(e.currentTarget);
+      const result = await loginByPartyCode(null, formData);
+      setState(result);
+    } catch {
+      setState({ error: "Something went wrong. Please try again." });
+    } finally {
+      setIsPending(false);
+    }
+  }
 
   return (
-    <form action={dispatch}>
+    <form onSubmit={handleSubmit}>
       <div className="form-group">
         <label htmlFor="code">Party Code</label>
         <input id="code" name="code" type="text" required placeholder="e.g. SMITH-A1B2" style={{ textTransform: "uppercase" }} />
