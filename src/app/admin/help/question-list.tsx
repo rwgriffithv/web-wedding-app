@@ -1,31 +1,42 @@
 "use client";
 
-import { useState, useEffect, useRef, useActionState } from "react";
+import { useState, useRef, type FormEvent } from "react";
 import { answerQuestion } from "./actions";
 import { CharCount } from "@/components/char-count";
 import { MAX_ANSWER_LENGTH } from "@/lib/constants";
 import type { QuestionWithParty } from "@/lib/repository/questions";
 
-const initialAnswerState: { success?: boolean; error?: string } | null = null;
-
 export function QuestionList({ questions, stats }: { questions: QuestionWithParty[]; stats: { total: number; unanswered: number } }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "unanswered">("all");
   const [sort, setSort] = useState<"date" | "party">("date");
-  const [answerState, dispatchAnswer, isPendingAnswer] = useActionState(answerQuestion, initialAnswerState);
+  const [answerState, setAnswerState] = useState<{ success?: boolean; error?: string } | null>(null);
+  const [isPendingAnswer, setIsPendingAnswer] = useState(false);
   const [answerTexts, setAnswerTexts] = useState<Record<number, string>>({});
   const lastAnsweredIdRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    if (answerState?.success && lastAnsweredIdRef.current !== null) {
-      setAnswerTexts(prev => {
-        const next = { ...prev };
-        delete next[lastAnsweredIdRef.current!];
-        return next;
-      });
-      setFilter("all");
+  async function handleAnswer(e: FormEvent<HTMLFormElement>, questionId: number) {
+    e.preventDefault();
+    lastAnsweredIdRef.current = questionId;
+    setIsPendingAnswer(true);
+    try {
+      const formData = new FormData(e.currentTarget);
+      const result = await answerQuestion(null, formData);
+      setAnswerState(result);
+      if (result.success) {
+        setAnswerTexts(prev => {
+          const next = { ...prev };
+          delete next[questionId];
+          return next;
+        });
+        setFilter("all");
+      }
+    } catch {
+      setAnswerState({ success: false, error: "Something went wrong. Please try again." });
+    } finally {
+      setIsPendingAnswer(false);
     }
-  }, [answerState]);
+  }
 
   let filtered = questions.filter(q => {
     const matchesSearch = search === "" ||
@@ -112,7 +123,7 @@ export function QuestionList({ questions, stats }: { questions: QuestionWithPart
                 )}
               </div>
               {!q.answer && (
-                <form action={(fd) => { lastAnsweredIdRef.current = q.id; dispatchAnswer(fd); }} className="styled-form w-full mt-1">
+                <form onSubmit={(e) => handleAnswer(e, q.id)} className="styled-form w-full mt-1">
                   <input type="hidden" name="question_id" value={q.id} />
                   <div className="form-group">
                     <textarea

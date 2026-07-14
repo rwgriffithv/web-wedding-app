@@ -1,26 +1,36 @@
 "use client";
 
-import { useState, useEffect, useActionState } from "react";
+import { useState, type FormEvent } from "react";
 import { addFaq } from "./actions";
 import { CharCount } from "@/components/char-count";
 import { MAX_QUESTION_LENGTH, MAX_ANSWER_LENGTH } from "@/lib/constants";
 
-const initialState: { success?: boolean; error?: string } | null = null;
-
 export function FaqForm() {
-  const [state, dispatch, isPending] = useActionState(addFaq, initialState);
+  const [state, setState] = useState<{ success?: boolean; error?: string } | null>(null);
+  const [isPending, setIsPending] = useState(false);
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
 
-  useEffect(() => {
-    if (state?.success) {
-      setQuestion("");
-      setAnswer("");
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setIsPending(true);
+    try {
+      const formData = new FormData(e.currentTarget);
+      const result = await addFaq(null, formData);
+      setState(result);
+      if (result.success) {
+        setQuestion("");
+        setAnswer("");
+      }
+    } catch {
+      setState({ success: false, error: "Something went wrong. Please try again." });
+    } finally {
+      setIsPending(false);
     }
-  }, [state]);
+  }
 
   return (
-    <form action={dispatch} className="styled-form">
+    <form onSubmit={handleSubmit} className="styled-form">
       <div className="form-group">
         <label htmlFor="faq_question">Question</label>
         <textarea
