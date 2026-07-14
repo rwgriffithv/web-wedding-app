@@ -44,4 +44,51 @@ test.describe("rate limiting", () => {
     await page.locator("button[type=submit]").click();
     await expect(page.getByText("Invalid username or password.")).toBeVisible();
   });
+
+  test("admin security page shows rate limit violations section", async ({ page }) => {
+    // Login as admin
+    await page.goto("/login");
+    await page.getByRole("button", { name: "User sign in" }).click();
+    await page.fill("input[name=username]", "admin");
+    await page.fill("input[name=password]", "admin");
+    await page.locator("button[type=submit]").click();
+    await page.waitForURL("/admin");
+
+    // Navigate to security page
+    await page.goto("/admin/security");
+
+    // Verify violations section is present
+    await expect(page.getByText(/Rate Limit Violations/)).toBeVisible();
+  });
+
+  test("admin security page shows empty violations state", async ({ page }) => {
+    // Login as admin
+    await page.goto("/login");
+    await page.getByRole("button", { name: "User sign in" }).click();
+    await page.fill("input[name=username]", "admin");
+    await page.fill("input[name=password]", "admin");
+    await page.locator("button[type=submit]").click();
+    await page.waitForURL("/admin");
+
+    await page.goto("/admin/security");
+
+    // Should show empty violations state (scoped to violations section, not any admin-table)
+    const violationsSection = page.locator("details").filter({ hasText: "Rate Limit Violations" });
+    await expect(violationsSection.getByText("No rate limit violations recorded.")).toBeVisible();
+  });
+
+  test("admin security page has ban ip section", async ({ page }) => {
+    // Login as admin
+    await page.goto("/login");
+    await page.getByRole("button", { name: "User sign in" }).click();
+    await page.fill("input[name=username]", "admin");
+    await page.fill("input[name=password]", "admin");
+    await page.locator("button[type=submit]").click();
+    await page.waitForURL("/admin");
+
+    await page.goto("/admin/security");
+
+    // The ban-ip section summary is present
+    await expect(page.locator("summary").filter({ hasText: "Ban IP" })).toBeVisible();
+  });
 });

@@ -1,15 +1,17 @@
 import { Header } from "@/components/header";
-import { getBannedIps, getAutoBanConfig } from "@/lib/repository/ip-bans";
+import { getBannedIps, getAutoBanConfig, getRateLimitViolations } from "@/lib/repository/ip-bans";
 import { getAllConfig } from "@/lib/repository/site-config";
 import { RateLimitForm } from "@/components/rate-limit-form";
 import { BanList } from "./ban-list";
 import { AutoBanForm } from "./auto-ban-form";
 import { BanIpForm } from "./ban-ip-form";
+import { ViolationList } from "./violation-list";
 
 export default function AdminSecurityPage() {
   const bannedIps = getBannedIps();
   const { threshold, windowSeconds: autoBanWindow } = getAutoBanConfig();
   const config = Object.fromEntries(getAllConfig().map((c) => [c.key, c.value]));
+  const violations = getRateLimitViolations(autoBanWindow);
 
   return (
     <>
@@ -29,6 +31,12 @@ export default function AdminSecurityPage() {
             windowKey="rate_limit_window_seconds"
             description="Rate limiting for login attempts per IP+user. Changes take effect on next request."
           />
+        </div>
+      </details>
+      <details className="admin-section" open>
+        <summary>Rate Limit Violations ({violations.length})</summary>
+        <div className="admin-section-body">
+          <ViolationList violations={violations} />
         </div>
       </details>
       <details className="admin-section">

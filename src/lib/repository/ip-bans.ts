@@ -1,4 +1,5 @@
-import { getDb, type BannedIp } from "@/lib/db";
+import { getDb } from "@/lib/db";
+import type { BannedIp, RateLimitViolation } from "@/lib/types";
 import { AUTO_BAN_THRESHOLD_DEFAULT, AUTO_BAN_WINDOW_DEFAULT } from "@/lib/constants";
 import { getConfig } from "@/lib/repository/site-config";
 
@@ -80,4 +81,16 @@ export function deleteOldViolations(windowSeconds: number): void {
   db.prepare(
     "DELETE FROM rate_limit_violations WHERE violated_at < datetime('now', '-' || ? || ' seconds')"
   ).run(windowSeconds);
+}
+
+export function getRateLimitViolations(windowSeconds: number): RateLimitViolation[] {
+  const db = getDb();
+  return db.prepare(
+    `SELECT ip_address, COUNT(*) as violation_count, MAX(violated_at) as last_violated_at
+     FROM rate_limit_violations
+     WHERE violated_at >= datetime('now', '-' || ? || ' seconds')
+     AND ip_address NOT IN (SELECT ip_address FROM banned_ips WHERE unbanned_at IS NULL)
+     GROUP BY ip_address
+     ORDER BY violation_count DESC`
+  ).all(windowSeconds) as RateLimitViolation[];
 }

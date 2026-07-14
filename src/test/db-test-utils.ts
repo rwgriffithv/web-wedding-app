@@ -2,6 +2,8 @@ import Database from "better-sqlite3";
 import { DDL } from "@/lib/schema";
 
 const TABLES = [
+  "rate_limit_violations",
+  "banned_ips",
   "questions",
   "faq_items",
   "rsvp_responses",

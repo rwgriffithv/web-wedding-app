@@ -118,3 +118,9 @@ export interface BannedIp {
   banned_at: string;
   unbanned_at: string | null;
 }
+
+export interface RateLimitViolation {
+  ip_address: string;
+  violation_count: number;
+  last_violated_at: string;
+}

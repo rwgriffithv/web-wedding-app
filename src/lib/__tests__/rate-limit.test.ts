@@ -157,4 +157,66 @@ describe("rate limiter", () => {
     // Long window key still blocked
     expect(limiter.check("long-window", cfg(1, 60_000))).toBe(false);
   });
+
+  it("maxAttempts of 1 blocks on second request", () => {
+    const limiter = createRateLimiter("test-single");
+    limiter.reset();
+
+    expect(limiter.check("key", cfg(1, 60_000))).toBe(true);
+    expect(limiter.check("key", cfg(1, 60_000))).toBe(false);
+  });
+
+  it("window of 0 resets immediately", () => {
+    const limiter = createRateLimiter("test-zero-window");
+    limiter.reset();
+
+    expect(limiter.check("key", cfg(5, 0))).toBe(true);
+    expect(limiter.check("key", cfg(5, 0))).toBe(true);
+  });
+
+  it("handles rapid creation of many keys without exceeding max store size", () => {
+    const limiter = createRateLimiter("test-rapid");
+    limiter.reset();
+
+    for (let i = 0; i < 5_000; i++) {
+      expect(limiter.check(`rapid-${i}`, cfg(2, 60_000))).toBe(true);
+    }
+
+    // Store should still function normally
+    expect(limiter.check("rapid-0", cfg(2, 60_000))).toBe(true);
+  });
+
+  it("entries created at different times expire independently", () => {
+    const limiter = createRateLimiter("test-staggered");
+    limiter.reset();
+
+    limiter.check("early", cfg(2, 10_000));
+    vi.advanceTimersByTime(5_000);
+    limiter.check("late", cfg(2, 10_000));
+
+    // Both used once
+    expect(limiter.check("early", cfg(2, 10_000))).toBe(true);
+    expect(limiter.check("late", cfg(2, 10_000))).toBe(true);
+
+    // Both now at limit
+    expect(limiter.check("early", cfg(2, 10_000))).toBe(false);
+    expect(limiter.check("late", cfg(2, 10_000))).toBe(false);
+
+    // Advance past early window, not late
+    vi.advanceTimersByTime(5_001);
+
+    // early expired → allowed, late still blocked
+    expect(limiter.check("early", cfg(2, 10_000))).toBe(true);
+    expect(limiter.check("late", cfg(2, 10_000))).toBe(false);
+  });
+
+  it("large maxAttempts allows many requests", () => {
+    const limiter = createRateLimiter("test-large");
+    limiter.reset();
+
+    for (let i = 0; i < 100; i++) {
+      expect(limiter.check("key", cfg(100, 60_000))).toBe(true);
+    }
+    expect(limiter.check("key", cfg(100, 60_000))).toBe(false);
+  });
 });

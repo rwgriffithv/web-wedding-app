@@ -34,7 +34,21 @@ export async function saveAutoBanSettings(prevState: SecurityState | null, formD
   }
 }
 
-export async function banIpAction(prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
+async function banIpCommon(ip: string, reason: string): Promise<SecurityState> {
+  if (isIpBanned(ip)) return { error: "This IP is already banned." };
+
+  try {
+    banIp(ip, reason);
+  } catch {
+    return { error: "This IP is already banned." };
+  }
+  revalidatePath("/admin/security");
+  return { success: true };
+}
+
+const IP_PATTERN = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)$/;
+
+export async function banIpAction(_prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
   if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
 
   try {
@@ -43,20 +57,11 @@ export async function banIpAction(prevState: SecurityState | null, formData: For
 
     if (!ip) return { error: "IP address is required." };
 
-    const ipPattern = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)$/;
-    if (!ipPattern.test(ip)) {
+    if (!IP_PATTERN.test(ip)) {
       return { error: "Invalid IP address format." };
     }
 
-    if (isIpBanned(ip)) return { error: "This IP is already banned." };
-
-    try {
-      banIp(ip, reason);
-    } catch {
-      return { error: "This IP is already banned." };
-    }
-    revalidatePath("/admin/security");
-    return { success: true };
+    return await banIpCommon(ip, reason);
   } catch {
     return { error: "Failed to ban IP." };
   }
@@ -73,5 +78,18 @@ export async function unbanIpAction(_prevState: SecurityState | null, formData: 
     return { success: true };
   } catch {
     return { error: "Failed to unban IP." };
+  }
+}
+
+export async function banViolationIpAction(_prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
+  if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+
+  try {
+    const ip = getString(formData, "ip_address") ?? "";
+    if (!ip) return { error: "IP address is required." };
+
+    return await banIpCommon(ip, "manual");
+  } catch {
+    return { error: "Failed to ban IP." };
   }
 }
