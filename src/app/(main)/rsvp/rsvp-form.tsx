@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useActionState } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { submitRsvp, type RsvpState } from "./actions";
 import type { RsvpResponse } from "@/lib/types";
 
@@ -11,10 +11,9 @@ interface RsvpFormProps {
   isLocked?: boolean;
 }
 
-const initialState: RsvpState | null = null;
-
 export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked }: RsvpFormProps) {
-  const [state, dispatch, isPending] = useActionState(submitRsvp, initialState);
+  const [state, setState] = useState<RsvpState | null>(null);
+  const [isPending, setIsPending] = useState(false);
   const [attending, setAttending] = useState(existingResponse?.attending === 1 ? "yes" : existingResponse ? "no" : "");
   const [bringPlusOne, setBringPlusOne] = useState(
     existingResponse?.plus_one_name ? "yes" : "no"
@@ -36,8 +35,17 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
 
   const hasResponse = !!existingResponse || hasSubmitted;
 
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setIsPending(true);
+    const formData = new FormData(e.currentTarget);
+    const result = await submitRsvp(null, formData);
+    setState(result);
+    setIsPending(false);
+  }
+
   return (
-    <form action={dispatch} className="rsvp-form">
+    <form onSubmit={handleSubmit} className="rsvp-form">
       <input type="hidden" name="member_id" value={memberId} />
 
       <div className="form-row">
