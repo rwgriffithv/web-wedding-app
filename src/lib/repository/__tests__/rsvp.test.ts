@@ -86,11 +86,10 @@ describe("rsvp repository", () => {
 
     const counts = getDashboardCounts();
 
-    // Invited: Guest 1 + Guest 2 in invited party
-    expect(counts.invited.guests).toBe(2);
-    // Guest 1 RSVP'd yes with plus_one_name → 1
-    expect(counts.invited.plus_ones).toBe(1);
-    expect(counts.invited.total).toBe(3);
+    // Invited: ALL 4 guests + potential plus-ones (Guest 1 + Guest 3 have can_bring_plus_one=1)
+    expect(counts.invited.guests).toBe(4);
+    expect(counts.invited.plus_ones).toBe(2);
+    expect(counts.invited.total).toBe(6);
 
     // Expected: Guest 1 (attending) + Guest 2 (attending) + Guest 3 (not unexpected, no RSVP)
     // Guest 4 is unexpected → excluded

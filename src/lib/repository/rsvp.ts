@@ -79,15 +79,12 @@ export function getPlusOneCount(): { attending: number } {
 export function getDashboardCounts(): DashboardCounts {
   const db = getDb();
 
-  // Invited: all guests in an invited party + their plus-ones if attending with a name
+  // Invited: ALL guests + ALL potential plus ones (can_bring_plus_one = 1)
   const invited = db.prepare(`
     SELECT
       COUNT(DISTINCT g.id) as guests,
-      COUNT(CASE WHEN r.attending = 1 AND r.plus_one_name IS NOT NULL AND r.plus_one_name != '' THEN 1 END) as plus_ones
+      COUNT(DISTINCT CASE WHEN g.can_bring_plus_one = 1 THEN g.id END) as plus_ones
     FROM guests g
-    JOIN parties p ON g.party_id = p.id
-    LEFT JOIN rsvp_responses r ON g.id = r.guest_id
-    WHERE p.invited = 1
   `).get() as { guests: number; plus_ones: number };
 
   // Expected: RSVP'd yes OR (not unexpected AND no RSVP yet)
