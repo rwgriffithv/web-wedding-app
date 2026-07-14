@@ -26,8 +26,8 @@ export function create(partyId: number, question: string): Question {
 
 export function answer(id: number, answer: string): void {
   const db = getDb();
-  const result = db.prepare("UPDATE questions SET answer = ?, answered_at = datetime('now') WHERE id = ?").run(answer, id);
-  if (result.changes === 0) throw new Error(`Question ${id} not found`);
+  const result = db.prepare("UPDATE questions SET answer = ?, answered_at = datetime('now') WHERE id = ? AND answer IS NULL").run(answer, id);
+  if (result.changes === 0) throw new Error(`Question ${id} not found or already answered`);
 }
 
 export function getStats(): { total: number; unanswered: number } {

@@ -91,3 +91,20 @@ export interface GuestRsvpStatus {
   plus_one_name: string | null;
   responded_at: string | null;
 }
+
+export interface FaqItem {
+  id: number;
+  question: string;
+  answer: string;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface Question {
+  id: number;
+  party_id: number;
+  question: string;
+  answer: string | null;
+  created_at: string;
+  answered_at: string | null;
+}

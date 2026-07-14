@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { isAdmin } from "@/lib/auth";
 import { getString, getInt } from "@/lib/form-data";
 import { create, update, deleteItem as deleteItemRepo, getAll, swapSortOrder } from "@/lib/repository/schedule";
+import { setConfig } from "@/lib/repository/site-config";
 
 interface ScheduleState { success?: boolean; error?: string }
 
@@ -20,7 +21,7 @@ export async function addItem(prevState: ScheduleState | null, formData: FormDat
   try {
     create(time, label);
     revalidatePath("/admin/schedule");
-    revalidatePath("/schedule");
+    revalidatePath("/guide");
     revalidatePath("/home");
     return { success: true };
   } catch (error) {
@@ -45,7 +46,7 @@ export async function updateItem(prevState: ScheduleState | null, formData: Form
   try {
     update(id, { time, label });
     revalidatePath("/admin/schedule");
-    revalidatePath("/schedule");
+    revalidatePath("/guide");
     revalidatePath("/home");
     return { success: true };
   } catch (error) {
@@ -78,7 +79,7 @@ export async function moveItem(prevState: ScheduleState | null, formData: FormDa
     swapSortOrder(current.id, current.sort_order, neighbor.id, neighbor.sort_order);
 
     revalidatePath("/admin/schedule");
-    revalidatePath("/schedule");
+    revalidatePath("/guide");
     revalidatePath("/home");
     return { success: true };
   } catch (error) {
@@ -96,11 +97,29 @@ export async function deleteItem(prevState: ScheduleState | null, formData: Form
   try {
     deleteItemRepo(id);
     revalidatePath("/admin/schedule");
-    revalidatePath("/schedule");
+    revalidatePath("/guide");
     revalidatePath("/home");
     return { success: true };
   } catch (error) {
     console.error(error);
     return { success: false, error: "Failed to delete schedule item." };
+  }
+}
+
+export async function saveScheduleText(prevState: ScheduleState | null, formData: FormData): Promise<ScheduleState> {
+  if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+
+  const text = getString(formData, "schedule_text");
+  if (text && text.length > 1000) {
+    return { success: false, error: "Intro text must be 1,000 characters or fewer." };
+  }
+  try {
+    setConfig("schedule_text", text ?? "");
+    revalidatePath("/admin/schedule");
+    revalidatePath("/guide");
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: "Failed to save intro text." };
   }
 }

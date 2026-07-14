@@ -88,7 +88,6 @@ export async function saveDressCodeText(prevState: DressCodeState | null, formDa
   try {
     setConfig("dress_code_text", text ?? "");
     revalidatePath("/admin/dress-code");
-    revalidatePath("/admin/site");
     revalidatePath("/guide");
     return { success: true };
   } catch (error) {

@@ -105,24 +105,6 @@ export function SiteConfigForm({ config }: SiteConfigFormProps) {
           Submissions locked after this date. Leave empty to keep RSVPs always open.
         </p>
       </fieldset>
-      <fieldset className="admin-fieldset form-group">
-        <legend>Guide</legend>
-        <div className="form-group">
-          <label htmlFor="guide_tab_schedule_text">Schedule Tab Intro Text</label>
-          <textarea id="guide_tab_schedule_text" name="guide_tab_schedule_text" rows={3} maxLength={1000} defaultValue={config.guide_tab_schedule_text} />
-          <p className="text-muted text-xs mt-0_25">Optional intro text displayed at the top of the Schedule tab.</p>
-        </div>
-        <div className="form-group">
-          <label htmlFor="guide_tab_dress_code_text">Dress Code Tab Intro Text</label>
-          <textarea id="guide_tab_dress_code_text" name="guide_tab_dress_code_text" rows={3} maxLength={1000} defaultValue={config.guide_tab_dress_code_text} />
-          <p className="text-muted text-xs mt-0_25">Optional intro text displayed at the top of the Dress Code tab.</p>
-        </div>
-        <div className="form-group">
-          <label htmlFor="guide_tab_lodging_text">Lodging Tab Intro Text</label>
-          <textarea id="guide_tab_lodging_text" name="guide_tab_lodging_text" rows={3} maxLength={1000} defaultValue={config.guide_tab_lodging_text} />
-          <p className="text-muted text-xs mt-0_25">Optional intro text displayed at the top of the Lodging tab.</p>
-        </div>
-      </fieldset>
       {state?.success && <p className="text-success text-sm mb-1" role="status">Saved successfully.</p>}
       {state?.error && <p className="text-error text-sm mb-1" role="alert">{state.error}</p>}
       <button type="submit" className="btn btn-primary" disabled={isPending}>{isPending ? "Saving..." : "Save Changes"}</button>

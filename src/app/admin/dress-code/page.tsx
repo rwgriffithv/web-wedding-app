@@ -1,9 +1,10 @@
 import { getImages } from "@/lib/repository/dress-code";
 import { getConfig } from "@/lib/repository/site-config";
 import { Header } from "@/components/header";
+import { TabTextForm } from "@/components/tab-text-form";
 import { DressCodeImageList } from "./image-list";
 import { DressCodeImageForm } from "./image-form";
-import { DressCodeTextForm } from "./dress-code-text-form";
+import { saveDressCodeText } from "./actions";
 
 export default function AdminDressCodePage() {
   const images = getImages();
@@ -13,15 +14,15 @@ export default function AdminDressCodePage() {
     <>
       <Header title="Dress Code" description="Manage dress code description and mood board images." />
       <details className="admin-section" open>
-        <summary>Add Image</summary>
+        <summary>Dress Code Description</summary>
         <div className="admin-section-body">
-          <DressCodeImageForm />
+          <TabTextForm label="Dress Code Description" fieldName="dress_code_text" currentText={dressCodeText} maxLength={5000} action={saveDressCodeText} />
         </div>
       </details>
       <details className="admin-section" open>
-        <summary>Dress Code Description</summary>
+        <summary>Add Image</summary>
         <div className="admin-section-body">
-          <DressCodeTextForm currentText={dressCodeText} />
+          <DressCodeImageForm />
         </div>
       </details>
       <details className="admin-section" open>

@@ -40,7 +40,6 @@ export default async function HelpPage({ searchParams }: HelpPageProps) {
             href={tab.id === "faq" ? "/help" : `/help?tab=${tab.id}`}
             className={`content-tab${activeTab === tab.id ? " active" : ""}`}
             role="tab"
-            tabIndex={0}
             aria-selected={activeTab === tab.id}
             aria-controls={`help-panel-${tab.id}`}
           >

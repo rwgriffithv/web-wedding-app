@@ -35,7 +35,7 @@ User-facing mutation handlers. Use **domain verbs** that describe the user's int
 | `remove*(formData)` | Remove an entity (alternative) | `removeUser()`, `removeGuest()`, `removeParty()` |
 | `delete*(formData)` | Remove an entity | `deleteItem()`, `deleteOption()`, `deleteTab()`, `deleteImage()` |
 | `move*(formData)` | Reorder via up/down | `moveItem()`, `moveTab()`, `moveOption()` |
-| `save*(formData)` | Persist config or settings | `saveSiteConfig()`, `saveDressCodeText()` |
+| `save*(formData)` | Persist config or settings | `saveSiteConfig()` |
 | `rename*(formData)` | Change display name/slug | `renameTab()` |
 | `create*Inline(formData)` | Create + return ID for immediate UI use | `createTabInline()`, `createPartyInline()` |
 | `submit*(formData)` | Submit a response or form | `submitRsvp()` |

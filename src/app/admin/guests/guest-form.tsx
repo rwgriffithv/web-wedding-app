@@ -47,7 +47,7 @@ export function GuestForm({ parties }: GuestFormProps) {
   };
 
   return (
-    <form action={handleSubmit} className="admin-form">
+    <form action={handleSubmit} className="styled-form">
       <div className="form-group">
         <label htmlFor="display_name">Display Name</label>
         <input id="display_name" name="display_name" type="text" required />

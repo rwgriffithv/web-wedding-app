@@ -35,6 +35,8 @@ const defaults: [string, string][] = [
   ["home_location", "Venue Name, City"],
   ["home_background_video", ""],
   ["dress_code_text", "Please dress in formal attire. Our wedding will feature a black-tie optional dress code. We recommend suits and cocktail dresses."],
+  ["schedule_text", ""],
+  ["lodging_text", ""],
 ];
 for (const [key, value] of defaults) {
   upsertIfEmpty.run(value, key);

@@ -122,6 +122,7 @@ export function FaqList({ items }: { items: FaqItem[] }) {
                       Delete
                     </button>
                   </div>
+                  {moveState?.error && <p className="text-error text-sm" role="alert">{moveState.error}</p>}
                   {deleteId === item.id && (
                     <div className="admin-item-confirm">
                       <p className="text-sm">Delete this FAQ item?</p>

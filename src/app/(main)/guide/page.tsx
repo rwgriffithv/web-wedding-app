@@ -27,11 +27,11 @@ export default async function GuidePage({ searchParams }: GuidePageProps) {
   const activeTab: TabId = isValidTab(params.tab) ? params.tab : "schedule";
 
   const scheduleItems = getScheduleItems();
-  const scheduleText = getConfig("guide_tab_schedule_text");
-  const dressCodeText = getConfig("guide_tab_dress_code_text");
+  const scheduleText = getConfig("schedule_text");
+  const dressCodeText = getConfig("dress_code_text");
   const dressCodeImages = getImages();
   const lodgingOptions = getLodgingOptions();
-  const lodgingText = getConfig("guide_tab_lodging_text");
+  const lodgingText = getConfig("lodging_text");
 
   return (
     <div className="page-content">
@@ -45,7 +45,6 @@ export default async function GuidePage({ searchParams }: GuidePageProps) {
             href={tab.id === "schedule" ? "/guide" : `/guide?tab=${tab.id}`}
             className={`content-tab${activeTab === tab.id ? " active" : ""}`}
             role="tab"
-            tabIndex={0}
             aria-selected={activeTab === tab.id}
             aria-controls={`guide-panel-${tab.id}`}
           >

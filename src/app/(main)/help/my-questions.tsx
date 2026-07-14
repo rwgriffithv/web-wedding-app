@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect, useActionState } from "react";
+import { useState, useEffect, useActionState } from "react";
 import { submitQuestion } from "./actions";
 import { CharCount } from "@/components/char-count";
 import { MAX_QUESTION_LENGTH } from "@/lib/constants";
@@ -11,15 +11,10 @@ const initialState: { success?: boolean; error?: string } | null = null;
 export function MyQuestions({ questions }: { questions: Question[] }) {
   const [state, dispatch, isPending] = useActionState(submitQuestion, initialState);
   const [questionText, setQuestionText] = useState("");
-  const successHandledRef = useRef(false);
 
   useEffect(() => {
-    if (state?.success && !successHandledRef.current) {
-      successHandledRef.current = true;
+    if (state?.success) {
       setQuestionText("");
-    }
-    if (!state?.success) {
-      successHandledRef.current = false;
     }
   }, [state]);
 

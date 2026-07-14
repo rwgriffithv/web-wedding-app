@@ -96,4 +96,25 @@ export const DDL = `
   CREATE INDEX IF NOT EXISTS idx_schedule_sort_order ON schedule_items(sort_order);
   CREATE INDEX IF NOT EXISTS idx_dress_code_sort_order ON dress_code_images(sort_order);
   CREATE INDEX IF NOT EXISTS idx_parties_invited ON parties(invited);
+
+  CREATE TABLE IF NOT EXISTS faq_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS questions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    party_id INTEGER NOT NULL,
+    question TEXT NOT NULL,
+    answer TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    answered_at TEXT,
+    FOREIGN KEY (party_id) REFERENCES parties(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_faq_sort_order ON faq_items(sort_order);
+  CREATE INDEX IF NOT EXISTS idx_questions_party_id ON questions(party_id);
 `;

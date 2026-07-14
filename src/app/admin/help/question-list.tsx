@@ -14,17 +14,16 @@ export function QuestionList({ questions, stats }: { questions: QuestionWithPart
   const [sort, setSort] = useState<"date" | "party">("date");
   const [answerState, dispatchAnswer, isPendingAnswer] = useActionState(answerQuestion, initialAnswerState);
   const [answerTexts, setAnswerTexts] = useState<Record<number, string>>({});
-  const answerHandledRef = useRef(false);
   const lastAnsweredIdRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (answerState?.success && !answerHandledRef.current) {
-      answerHandledRef.current = true;
-      setAnswerTexts({});
+    if (answerState?.success && lastAnsweredIdRef.current !== null) {
+      setAnswerTexts(prev => {
+        const next = { ...prev };
+        delete next[lastAnsweredIdRef.current!];
+        return next;
+      });
       setFilter("all");
-    }
-    if (!answerState?.success) {
-      answerHandledRef.current = false;
     }
   }, [answerState]);
 
@@ -121,6 +120,7 @@ export function QuestionList({ questions, stats }: { questions: QuestionWithPart
                       rows={2}
                       required
                       maxLength={MAX_ANSWER_LENGTH}
+                      aria-label={`Answer for ${q.party_name}'s question`}
                       placeholder="Type your answer..."
                       value={answerTexts[q.id] || ""}
                       onChange={(e) => setAnswerTexts(prev => ({ ...prev, [q.id]: e.target.value }))}

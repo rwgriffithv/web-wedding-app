@@ -36,4 +36,5 @@ test("admin sidebar has all management links", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Dress Code" })).toBeVisible();
   await expect(page.getByRole("link", { name: "RSVP" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Media" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Help" })).toBeVisible();
 });

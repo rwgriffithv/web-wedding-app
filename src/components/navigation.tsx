@@ -14,6 +14,7 @@ export function Navigation({ isAdmin }: { isAdmin?: boolean }) {
       </nav>
       <div className="wedding-nav-secondary">
         {isAdmin && <Link href="/admin">Admin</Link>}
+        <Link href="/help">Help</Link>
         <LogoutButton />
       </div>
     </div>

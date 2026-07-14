@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { isAdmin } from "@/lib/auth";
 import { getString, getInt, validateMediaUrl } from "@/lib/form-data";
 import { create, update, getAll, swapSortOrder, deleteOption as deleteOptionRepo } from "@/lib/repository/lodging";
+import { setConfig } from "@/lib/repository/site-config";
 import { ensureThumbnail } from "@/lib/thumbnail";
 
 interface LodgingState { success?: boolean; error?: string }
@@ -118,5 +119,23 @@ export async function deleteOption(prevState: LodgingState | null, formData: For
   } catch (error) {
     console.error(error);
     return { success: false, error: "Failed to delete lodging option." };
+  }
+}
+
+export async function saveLodgingText(prevState: LodgingState | null, formData: FormData): Promise<LodgingState> {
+  if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+
+  const text = getString(formData, "lodging_text");
+  if (text && text.length > 1000) {
+    return { success: false, error: "Intro text must be 1,000 characters or fewer." };
+  }
+  try {
+    setConfig("lodging_text", text ?? "");
+    revalidatePath("/admin/lodging");
+    revalidatePath("/guide");
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: "Failed to save intro text." };
   }
 }
