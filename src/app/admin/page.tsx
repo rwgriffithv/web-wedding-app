@@ -15,7 +15,8 @@ export default function AdminDashboardPage() {
             <div className="stat-row-figures">
               <span className="stat-figure"><span className="stat-number">{counts[key].guests}</span> Guests</span>
               <span className="stat-figure"><span className="stat-number">{counts[key].plus_ones}</span> Plus Ones</span>
-              <span className="stat-figure"><span className="stat-number">{counts[key].total}</span> Total</span>
+              <span className="stat-separator" aria-hidden="true" />
+              <span className="stat-figure stat-figure--total"><span className="stat-number">{counts[key].total}</span> Total</span>
             </div>
           </div>
         ))}
