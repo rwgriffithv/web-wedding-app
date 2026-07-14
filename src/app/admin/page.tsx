@@ -1,9 +1,12 @@
 import { Header } from "@/components/header";
 import { getDashboardCounts, getRecentResponses } from "@/lib/repository/rsvp";
+import { getStats } from "@/lib/repository/questions";
 
 export default function AdminDashboardPage() {
   const counts = getDashboardCounts();
   const responses = getRecentResponses(10);
+  const questionStats = getStats();
+  const answered = questionStats.total - questionStats.unanswered;
 
   return (
     <>
@@ -20,6 +23,13 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         ))}
+        <div className="stat-row">
+          <h3 className="stat-row-title">Help Questions</h3>
+          <div className="stat-row-figures">
+            <span className="stat-figure"><span className="stat-number">{answered}</span> Answered</span>
+            <span className={`stat-figure${questionStats.unanswered > 0 ? " stat-figure--warning" : ""}`}><span className="stat-number">{questionStats.unanswered}</span> Unanswered</span>
+          </div>
+        </div>
       </div>
 
       <h2 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.75rem" }}>Recent RSVPs</h2>

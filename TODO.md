@@ -119,7 +119,7 @@ This is an ordered list of features to implement along with a simple sub-bullet 
   * status: done
 
 * Please add a new section/row to the admin dashboard main section below the invited/expected/etc counts called "help questions". There is a number for "answered" and then "unanswered". The styling should be similar to that of the invited/expected/etc section but distinct. The unanswered count background should be a warning color to grab attention if it is more than 0.
-  * status: not done
+  * status: done
 
 * Please fix this persistent issue that has plagued some users. I cannot figure out why they have issues, but they log in successfully with a party code, click the RSVP page from the pill, and then are booted back out to the login page. I can't figure it out, I desperately need your help, this subset of users cannot RSVP! Here are the console logs from one of these users:
 ```

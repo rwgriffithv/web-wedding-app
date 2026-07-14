@@ -13,6 +13,7 @@
   --color-sidebar-active: #ffffff;
   --color-accent: #8b5cf6;
   --color-success: #065f46;
+  --color-warning: #d97706;
   --color-error: #dc2626;
   --radius: 10px;
   --font-heading: "Playfair Display", "Georgia", "Times New Roman", serif;
@@ -904,6 +905,9 @@ a:hover { text-decoration: underline; }
 }
 .stat-figure--total {
   background: var(--color-primary); color: white; border-color: var(--color-primary);
+}
+.stat-figure--warning {
+  background: var(--color-warning); color: white; border-color: var(--color-warning);
 }
 .stat-number { font-size: 1.125rem; font-weight: 700; margin-right: 0.25rem; }
 .stat-figure--total .stat-number { color: white; }
