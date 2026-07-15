@@ -5,6 +5,15 @@ import { parseAdminSession, validateSessionForMutation } from "@/lib/auth";
 import { getString } from "@/lib/form-data";
 import { setConfigs } from "@/lib/repository/site-config";
 
+const ALLOWED_KEYS = new Set([
+  "rate_limit_max_attempts",
+  "rate_limit_window_seconds",
+  "rsvp_rate_limit_max",
+  "rsvp_rate_limit_window",
+  "question_rate_limit_max",
+  "question_rate_limit_window",
+]);
+
 interface RateLimitState {
   success?: boolean;
   error?: string;
@@ -22,6 +31,9 @@ export async function saveRateLimitConfig(
     const entries: [string, string][] = [];
     for (const key of formData.keys()) {
       if (key === "_key") continue;
+      if (!ALLOWED_KEYS.has(key)) {
+        return { success: false, error: `Unknown config key: "${key}".` };
+      }
       const value = getString(formData, key) ?? "";
       const num = parseInt(value, 10);
       if (!Number.isFinite(num) || num <= 0 || num > 1000) {

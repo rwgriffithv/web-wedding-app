@@ -382,4 +382,61 @@ test.describe("rate limiting", () => {
       setConfig("auto_ban_window_seconds", "3600");
     }
   });
+
+  test("after cooldown expires, single request succeeds (not re-blocked)", async ({ page }) => {
+    // Proves the rate limit window resets correctly after cooldown.
+    //
+    // Setup:
+    //   rate_limit_max_attempts = 2  → 2 allowed per window, 3rd blocked
+    //   rate_limit_window_seconds = 2 → window resets after 2 seconds
+    //
+    // Flow:
+    //   1. Two failed logins → credential error (within limit)
+    //   2. Third login → rate limit (exceeds limit)
+    //   3. Wait for cooldown (3s = window + buffer)
+    //   4. Fourth login → credential error (NOT rate limit — window has reset)
+
+    setConfig("rate_limit_max_attempts", "2");
+    setConfig("rate_limit_window_seconds", "2");
+    setConfig("auto_ban_login_threshold", "50");
+    setConfig("auto_ban_window_seconds", "3600");
+
+    const username = "rl-e2e-window-reset";
+
+    try {
+      await page.goto("/login");
+      await page.getByRole("button", { name: "User sign in" }).click();
+
+      // Steps 1-2: Two failed logins within limit → credential error
+      for (let i = 0; i < 2; i++) {
+        await page.fill("input[name=username]", username);
+        await page.fill("input[name=password]", "wrong");
+        await page.locator("button[type=submit]").click();
+        await expect(page.getByText("Invalid username or password.")).toBeVisible();
+      }
+
+      // Step 3: Third login exceeds limit → rate limit error
+      await page.fill("input[name=username]", username);
+      await page.fill("input[name=password]", "wrong");
+      await page.locator("button[type=submit]").click();
+      await expect(page.getByText("Too many attempts")).toBeVisible();
+
+      // Step 4: Wait for rate limit window to expire (2s window + 1s buffer)
+      await page.waitForTimeout(3000);
+
+      // Step 5: After cooldown, next request should show credential error (NOT rate limit)
+      await page.goto("/login");
+      await page.getByRole("button", { name: "User sign in" }).click();
+      await page.fill("input[name=username]", username);
+      await page.fill("input[name=password]", "wrong");
+      await page.locator("button[type=submit]").click();
+      await expect(page.getByText("Invalid username or password.")).toBeVisible();
+    } finally {
+      nukeAllBansAndViolations();
+      setConfig("rate_limit_max_attempts", "100");
+      setConfig("rate_limit_window_seconds", "60");
+      setConfig("auto_ban_login_threshold", "50");
+      setConfig("auto_ban_window_seconds", "3600");
+    }
+  });
 });

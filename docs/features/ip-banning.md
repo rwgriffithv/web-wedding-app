@@ -114,7 +114,7 @@ Four sections:
 |---|---|---|
 | Auto-Ban Settings | `AutoBanForm` | Configure threshold (1–100 lockouts) and window (60–86400s) |
 | Login Rate Limiting | `RateLimitForm` | Max attempts and window for login rate limiter |
-| Ban IP | `BanIpForm` | Manually ban an IP with optional reason (validates IPv4 format) |
+| Ban IP | `BanIpForm` | Manually ban an IP with optional reason (validates IPv4/IPv6 format) |
 | Banned IPs | `BanList` | List of active bans with unban buttons and reason labels |
 
 ### Dashboard (`/admin`)
@@ -155,7 +155,14 @@ The rate limiter resets on server restart. The DB-backed `rate_limit_violations`
 
 ## Trust Boundary
 
-`getClientIp()` trusts `cf-connecting-ip`, `x-forwarded-for`, and `x-real-ip` headers. This is correct in the current deployment (Cloudflare Tunnel → Caddy) where these headers are set by trusted proxies. `cf-connecting-ip` is set by Cloudflare and is the most reliable — it cannot be spoofed by clients. `x-forwarded-for` and `x-real-ip` are spoofable without a reverse proxy.
+**Deployment is exclusively via Cloudflare Tunnel + Caddy.** Direct access without Cloudflare is unsupported.
+
+`getClientIp()` trusts `cf-connecting-ip`, `x-forwarded-for`, and `x-real-ip` headers. This is safe because:
+
+- **`cf-connecting-ip`** is set by Cloudflare and is the primary IP source. It cannot be spoofed by clients.
+- **`x-forwarded-for`** and **`x-real-ip`** are set by Caddy (trusted reverse proxy on the same Docker network).
+
+Running the app without Cloudflare (e.g. direct access to Caddy or Next.js) would make `x-forwarded-for` spoofable, allowing IP impersonation and rate-limit bypass. This deployment model is a hard requirement, not a recommendation.
 
 ---
 
@@ -171,7 +178,7 @@ The rate limiter resets on server restart. The DB-backed `rate_limit_violations`
 | `src/app/login/page.tsx` | Server Component IP ban check |
 | `src/app/login/actions.ts` | `tryAutoBan()` — auto-ban logic called from rate-limit failure path |
 | `src/app/admin/security/page.tsx` | Security admin page |
-| `src/app/admin/security/actions.ts` | `saveAutoBanSettings`, `banIpAction`, `unbanIpAction` |
+| `src/app/admin/security/actions.ts` | `saveAutoBanSettings`, `banIpAction`, `unbanIpAction`, `banViolationIpAction`, `clearViolationsAction`, `saveSessionSettings`, `saveSuspiciousSettings` |
 | `src/app/admin/security/ban-list.tsx` | Banned IPs list with unban |
 | `src/app/admin/security/auto-ban-form.tsx` | Auto-ban settings form |
 | `src/app/admin/security/ban-ip-form.tsx` | Manual IP ban form |

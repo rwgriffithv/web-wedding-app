@@ -51,7 +51,7 @@ interface Session {
 
 This eliminates database queries from the hot path (every page load) while still catching password changes on mutations.
 
-**Note:** The `Secure` flag is always set. Local development over plain HTTP (`npm run dev`) will not persist session cookies in the browser.
+**Note:** The `Secure` flag is always set. **HTTPS is required.** Local development over plain HTTP (`npm run dev`) will not persist session cookies in the browser. Production must use HTTPS via Cloudflare Tunnel.
 
 ### Rate-Limit Cookies (Client-Only)
 
@@ -94,7 +94,7 @@ The server has no use for rate-limit cookies — it never reads them. If the ser
 
 ### Server-Side (Source of Truth)
 
-The server maintains an in-memory sliding-window rate limiter per feature. Each limiter is a `Map` of key → `{ count, resetAt }` entries. Expired entries are pruned by a hardcoded 60-second cleanup interval — this is housekeeping, not a security boundary (the `check()` function also evicts the oldest entry inline when the store exceeds 10,000 entries).
+The server maintains an in-memory fixed-window rate limiter per feature. Each limiter is a `Map` of key → `{ count, resetAt }` entries. Expired entries are pruned by a hardcoded 60-second cleanup interval — this is housekeeping, not a security boundary (the `check()` function also evicts the oldest entry inline when the store exceeds 10,000 entries).
 
 **Configurable via admin UI** (`site_config`):
 
@@ -283,10 +283,18 @@ const session = await parseSession();  // crypto only, no DB
 if (!session) return { error: "Not authenticated." };
 ```
 
-For **mutations** (RSVP submit, admin CRUD, etc.):
+For **admin mutations** (CRUD, config save, ban/unban):
 ```typescript
-if (!(await isAdmin())) return { error: "Unauthorized" };        // fast path: HMAC + type check
-if (!(await validateSessionForMutation())) return { error: "Session expired" };  // DB: pwChangedAt check
+const session = await parseAdminSession();  // crypto only + admin type check
+if (!session) return { error: "Unauthorized" };
+if (!(await validateSessionForMutation(session))) return { error: "Session expired" };  // DB: pwChangedAt check
+```
+
+For **party mutations** (RSVP submit, help questions):
+```typescript
+const session = await parseSession();  // crypto only
+if (!session) return { error: "Not authenticated." };
+if (!(await validateSessionForMutation(session))) return { error: "Session expired." };  // DB: pwChangedAt check
 ```
 
 This two-tier approach means page loads incur zero database queries for authentication. Only mutations validate against the database (to catch password changes since the session was issued).
@@ -406,8 +414,8 @@ Auth is enforced at the layout level (`isAdmin()` guard) and in every Server Act
 
 | Route | Guard | Redirect |
 |---|---|---|
-| `/admin/*` | `isAdmin()` | → `/login` |
-| `/(main)/*` | `parseSession()` | → `/` (landing page) |
+| `/admin/*` | `isAdmin()` (layout) + `parseAdminSession()` (actions) | → `/login` |
+| `/(main)/*` | `parseSession()` (layout) + `parseSession()` (actions) | → `/` (landing page) |
 
 ---
 
@@ -421,6 +429,22 @@ Party codes serve as both the **username and password** for party logins:
 - The party code is displayed in plaintext in the admin Parties panel with a copy button
 
 When a party code is updated by an admin, the corresponding party user's password is also updated, and all existing sessions for that party are invalidated (via the `pwChangedAt` check).
+
+---
+
+## Design Decisions
+
+### In-memory rate limiter resets on server restart
+
+The rate limiter uses an in-memory `Map` that resets when the Node.js process restarts (Docker container restart, deployment). Violations and bans persist in SQLite, so auto-ban still works across restarts — but the per-window attempt counter resets. This is a deliberate simplicity trade-off: persistent rate limiting would require SQLite reads on every request, negating the performance benefit of the in-memory limiter.
+
+### No rate limiting on admin actions
+
+Admin server actions (ban, unban, config save, CRUD operations) have no rate limiting. The admin panel is already protected by session authentication, and rate limiting admin endpoints adds no meaningful security. An attacker with a compromised admin session could rapidly ban IPs or change config, but this is mitigated by the session auth requirement and the ability to manually unban IPs.
+
+### `SESSION_SECRET` is admin responsibility
+
+`SESSION_SECRET` must be set in the environment. No strength validation is performed — the admin chooses complexity as they see fit. A weak or short secret makes sessions trivially forgeable. Changing the secret invalidates all active sessions (existing HMAC signatures become invalid). The secret is used to sign session cookies via HMAC-SHA256.
 
 ---
 

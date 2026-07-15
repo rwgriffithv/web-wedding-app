@@ -8,6 +8,14 @@ import { banIp, unbanIp, isIpBanned, clearViolations } from "@/lib/repository/ip
 
 interface SecurityState { success?: boolean; error?: string }
 
+const IP_V4 = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)$/;
+const IP_V6 = /^[0-9a-fA-F]{0,4}(?::[0-9a-fA-F]{0,4}){2,7}$/;
+const MAX_REASON_LENGTH = 500;
+
+function isValidIp(ip: string): boolean {
+  return IP_V4.test(ip) || IP_V6.test(ip);
+}
+
 export async function saveAutoBanSettings(prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
   const session = await parseAdminSession();
   if (!session) return { success: false, error: "Unauthorized" };
@@ -42,7 +50,7 @@ async function banIpCommon(ip: string, reason: string): Promise<SecurityState> {
   if (isIpBanned(ip)) return { error: "This IP is already banned." };
 
   try {
-    banIp(ip, reason);
+    banIp(ip, reason.slice(0, MAX_REASON_LENGTH));
   } catch (error) {
     console.error(error);
     return { error: "This IP is already banned." };
@@ -50,8 +58,6 @@ async function banIpCommon(ip: string, reason: string): Promise<SecurityState> {
   revalidatePath("/admin/security");
   return { success: true };
 }
-
-const IP_PATTERN = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)$/;
 
 export async function banIpAction(_prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
   const session = await parseAdminSession();
@@ -64,7 +70,7 @@ export async function banIpAction(_prevState: SecurityState | null, formData: Fo
 
     if (!ip) return { error: "IP address is required." };
 
-    if (!IP_PATTERN.test(ip)) {
+    if (!isValidIp(ip)) {
       return { error: "Invalid IP address format." };
     }
 
@@ -101,7 +107,7 @@ export async function banViolationIpAction(_prevState: SecurityState | null, for
     const ip = getString(formData, "ip_address") ?? "";
     if (!ip) return { error: "IP address is required." };
 
-    if (!IP_PATTERN.test(ip)) {
+    if (!isValidIp(ip)) {
       return { error: "Invalid IP address format." };
     }
 
@@ -173,7 +179,7 @@ export async function clearViolationsAction(_prevState: SecurityState | null, fo
     const ip = getString(formData, "ip_address") ?? "";
     if (!ip) return { error: "IP address is required." };
 
-    if (!IP_PATTERN.test(ip)) {
+    if (!isValidIp(ip)) {
       return { error: "Invalid IP address format." };
     }
 
