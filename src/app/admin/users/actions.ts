@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { isAdmin, parseSession, validateSessionForMutation } from "@/lib/auth";
+import { parseAdminSession, validateSessionForMutation } from "@/lib/auth";
 import { getEnvConfig } from "@/lib/config";
 import { getString, getInt } from "@/lib/form-data";
 import { createUser as createUserRepo, updateUser as updateUserRepo, deleteUser as deleteUserRepo, getUserById } from "@/lib/repository/users";
@@ -11,8 +11,9 @@ interface UserState { success?: boolean; error?: string }
 const ALLOWED_TYPES = ["admin", "viewer"] as const;
 
 export async function addUser(prevState: UserState | null, formData: FormData): Promise<UserState> {
-  if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
+  const session = await parseAdminSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
 
   const displayName = getString(formData, "display_name");
   const username = getString(formData, "username");
@@ -46,8 +47,9 @@ export async function addUser(prevState: UserState | null, formData: FormData): 
 }
 
 export async function updateUser(prevState: UserState | null, formData: FormData): Promise<UserState> {
-  if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
+  const session = await parseAdminSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "user_id");
   if (id === null) return { success: false, error: "Invalid user ID." };
@@ -91,8 +93,9 @@ export async function updateUser(prevState: UserState | null, formData: FormData
 }
 
 export async function removeUser(prevState: UserState | null, formData: FormData): Promise<UserState> {
-  if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
+  const session = await parseAdminSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "user_id");
   if (id === null) return { success: false, error: "Invalid user ID." };
@@ -103,8 +106,7 @@ export async function removeUser(prevState: UserState | null, formData: FormData
     return { success: false, error: "Cannot delete the primary admin account." };
   }
 
-  const session = await parseSession();
-  if (session?.userId === id) {
+  if (session.userId != null && session.userId === id) {
     return { success: false, error: "Cannot delete your own account." };
   }
 

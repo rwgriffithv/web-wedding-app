@@ -1,13 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockIsAdmin = vi.fn();
+const mockValidateSessionForMutation = vi.fn();
 const mockBanIp = vi.fn();
 const mockIsIpBanned = vi.fn();
 const mockClearViolations = vi.fn();
 const mockSetConfig = vi.fn();
 const mockRevalidatePath = vi.fn();
 
-vi.mock("@/lib/auth", () => ({ isAdmin: () => mockIsAdmin(), validateSessionForMutation: () => mockIsAdmin() }));
+vi.mock("@/lib/auth", () => ({ parseAdminSession: () => mockIsAdmin(), validateSessionForMutation: () => mockValidateSessionForMutation() }));
 vi.mock("@/lib/repository/ip-bans", () => ({
   banIp: (...args: unknown[]) => mockBanIp(...args),
   isIpBanned: (...args: unknown[]) => mockIsIpBanned(...args),
@@ -23,6 +24,7 @@ vi.mock("next/cache", () => ({
 beforeEach(() => {
   vi.clearAllMocks();
   mockIsAdmin.mockResolvedValue(true);
+  mockValidateSessionForMutation.mockResolvedValue({ userId: 1, type: "admin" });
   mockIsIpBanned.mockReturnValue(false);
 });
 
@@ -38,6 +40,14 @@ describe("saveSuspiciousSettings", () => {
     const { saveSuspiciousSettings } = await import("../actions");
     const result = await saveSuspiciousSettings(null, formData({ suspicious_ip_threshold: "10" }));
     expect(result.error).toBe("Unauthorized");
+  });
+
+  it("rejects expired session (isAdmin passes, validateSessionForMutation fails)", async () => {
+    mockIsAdmin.mockResolvedValue(true);
+    mockValidateSessionForMutation.mockResolvedValue(null);
+    const { saveSuspiciousSettings } = await import("../actions");
+    const result = await saveSuspiciousSettings(null, formData({ suspicious_ip_threshold: "10" }));
+    expect(result.error).toBe("Session expired");
   });
 
   it("rejects non-numeric threshold", async () => {

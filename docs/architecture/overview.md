@@ -111,7 +111,7 @@ Requests pass through multiple protection layers:
 
 The server enforces the same protection for UI clients (browsers) and non-UI clients (curl, scripts, bots). Rate-limit cookies are a UX convenience for browsers; the server's rate limiter is the actual enforcement.
 
-Auth is enforced at the layout level (`isAdmin()` guard) and in every Server Action. `SafeUser` type (`Omit<User, "password">`) is returned by all repository functions except `getUserWithPassword` and `getPartyUserWithPassword`. See [authentication.md](../features/authentication.md) for the full cookie architecture, client vs server responsibilities, and protection details.
+Auth is enforced at the layout level (`parseAdminSession()` guard) and in every Server Action. `SafeUser` type (`Omit<User, "password">`) is returned by all repository functions except `getUserWithPassword` and `getPartyUserWithPassword`. See [authentication.md](../features/authentication.md) for the full cookie architecture, client vs server responsibilities, and protection details.
 
 ## Technology Stack
 
@@ -124,7 +124,7 @@ Auth is enforced at the layout level (`isAdmin()` guard) and in every Server Act
 | Styling | Plain CSS (custom properties) | Zero-dependency, themeable via `:root`. **No Tailwind CSS.** Utility classes are hand-crafted in `globals.css`. |
 | Proxy | Caddy 2.11 (alpine) | TLS, rate limiting, security headers |
 | Tunnel | cloudflared 2026.6.1 | Outbound-only Cloudflare Tunnel |
-| Testing | Vitest + Playwright | 152 unit tests + E2E specs |
+| Testing | Vitest + Playwright | 313 unit tests + E2E specs |
 | Deployment | Docker Compose | Multi-stage build, isolated networks |
 
 ## Directory Layout

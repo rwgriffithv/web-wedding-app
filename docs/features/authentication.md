@@ -43,10 +43,11 @@ interface Session {
 }
 ```
 
-**Session invalidation:** The session uses two-tier validation:
+**Session invalidation:** The session uses three-tier validation:
 
-1. **Fast path (`parseSession()`)** — Crypto only (HMAC signature + expiry check). No database queries. Used for page loads, layouts, and read-only checks.
-2. **Mutation path (`validateSessionForMutation()`)** — Validates `pwChangedAt` against the user's current `password_changed_at` in the database. Called only in state-changing server actions (RSVP submission, admin CRUD, etc.).
+1. **Fast path (`parseSession()`)** — Crypto only (HMAC signature + expiry check). No database queries. Used for page loads, layouts, and read-only checks (e.g. `trackPageView`, media route).
+2. **Admin fast path (`parseAdminSession()`)** — Crypto only plus admin type check. No database queries. Used by all admin Server Actions (guests, parties, users, schedule, dress code, etc.) to avoid a redundant `parseSession()` call before the mutation path.
+3. **Mutation path (`validateSessionForMutation(session?)`)** — Accepts an optional pre-parsed session to avoid double `parseSession()`. Validates `pwChangedAt` against the user's current `password_changed_at` in the database. Called only in state-changing server actions (RSVP submission, admin CRUD, etc.).
 
 This eliminates database queries from the hot path (every page load) while still catching password changes on mutations.
 

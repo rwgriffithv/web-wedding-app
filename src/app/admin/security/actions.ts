@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { isAdmin, validateSessionForMutation } from "@/lib/auth";
+import { parseAdminSession, validateSessionForMutation } from "@/lib/auth";
 import { getString } from "@/lib/form-data";
 import { setConfig } from "@/lib/repository/site-config";
 import { banIp, unbanIp, isIpBanned, clearViolations } from "@/lib/repository/ip-bans";
@@ -9,8 +9,9 @@ import { banIp, unbanIp, isIpBanned, clearViolations } from "@/lib/repository/ip
 interface SecurityState { success?: boolean; error?: string }
 
 export async function saveAutoBanSettings(prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
-  if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
+  const session = await parseAdminSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
 
   try {
     const threshold = getString(formData, "auto_ban_login_threshold") ?? "";
@@ -53,8 +54,9 @@ async function banIpCommon(ip: string, reason: string): Promise<SecurityState> {
 const IP_PATTERN = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)$/;
 
 export async function banIpAction(_prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
-  if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
+  const session = await parseAdminSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
 
   try {
     const ip = getString(formData, "ip_address") ?? "";
@@ -74,8 +76,9 @@ export async function banIpAction(_prevState: SecurityState | null, formData: Fo
 }
 
 export async function unbanIpAction(_prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
-  if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
+  const session = await parseAdminSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
 
   try {
     const id = parseInt(getString(formData, "id") ?? "", 10);
@@ -90,8 +93,9 @@ export async function unbanIpAction(_prevState: SecurityState | null, formData: 
 }
 
 export async function banViolationIpAction(_prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
-  if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
+  const session = await parseAdminSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
 
   try {
     const ip = getString(formData, "ip_address") ?? "";
@@ -109,8 +113,9 @@ export async function banViolationIpAction(_prevState: SecurityState | null, for
 }
 
 export async function saveSessionSettings(prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
-  if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
+  const session = await parseAdminSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
 
   try {
     const sessionMaxHours = getString(formData, "session_max_hours") ?? "";
@@ -137,8 +142,9 @@ export async function saveSessionSettings(prevState: SecurityState | null, formD
 }
 
 export async function saveSuspiciousSettings(prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
-  if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
+  const session = await parseAdminSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
 
   try {
     const threshold = getString(formData, "suspicious_ip_threshold") ?? "";
@@ -159,8 +165,9 @@ export async function saveSuspiciousSettings(prevState: SecurityState | null, fo
 }
 
 export async function clearViolationsAction(_prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
-  if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
+  const session = await parseAdminSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
 
   try {
     const ip = getString(formData, "ip_address") ?? "";

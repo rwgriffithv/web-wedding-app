@@ -9,6 +9,9 @@ function getPageViewDebounceMinutes(): number {
   return Number.isFinite(minutes) && minutes > 0 ? Math.min(minutes, 1440) : 15;
 }
 
+/** Intentionally uses parseSession() (fast path) instead of validateSessionForMutation().
+ *  Page view counting is a low-stakes counter — a stale session writing one extra
+ *  view is not worth a DB query on every page load. */
 export async function trackPageView(): Promise<void> {
   const session = await parseSession();
   if (!session || !session.userId) return;

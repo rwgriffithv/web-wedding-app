@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { useMemo } from "react";
 import { RsvpForm } from "../rsvp-form";
 import { RateLimitContext } from "../rate-limit-context";
 import { useRateLimitCooldown, type CooldownProps } from "@/lib/use-rate-limit-cooldown";
@@ -35,8 +36,9 @@ function RenderWithCooldown({ children, cooldown }: { children: ReactNode; coold
 
 function RealCooldownProvider({ children }: { children: ReactNode }) {
   const cooldown = useRateLimitCooldown("rl_r_until");
+  const value = useMemo(() => cooldown, [cooldown.cooldown]);
   return (
-    <RateLimitContext.Provider value={cooldown}>
+    <RateLimitContext.Provider value={value}>
       {children}
     </RateLimitContext.Provider>
   );

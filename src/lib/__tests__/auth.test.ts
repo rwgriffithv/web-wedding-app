@@ -134,7 +134,8 @@ describe("parseSession (fast path)", () => {
     payloadObj.exp = Date.now() - 10_000;
     const expiredPayload = JSON.stringify(payloadObj);
     const crypto = await import("crypto");
-    const hmac = crypto.createHmac("sha256", "rob-and-ana").update(expiredPayload).digest("hex");
+    // Secret must match vitest.config.ts SESSION_SECRET ("test-secret-key-not-for-production")
+    const hmac = crypto.createHmac("sha256", "test-secret-key-not-for-production").update(expiredPayload).digest("hex");
     const expiredToken = Buffer.from(`${expiredPayload}.${hmac}`).toString("base64url");
 
     vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: expiredToken }), set: vi.fn() } as never);

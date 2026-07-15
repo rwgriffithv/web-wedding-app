@@ -8,7 +8,7 @@ import { getPartyUserWithPassword } from "./repository/users";
 
 export const SESSION_COOKIE = "session";
 
-interface Session {
+export interface Session {
   userId?: number;
   partyId?: number;
   type: "admin" | "viewer" | "party";
@@ -83,13 +83,25 @@ export async function parseSession(): Promise<Session | null> {
   return verifySession(token);
 }
 
-/** Cold path — validates session fields against DB. Call only on mutations. */
-export async function validateSessionForMutation(): Promise<Session | null> {
+/** Fast path — parse session and verify it belongs to an admin. No DB query. */
+export async function parseAdminSession(): Promise<Session | null> {
   const session = await parseSession();
-  if (!session) return null;
-  return validateSessionFields(session);
+  if (!session || session.type !== "admin") return null;
+  return session;
 }
 
+/** Cold path — validates session fields against DB. Call only on mutations. */
+export async function validateSessionForMutation(session?: Session | null): Promise<Session | null> {
+  const s = session ?? await parseSession();
+  if (!s) return null;
+  return validateSessionFields(s);
+}
+
+/**
+ * Fast path — parse session and verify it belongs to an admin. No DB query.
+ * Used by read-only endpoints (e.g. media list). For admin mutations,
+ * prefer `parseAdminSession()` + `validateSessionForMutation(session)`.
+ */
 export async function isAdmin(): Promise<boolean> {
   const session = await parseSession();
   return session?.type === "admin";
