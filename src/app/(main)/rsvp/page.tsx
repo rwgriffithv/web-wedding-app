@@ -63,11 +63,11 @@ export default async function RsvpPage() {
   return (
     <div className="page-content">
       <h1>RSVP</h1>
-      <p className="text-muted mb-6">Party: {party.name}</p>
+      <p className="text-muted mb-2">Party: {party.name}</p>
       <p className="text-muted text-sm mb-1">
         Please respond for each member of the party. Submissions may be changed up until the deadline.
       </p>
-      <p className="text-muted text-sm mb-6">
+      <p className="text-muted text-sm mb-2">
         RSVP Deadline: {formattedDeadline ?? "None"}
       </p>
 
