@@ -1,7 +1,7 @@
 import { Header } from "@/components/header";
 import { getDashboardCounts, getRecentResponses } from "@/lib/repository/rsvp";
 import { getStats } from "@/lib/repository/questions";
-import { getSuspiciousIpCount, getBannedCount, getAutoBanConfig } from "@/lib/repository/ip-bans";
+import { getSuspiciousIpCount, getBannedCount, getSuspiciousConfig } from "@/lib/repository/ip-bans";
 
 export default function AdminDashboardPage() {
   const counts = getDashboardCounts();
@@ -9,8 +9,8 @@ export default function AdminDashboardPage() {
   const questionStats = getStats();
   const answered = questionStats.total - questionStats.unanswered;
 
-  const { threshold, windowSeconds: autoBanWindow } = getAutoBanConfig();
-  const suspiciousCount = getSuspiciousIpCount(threshold, autoBanWindow);
+  const { threshold: suspiciousThreshold } = getSuspiciousConfig();
+  const suspiciousCount = getSuspiciousIpCount(suspiciousThreshold);
   const bannedCount = getBannedCount();
 
   return (
@@ -38,8 +38,8 @@ export default function AdminDashboardPage() {
         <div className="stat-row">
           <h3 className="stat-row-title">Security</h3>
           <div className="stat-row-figures">
-            <span className={`stat-figure${suspiciousCount > 0 ? " stat-figure--warning" : ""}`}><span className="stat-number">{suspiciousCount}</span> Suspicious IPs</span>
             <span className={`stat-figure${bannedCount > 0 ? " stat-figure--danger" : ""}`}><span className="stat-number">{bannedCount}</span> Banned</span>
+            <span className={`stat-figure${suspiciousCount > 0 ? " stat-figure--warning" : ""}`}><span className="stat-number">{suspiciousCount}</span> Suspicious IPs</span>
           </div>
         </div>
       </div>

@@ -1,12 +1,17 @@
 import { getDb } from "@/lib/db";
 import type { BannedIp, RateLimitViolation } from "@/lib/types";
-import { AUTO_BAN_THRESHOLD_DEFAULT, AUTO_BAN_WINDOW_DEFAULT } from "@/lib/constants";
+import { AUTO_BAN_THRESHOLD_DEFAULT, AUTO_BAN_WINDOW_DEFAULT, SUSPICIOUS_THRESHOLD_DEFAULT } from "@/lib/constants";
 import { getConfig } from "@/lib/repository/site-config";
 
 export function getAutoBanConfig(): { threshold: number; windowSeconds: number } {
   const threshold = parseInt(getConfig("auto_ban_login_threshold"), 10) || AUTO_BAN_THRESHOLD_DEFAULT;
   const windowSeconds = parseInt(getConfig("auto_ban_window_seconds"), 10) || AUTO_BAN_WINDOW_DEFAULT;
   return { threshold, windowSeconds };
+}
+
+export function getSuspiciousConfig(): { threshold: number } {
+  const threshold = parseInt(getConfig("suspicious_ip_threshold"), 10) || SUSPICIOUS_THRESHOLD_DEFAULT;
+  return { threshold };
 }
 
 export function isIpBanned(ip: string): boolean {
@@ -24,17 +29,18 @@ export function getBannedIps(): BannedIp[] {
   ).all() as BannedIp[];
 }
 
-export function getSuspiciousIpCount(threshold: number, windowSeconds: number): number {
+export function getSuspiciousIpCount(threshold: number): number {
   const db = getDb();
-  const raw = db.prepare(
-    `SELECT r.ip_address, COUNT(*) as violation_count
-     FROM rate_limit_violations r
-     WHERE r.violated_at >= datetime('now', '-' || ? || ' seconds')
-     AND r.ip_address NOT IN (SELECT ip_address FROM banned_ips WHERE unbanned_at IS NULL)
-     GROUP BY r.ip_address
-     HAVING violation_count >= ?`
-  ).all(windowSeconds, threshold) as { ip_address: string; violation_count: number }[];
-  return raw.length;
+  const row = db.prepare(
+    `SELECT COUNT(*) as cnt FROM (
+      SELECT r.ip_address
+      FROM rate_limit_violations r
+      WHERE r.ip_address NOT IN (SELECT ip_address FROM banned_ips WHERE unbanned_at IS NULL)
+      GROUP BY r.ip_address
+      HAVING COUNT(*) >= ?
+    )`
+  ).get(threshold) as { cnt: number };
+  return row.cnt;
 }
 
 export function getBannedCount(): number {
@@ -93,4 +99,21 @@ export function getRateLimitViolations(windowSeconds: number): RateLimitViolatio
      GROUP BY ip_address
      ORDER BY violation_count DESC`
   ).all(windowSeconds) as RateLimitViolation[];
+}
+
+export function getSuspiciousIps(threshold: number): RateLimitViolation[] {
+  const db = getDb();
+  return db.prepare(
+    `SELECT ip_address, COUNT(*) as violation_count, MAX(violated_at) as last_violated_at
+     FROM rate_limit_violations
+     WHERE ip_address NOT IN (SELECT ip_address FROM banned_ips WHERE unbanned_at IS NULL)
+     GROUP BY ip_address
+     HAVING violation_count >= ?
+     ORDER BY violation_count DESC`
+  ).all(threshold) as RateLimitViolation[];
+}
+
+export function clearViolations(ip: string): void {
+  const db = getDb();
+  db.prepare("DELETE FROM rate_limit_violations WHERE ip_address = ?").run(ip);
 }

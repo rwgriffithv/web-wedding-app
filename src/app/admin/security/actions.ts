@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { isAdmin } from "@/lib/auth";
 import { getString } from "@/lib/form-data";
 import { setConfig } from "@/lib/repository/site-config";
-import { banIp, unbanIp, isIpBanned } from "@/lib/repository/ip-bans";
+import { banIp, unbanIp, isIpBanned, clearViolations } from "@/lib/repository/ip-bans";
 
 interface SecurityState { success?: boolean; error?: string }
 
@@ -28,6 +28,7 @@ export async function saveAutoBanSettings(prevState: SecurityState | null, formD
     setConfig("auto_ban_login_threshold", String(thresholdNum));
     setConfig("auto_ban_window_seconds", String(windowNum));
     revalidatePath("/admin/security");
+    revalidatePath("/admin");
     return { success: true };
   } catch (error) {
     console.error(error);
@@ -127,5 +128,47 @@ export async function saveSessionSettings(prevState: SecurityState | null, formD
   } catch (error) {
     console.error(error);
     return { error: "Failed to save session settings." };
+  }
+}
+
+export async function saveSuspiciousSettings(prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
+  if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+
+  try {
+    const threshold = getString(formData, "suspicious_ip_threshold") ?? "";
+    const thresholdNum = parseInt(threshold, 10);
+
+    if (!Number.isFinite(thresholdNum) || thresholdNum < 1 || thresholdNum > 100) {
+      return { error: "Threshold must be a number between 1 and 100." };
+    }
+
+    setConfig("suspicious_ip_threshold", String(thresholdNum));
+    revalidatePath("/admin/security");
+    revalidatePath("/admin");
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { error: "Failed to save suspicious IP settings." };
+  }
+}
+
+export async function clearViolationsAction(_prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
+  if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+
+  try {
+    const ip = getString(formData, "ip_address") ?? "";
+    if (!ip) return { error: "IP address is required." };
+
+    if (!IP_PATTERN.test(ip)) {
+      return { error: "Invalid IP address format." };
+    }
+
+    clearViolations(ip);
+    revalidatePath("/admin/security");
+    revalidatePath("/admin");
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { error: "Failed to clear violations." };
   }
 }

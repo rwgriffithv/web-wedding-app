@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
+import { describe, it, expect, vi, beforeAll, beforeEach, afterAll } from "vitest";
 import { createTestDb, truncateAll } from "@/test/db-test-utils";
 import type Database from "better-sqlite3";
 
@@ -8,14 +8,14 @@ vi.mock("@/lib/db", () => ({
   getDb: () => db,
 }));
 
+const defaultSiteConfig: Record<string, string> = {
+  auto_ban_login_threshold: "5",
+  auto_ban_window_seconds: "3600",
+  suspicious_ip_threshold: "10",
+};
+
 vi.mock("@/lib/repository/site-config", () => ({
-  getConfig: (key: string) => {
-    const defaults: Record<string, string> = {
-      auto_ban_login_threshold: "5",
-      auto_ban_window_seconds: "3600",
-    };
-    return defaults[key] ?? "";
-  },
+  getConfig: vi.fn((key: string) => defaultSiteConfig[key] ?? ""),
 }));
 
 beforeAll(() => { db = createTestDb(); });
@@ -183,7 +183,7 @@ describe("ip-bans repository", () => {
   describe("getSuspiciousIpCount", () => {
     it("returns 0 when no violations", async () => {
       const { getSuspiciousIpCount } = await import("@/lib/repository/ip-bans");
-      expect(getSuspiciousIpCount(5, 3600)).toBe(0);
+      expect(getSuspiciousIpCount(5)).toBe(0);
     });
 
     it("counts IPs above threshold", async () => {
@@ -191,7 +191,7 @@ describe("ip-bans repository", () => {
       for (let i = 0; i < 5; i++) recordRateLimitViolation("192.168.1.60");
       for (let i = 0; i < 3; i++) recordRateLimitViolation("192.168.1.61");
 
-      expect(getSuspiciousIpCount(5, 3600)).toBe(1);
+      expect(getSuspiciousIpCount(5)).toBe(1);
     });
 
     it("excludes already-banned IPs", async () => {
@@ -199,7 +199,16 @@ describe("ip-bans repository", () => {
       for (let i = 0; i < 5; i++) recordRateLimitViolation("192.168.1.62");
       banIp("192.168.1.62", "manual");
 
-      expect(getSuspiciousIpCount(5, 3600)).toBe(0);
+      expect(getSuspiciousIpCount(5)).toBe(0);
+    });
+
+    it("counts all violations regardless of time", async () => {
+      const { recordRateLimitViolation, getSuspiciousIpCount } = await import("@/lib/repository/ip-bans");
+      recordRateLimitViolation("192.168.1.63");
+      // Insert an old violation directly
+      db.prepare("INSERT INTO rate_limit_violations (ip_address, violated_at) VALUES (?, datetime('now', '-7200 seconds'))").run("192.168.1.63");
+
+      expect(getSuspiciousIpCount(2)).toBe(1);
     });
   });
 
@@ -209,6 +218,93 @@ describe("ip-bans repository", () => {
       const config = getAutoBanConfig();
       expect(config.threshold).toBe(5);
       expect(config.windowSeconds).toBe(3600);
+    });
+  });
+
+  describe("getSuspiciousConfig", () => {
+    it("returns default threshold when no config set", async () => {
+      const { getSuspiciousConfig } = await import("@/lib/repository/ip-bans");
+      const config = getSuspiciousConfig();
+      expect(config.threshold).toBe(10);
+    });
+
+    it("returns custom threshold from config", async () => {
+      const siteConfig = await import("@/lib/repository/site-config");
+      vi.mocked(siteConfig.getConfig).mockImplementation((key: string) => {
+        if (key === "suspicious_ip_threshold") return "20";
+        return "";
+      });
+      const { getSuspiciousConfig } = await import("@/lib/repository/ip-bans");
+      const config = getSuspiciousConfig();
+      expect(config.threshold).toBe(20);
+      vi.mocked(siteConfig.getConfig).mockRestore();
+    });
+  });
+
+  describe("getSuspiciousIps", () => {
+    it("returns empty array when no violations", async () => {
+      const { getSuspiciousIps } = await import("@/lib/repository/ip-bans");
+      expect(getSuspiciousIps(5)).toHaveLength(0);
+    });
+
+    it("returns IPs at or above threshold", async () => {
+      const { recordRateLimitViolation, getSuspiciousIps } = await import("@/lib/repository/ip-bans");
+      for (let i = 0; i < 5; i++) recordRateLimitViolation("192.168.1.80");
+      for (let i = 0; i < 2; i++) recordRateLimitViolation("192.168.1.81");
+
+      const suspicious = getSuspiciousIps(5);
+      expect(suspicious).toHaveLength(1);
+      expect(suspicious[0].ip_address).toBe("192.168.1.80");
+      expect(suspicious[0].violation_count).toBe(5);
+    });
+
+    it("excludes banned IPs", async () => {
+      const { banIp, recordRateLimitViolation, getSuspiciousIps } = await import("@/lib/repository/ip-bans");
+      for (let i = 0; i < 5; i++) recordRateLimitViolation("192.168.1.82");
+      banIp("192.168.1.82", "manual");
+
+      expect(getSuspiciousIps(5)).toHaveLength(0);
+    });
+
+    it("orders by violation_count DESC", async () => {
+      const { recordRateLimitViolation, getSuspiciousIps } = await import("@/lib/repository/ip-bans");
+      for (let i = 0; i < 3; i++) recordRateLimitViolation("192.168.1.83");
+      for (let i = 0; i < 10; i++) recordRateLimitViolation("192.168.1.84");
+      for (let i = 0; i < 5; i++) recordRateLimitViolation("192.168.1.85");
+
+      const suspicious = getSuspiciousIps(2);
+      expect(suspicious[0].ip_address).toBe("192.168.1.84");
+      expect(suspicious[1].ip_address).toBe("192.168.1.85");
+      expect(suspicious[2].ip_address).toBe("192.168.1.83");
+    });
+
+    it("includes last_violated_at timestamp", async () => {
+      const { recordRateLimitViolation, getSuspiciousIps } = await import("@/lib/repository/ip-bans");
+      recordRateLimitViolation("192.168.1.86");
+
+      const suspicious = getSuspiciousIps(1);
+      expect(suspicious[0].last_violated_at).toBeTruthy();
+    });
+  });
+
+  describe("clearViolations", () => {
+    it("removes all violations for an IP", async () => {
+      const { recordRateLimitViolation, clearViolations, getViolationCount } = await import("@/lib/repository/ip-bans");
+      for (let i = 0; i < 5; i++) recordRateLimitViolation("192.168.1.90");
+
+      expect(getViolationCount("192.168.1.90", 86400)).toBe(5);
+      clearViolations("192.168.1.90");
+      expect(getViolationCount("192.168.1.90", 86400)).toBe(0);
+    });
+
+    it("does not affect other IPs", async () => {
+      const { recordRateLimitViolation, clearViolations, getViolationCount } = await import("@/lib/repository/ip-bans");
+      for (let i = 0; i < 3; i++) recordRateLimitViolation("192.168.1.91");
+      for (let i = 0; i < 2; i++) recordRateLimitViolation("192.168.1.92");
+
+      clearViolations("192.168.1.91");
+      expect(getViolationCount("192.168.1.91", 86400)).toBe(0);
+      expect(getViolationCount("192.168.1.92", 86400)).toBe(2);
     });
   });
 

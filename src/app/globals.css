@@ -1656,6 +1656,11 @@ a:hover {
   font-size: 0.8rem;
 }
 
+.flex-gap-sm {
+  display: flex;
+  gap: 0.5rem;
+}
+
 .btn-danger {
   background: var(--color-error);
   color: white;
@@ -1779,6 +1784,14 @@ footer {
 
 .admin-table tbody tr:hover {
   background: var(--color-surface);
+}
+
+.admin-table th.sortable {
+  cursor: pointer;
+}
+
+.admin-table th.sortable:hover {
+  color: var(--color-text);
 }
 
 /* Admin Table Wrapper (horizontal scroll on mobile) */

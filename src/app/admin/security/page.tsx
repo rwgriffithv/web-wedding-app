@@ -1,5 +1,5 @@
 import { Header } from "@/components/header";
-import { getBannedIps, getAutoBanConfig, getRateLimitViolations } from "@/lib/repository/ip-bans";
+import { getBannedIps, getAutoBanConfig, getRateLimitViolations, getSuspiciousConfig, getSuspiciousIps } from "@/lib/repository/ip-bans";
 import { getAllConfig } from "@/lib/repository/site-config";
 import { RateLimitForm } from "@/components/rate-limit-form";
 import { BanList } from "./ban-list";
@@ -7,12 +7,16 @@ import { AutoBanForm } from "./auto-ban-form";
 import { BanIpForm } from "./ban-ip-form";
 import { ViolationList } from "./violation-list";
 import { SessionSettingsForm } from "./session-settings-form";
+import { SuspiciousSettingsForm } from "./suspicious-settings-form";
+import { SuspiciousIpList } from "./suspicious-ip-list";
 
 export default function AdminSecurityPage() {
   const bannedIps = getBannedIps();
-  const { threshold, windowSeconds: autoBanWindow } = getAutoBanConfig();
+  const { threshold: autoBanThreshold, windowSeconds: autoBanWindow } = getAutoBanConfig();
+  const { threshold: suspiciousThreshold } = getSuspiciousConfig();
   const config = Object.fromEntries(getAllConfig().map((c) => [c.key, c.value]));
   const violations = getRateLimitViolations(autoBanWindow);
+  const suspiciousIps = getSuspiciousIps(suspiciousThreshold);
 
   return (
     <>
@@ -20,7 +24,7 @@ export default function AdminSecurityPage() {
       <details className="admin-section">
         <summary>Auto-Ban Settings</summary>
         <div className="admin-section-body">
-          <AutoBanForm threshold={String(threshold)} windowSeconds={String(autoBanWindow)} />
+          <AutoBanForm threshold={String(autoBanThreshold)} windowSeconds={String(autoBanWindow)} />
         </div>
       </details>
       <details className="admin-section">
@@ -41,6 +45,13 @@ export default function AdminSecurityPage() {
             sessionMaxHours={config.session_max_hours || "24"}
             pageViewDebounceMinutes={config.page_view_debounce_minutes || "15"}
           />
+        </div>
+      </details>
+      <details className="admin-section" open>
+        <summary>Suspicious IPs ({suspiciousIps.length})</summary>
+        <div className="admin-section-body">
+          <SuspiciousSettingsForm threshold={String(suspiciousThreshold)} />
+          <SuspiciousIpList violations={suspiciousIps} />
         </div>
       </details>
       <details className="admin-section" open>
