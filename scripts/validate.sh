@@ -7,6 +7,16 @@ set -euo pipefail
 #
 # Usage: ./scripts/validate.sh [--db path/to/db]
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# If not inside Docker, re-exec inside the container
+if [ ! -f /.dockerenv ]; then
+  echo "Running inside Docker container..."
+  exec docker compose run --rm \
+    -v "${SCRIPT_DIR}:/tmp/scripts:ro" \
+    webapp bash "/tmp/scripts/$(basename "$0")" "$@"
+fi
+
 DB="${DB_PATH:-$(pwd)/data/sqlite/prod.db}"
 
 while [[ $# -gt 0 ]]; do
