@@ -102,7 +102,7 @@ function PartyCodeForm({ cooldown, isLimited, checkRateLimit, syncFromResponse }
     <form onSubmit={handleSubmit}>
       <div className="form-group">
         <label htmlFor="code">Party Code</label>
-        <input id="code" name="code" type="text" required placeholder="e.g. SMITH-A1B2" style={{ textTransform: "uppercase" }} disabled={isLimited} />
+        <input id="code" name="code" type="text" required placeholder="Enter code" autoComplete="off" style={{ textTransform: "uppercase" }} disabled={isLimited} />
         <p className="text-xs text-muted mt-1">
           Found on your invitation
         </p>
