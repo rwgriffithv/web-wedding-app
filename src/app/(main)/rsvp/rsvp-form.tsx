@@ -3,19 +3,17 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { submitRsvp, type RsvpState } from "./actions";
 import type { RsvpResponse } from "@/lib/types";
-import { useRateLimitCooldown, type CooldownProps } from "@/lib/use-rate-limit-cooldown";
+import { useSharedCooldown } from "./rate-limit-context";
 
 interface RsvpFormProps {
   memberId: number;
   canBringPlusOne: boolean;
   existingResponse?: Pick<RsvpResponse, "guest_name" | "attending" | "plus_one_name">;
   isLocked?: boolean;
-  cooldownProps?: CooldownProps;
 }
 
-export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked, cooldownProps }: RsvpFormProps) {
-  const hook = useRateLimitCooldown("rl_r_until");
-  const { cooldown, isLimited, checkRateLimit, syncFromResponse } = cooldownProps ?? hook;
+export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked }: RsvpFormProps) {
+  const { cooldown, isLimited, checkRateLimit, syncFromResponse } = useSharedCooldown();
 
   const [state, setState] = useState<RsvpState | null>(null);
   const [isPending, setIsPending] = useState(false);
@@ -61,7 +59,7 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
     }
   }
 
-  const isFormDisabled = isLocked || isLimited;
+  const isInputDisabled = isLocked || isLimited;
 
   return (
     <form onSubmit={handleSubmit} className="rsvp-form">
@@ -80,7 +78,7 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
                 checked={attending === "yes"}
                 onChange={() => setAttending("yes")}
                 required
-                disabled={isFormDisabled}
+                disabled={isInputDisabled}
               />
               Yes
             </label>
@@ -92,7 +90,7 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
                 value="no"
                 checked={attending === "no"}
                 onChange={() => setAttending("no")}
-                disabled={isFormDisabled}
+                disabled={isInputDisabled}
               />
               No
             </label>
@@ -111,7 +109,7 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
                   value="yes"
                   checked={bringPlusOne === "yes"}
                   onChange={() => setBringPlusOne("yes")}
-                  disabled={isFormDisabled || attending === "no"}
+                  disabled={isInputDisabled || attending === "no"}
                 />
                 Yes
               </label>
@@ -123,7 +121,7 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
                   value="no"
                   checked={bringPlusOne === "no"}
                   onChange={() => setBringPlusOne("no")}
-                  disabled={isFormDisabled || attending === "no"}
+                  disabled={isInputDisabled || attending === "no"}
                 />
                 No
               </label>
@@ -142,7 +140,7 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
             value={plusOneName}
             onChange={(e) => setPlusOneName(e.target.value)}
             placeholder="Guest's name"
-            disabled={isFormDisabled || attending === "no"}
+            disabled={isInputDisabled || attending === "no"}
             required
           />
         </div>

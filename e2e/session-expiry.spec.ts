@@ -10,8 +10,27 @@ function createExpiredSession(data: Record<string, unknown>): string {
   return Buffer.from(`${json}.${hmac}`).toString("base64url");
 }
 
+function decodeSession(token: string): Record<string, unknown> | null {
+  try {
+    const decoded = Buffer.from(token, "base64url").toString();
+    const lastDot = decoded.lastIndexOf(".");
+    if (lastDot === -1) return null;
+    return JSON.parse(decoded.slice(0, lastDot)) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+async function getSessionPayload(page: import("@playwright/test").Page): Promise<Record<string, unknown>> {
+  const cookies = await page.context().cookies();
+  const sessionCookie = cookies.find((c) => c.name === "session");
+  if (!sessionCookie) throw new Error("No session cookie found after login");
+  const payload = decodeSession(sessionCookie.value);
+  if (!payload) throw new Error("Failed to decode session token");
+  return payload;
+}
+
 test("expired admin session redirects to login", async ({ page }) => {
-  // Log in as admin to get valid session attributes
   await page.goto("/login");
   await page.getByRole("button", { name: "User sign in" }).click();
   await page.fill("input[name=username]", "admin");
@@ -19,8 +38,8 @@ test("expired admin session redirects to login", async ({ page }) => {
   await page.locator("button[type=submit]").click();
   await page.waitForURL("/admin");
 
-  // Replace with an expired session token (same payload, exp in the past)
-  const expiredToken = createExpiredSession({ userId: 2, type: "admin" });
+  const payload = await getSessionPayload(page);
+  const expiredToken = createExpiredSession(payload);
   await page.context().addCookies([{
     name: "session",
     value: expiredToken,
@@ -28,20 +47,18 @@ test("expired admin session redirects to login", async ({ page }) => {
     path: "/",
   }]);
 
-  // Navigate to protected page — expired session should be rejected
   await page.goto("/admin");
   await expect(page).toHaveURL("/login");
 });
 
 test("expired party session redirects to login", async ({ page }) => {
-  // Log in as party user to get valid session attributes
   await page.goto("/");
   await page.fill("input[name=code]", "DEMO-1234");
   await page.getByRole("button", { name: "Continue with Party Code" }).click();
   await page.waitForURL("/home");
 
-  // Replace with an expired session token
-  const expiredToken = createExpiredSession({ userId: 4, partyId: 1, type: "party" });
+  const payload = await getSessionPayload(page);
+  const expiredToken = createExpiredSession(payload);
   await page.context().addCookies([{
     name: "session",
     value: expiredToken,
@@ -49,7 +66,6 @@ test("expired party session redirects to login", async ({ page }) => {
     path: "/",
   }]);
 
-  // Navigate to protected page — expired session should be rejected
   await page.goto("/home");
   await expect(page).toHaveURL("/login");
 });

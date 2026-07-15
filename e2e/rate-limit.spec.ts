@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { loginAsAdmin } from "./helpers";
 import Database from "better-sqlite3";
 import path from "path";
 
@@ -64,15 +65,6 @@ function detectClientIp(): string {
     "The first rate-limited login attempt must succeed before detectClientIp() is called."
   );
   return row.ip_address;
-}
-
-async function loginAsAdmin(page: Page) {
-  await page.goto("/login");
-  await page.getByRole("button", { name: "User sign in" }).click();
-  await page.fill("input[name=username]", "admin");
-  await page.fill("input[name=password]", "admin");
-  await page.locator("button[type=submit]").click();
-  await page.waitForURL("/admin");
 }
 
 test.describe("rate limiting", () => {

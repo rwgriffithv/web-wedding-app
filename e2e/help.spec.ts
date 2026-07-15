@@ -1,28 +1,5 @@
 import { test, expect } from "@playwright/test";
-
-async function loginAsParty(page: import("@playwright/test").Page) {
-  await page.goto("/");
-  await page.fill("input[name=code]", "DEMO-1234");
-  await page.getByRole("button", { name: "Continue with Party Code" }).click();
-  try {
-    await expect(page).toHaveURL(/\/home/, { timeout: 3000 });
-  } catch (err) {
-    console.log("[loginAsParty] first attempt failed, retrying:", (err as Error).message?.slice(0, 200));
-    await page.waitForTimeout(2000);
-    await page.goto("/");
-    await page.fill("input[name=code]", "DEMO-1234");
-    await page.getByRole("button", { name: "Continue with Party Code" }).click();
-    await expect(page).toHaveURL(/\/home/);
-  }
-}
-
-async function loginAsAdmin(page: import("@playwright/test").Page) {
-  await page.goto("/login");
-  await page.getByRole("button", { name: "User sign in" }).click();
-  await page.fill("input[name=username]", "admin");
-  await page.fill("input[name=password]", "admin");
-  await page.locator("button[type=submit]").click();
-}
+import { loginAsParty, loginAsAdmin } from "./helpers";
 
 test("help page requires auth", async ({ page }) => {
   await page.goto("/help");
@@ -59,7 +36,6 @@ test("help link is visible in secondary nav", async ({ page }) => {
 
 test("admin help page is accessible", async ({ page }) => {
   await loginAsAdmin(page);
-  await page.waitForURL(/\/admin/, { timeout: 10000 });
   await page.goto("/admin/help");
   await expect(page.getByRole("heading", { name: "Help" })).toBeVisible();
   await expect(page.getByText("Manage FAQ and view party questions.")).toBeVisible();
@@ -67,7 +43,6 @@ test("admin help page is accessible", async ({ page }) => {
 
 test("admin can add FAQ item", async ({ page }) => {
   await loginAsAdmin(page);
-  await page.waitForURL(/\/admin/, { timeout: 10000 });
   await page.goto("/admin/help");
 
   await page.fill("#faq_question", "What should I wear?");
@@ -80,7 +55,6 @@ test("admin can add FAQ item", async ({ page }) => {
 
 test("admin help page has FAQ and Questions sections", async ({ page }) => {
   await loginAsAdmin(page);
-  await page.waitForURL(/\/admin/, { timeout: 10000 });
   await page.goto("/admin/help");
   await expect(page.getByRole("heading", { name: "Help" })).toBeVisible();
   await expect(page.getByText("Manage FAQ and view party questions.")).toBeVisible();

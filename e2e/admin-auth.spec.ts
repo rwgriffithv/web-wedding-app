@@ -1,12 +1,5 @@
 import { test, expect } from "@playwright/test";
-
-async function loginAsAdmin(page: import("@playwright/test").Page) {
-  await page.goto("/login");
-  await page.getByRole("button", { name: "User sign in" }).click();
-  await page.fill("input[name=username]", "admin");
-  await page.fill("input[name=password]", "admin");
-  await page.locator("button[type=submit]").click();
-}
+import { loginAsAdmin } from "./helpers";
 
 test("redirects to login when accessing admin without auth", async ({ page }) => {
   await page.goto("/admin");
@@ -15,12 +8,10 @@ test("redirects to login when accessing admin without auth", async ({ page }) =>
 
 test("login with admin credentials redirects to admin", async ({ page }) => {
   await loginAsAdmin(page);
-  await page.waitForURL(/\/admin/, { timeout: 10000 });
 });
 
 test("admin dashboard shows stats and rsvp table", async ({ page }) => {
   await loginAsAdmin(page);
-  await page.waitForURL(/\/admin/, { timeout: 10000 });
   await expect(page.locator(".stat-row")).toHaveCount(5);
   await expect(page.getByRole("heading", { name: "Invited" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Expected" })).toBeVisible();

@@ -98,10 +98,11 @@ export async function destroySession(): Promise<void> {
   store.set(SESSION_COOKIE, "", { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 0 });
 }
 
-/** Parse session_max_hours from DB config, clamp 1–24, return seconds. */
+/** Parse session_max_hours from DB config, clamp to 1 second–24 hours, return seconds. */
 export function getSessionMaxSeconds(): number {
-  const hours = parseInt(getConfig("session_max_hours"), 10);
-  return (Number.isFinite(hours) && hours > 0 ? Math.min(hours, 24) : 24) * 60 * 60;
+  const hours = parseFloat(getConfig("session_max_hours"));
+  const seconds = (Number.isFinite(hours) && hours > 0 ? Math.min(hours, 24) : 24) * 60 * 60;
+  return Math.max(1, seconds);
 }
 
 const SALT_LENGTH = 32;

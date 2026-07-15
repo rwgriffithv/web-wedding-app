@@ -1,20 +1,5 @@
 import { test, expect } from "@playwright/test";
-
-async function loginAsParty(page: import("@playwright/test").Page) {
-  await page.goto("/");
-  await page.fill("input[name=code]", "DEMO-1234");
-  await page.getByRole("button", { name: "Continue with Party Code" }).click();
-  try {
-    await expect(page).toHaveURL(/\/home/, { timeout: 3000 });
-  } catch (err) {
-    console.log("[loginAsParty] first attempt failed, retrying:", (err as Error).message?.slice(0, 200));
-    await page.waitForTimeout(2000);
-    await page.goto("/");
-    await page.fill("input[name=code]", "DEMO-1234");
-    await page.getByRole("button", { name: "Continue with Party Code" }).click();
-    await expect(page).toHaveURL(/\/home/);
-  }
-}
+import { loginAsParty } from "./helpers";
 
 test("guide page requires auth", async ({ page }) => {
   await page.goto("/guide");

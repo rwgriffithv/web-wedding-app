@@ -154,4 +154,28 @@ describe("getSessionMaxSeconds", () => {
     const { getSessionMaxSeconds } = await import("../auth");
     expect(getSessionMaxSeconds()).toBe(1 * 60 * 60);
   });
+
+  it("handles decimal hours like 0.5", async () => {
+    mockGetConfig.mockReturnValue("0.5");
+    const { getSessionMaxSeconds } = await import("../auth");
+    expect(getSessionMaxSeconds()).toBe(0.5 * 60 * 60);
+  });
+
+  it("handles decimal hours like 1.5", async () => {
+    mockGetConfig.mockReturnValue("1.5");
+    const { getSessionMaxSeconds } = await import("../auth");
+    expect(getSessionMaxSeconds()).toBe(1.5 * 60 * 60);
+  });
+
+  it("clamps decimal above 24 to 24h", async () => {
+    mockGetConfig.mockReturnValue("25.5");
+    const { getSessionMaxSeconds } = await import("../auth");
+    expect(getSessionMaxSeconds()).toBe(24 * 60 * 60);
+  });
+
+  it("clamps sub-second values to minimum 1 second", async () => {
+    mockGetConfig.mockReturnValue("0.0001");
+    const { getSessionMaxSeconds } = await import("../auth");
+    expect(getSessionMaxSeconds()).toBe(1);
+  });
 });
