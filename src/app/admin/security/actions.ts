@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { isAdmin } from "@/lib/auth";
 import { getString } from "@/lib/form-data";
-import { getConfig, setConfig } from "@/lib/repository/site-config";
+import { setConfig } from "@/lib/repository/site-config";
 import { banIp, unbanIp, isIpBanned } from "@/lib/repository/ip-bans";
 
 interface SecurityState { success?: boolean; error?: string }
@@ -29,7 +29,8 @@ export async function saveAutoBanSettings(prevState: SecurityState | null, formD
     setConfig("auto_ban_window_seconds", String(windowNum));
     revalidatePath("/admin/security");
     return { success: true };
-  } catch {
+  } catch (error) {
+    console.error(error);
     return { error: "Failed to save auto-ban settings." };
   }
 }
@@ -39,7 +40,8 @@ async function banIpCommon(ip: string, reason: string): Promise<SecurityState> {
 
   try {
     banIp(ip, reason);
-  } catch {
+  } catch (error) {
+    console.error(error);
     return { error: "This IP is already banned." };
   }
   revalidatePath("/admin/security");
@@ -62,7 +64,8 @@ export async function banIpAction(_prevState: SecurityState | null, formData: Fo
     }
 
     return await banIpCommon(ip, reason);
-  } catch {
+  } catch (error) {
+    console.error(error);
     return { error: "Failed to ban IP." };
   }
 }
@@ -76,7 +79,8 @@ export async function unbanIpAction(_prevState: SecurityState | null, formData: 
     unbanIp(id);
     revalidatePath("/admin/security");
     return { success: true };
-  } catch {
+  } catch (error) {
+    console.error(error);
     return { error: "Failed to unban IP." };
   }
 }
@@ -88,8 +92,13 @@ export async function banViolationIpAction(_prevState: SecurityState | null, for
     const ip = getString(formData, "ip_address") ?? "";
     if (!ip) return { error: "IP address is required." };
 
+    if (!IP_PATTERN.test(ip)) {
+      return { error: "Invalid IP address format." };
+    }
+
     return await banIpCommon(ip, "manual");
-  } catch {
+  } catch (error) {
+    console.error(error);
     return { error: "Failed to ban IP." };
   }
 }
@@ -115,7 +124,8 @@ export async function saveSessionSettings(prevState: SecurityState | null, formD
     setConfig("page_view_debounce_minutes", String(minutesNum));
     revalidatePath("/admin/security");
     return { success: true };
-  } catch {
+  } catch (error) {
+    console.error(error);
     return { error: "Failed to save session settings." };
   }
 }

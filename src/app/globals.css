@@ -1088,9 +1088,23 @@ a:hover {
   color: var(--color-sidebar-active);
   font-size: 1rem;
   font-weight: 600;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-back-link {
+  display: block;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.75rem;
+  opacity: 0.5;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-back-link:hover {
+  opacity: 1;
+  text-decoration: none;
 }
 
 .admin-sidebar a {

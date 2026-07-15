@@ -8,9 +8,9 @@ export default function AdminSitePage() {
 
   return (
     <>
-      <Header title="Site Configuration" description="Manage landing page, home page, and security settings." />
+      <Header title="Home" description="Manage landing page, home page, and banner." />
       <details className="admin-section" open>
-        <summary>Site Settings</summary>
+        <summary>Settings</summary>
         <div className="admin-section-body">
           <SiteConfigForm config={configMap} />
         </div>

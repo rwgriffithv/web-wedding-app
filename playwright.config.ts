@@ -18,6 +18,9 @@ export default defineConfig({
     },
   ],
   webServer: {
+    // db:seed always resets rate-limit config and clears bans/violations
+    // to prevent parallel workers from self-banning localhost.
+    // See docs/architecture/conventions.md — "E2E Testing Pitfalls".
     command: "npm run db:seed && npm run dev",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,

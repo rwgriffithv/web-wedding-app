@@ -42,8 +42,16 @@ const setConfig = (key: string, value: string) => {
   upsertConfig.run(value, key);
 };
 
+// Always reset rate-limit config and clear ban/violation state.
+// This prevents E2E tests from self-banning due to parallel workers
+// exhausting the threshold during concurrent login attempts.
 setConfig("rate_limit_max_attempts", "100");
 setConfig("rate_limit_window_seconds", "60");
+setConfig("auto_ban_login_threshold", "50");
+setConfig("auto_ban_window_seconds", "3600");
+
+db.exec("DELETE FROM banned_ips");
+db.exec("DELETE FROM rate_limit_violations");
 
 // Ensure default config values exist for existing databases (only fills empty/null values)
 const upsertIfEmpty = db.prepare("UPDATE site_config SET value = ? WHERE key = ? AND (value IS NULL OR value = '')");
@@ -52,6 +60,7 @@ const defaults: [string, string][] = [
   ["landing_background", ""],
   ["home_title", "Our Wedding"],
   ["home_date", "2026-08-15"],
+  ["home_time", "15:00"],
   ["home_venue", ""],
   ["home_location", "Venue Name, City"],
   ["home_background_video", ""],
@@ -59,8 +68,6 @@ const defaults: [string, string][] = [
   ["dress_code_text", "Please dress in formal attire. Our wedding will feature a black-tie optional dress code. We recommend suits and cocktail dresses."],
   ["schedule_text", ""],
   ["lodging_text", ""],
-  ["auto_ban_login_threshold", "5"],
-  ["auto_ban_window_seconds", "3600"],
 ];
 for (const [key, value] of defaults) {
   upsertIfEmpty.run(value, key);

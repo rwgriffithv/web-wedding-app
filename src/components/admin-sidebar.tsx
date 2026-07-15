@@ -36,18 +36,18 @@ export function AdminSidebar() {
 
   const links = [
     { href: "/admin", label: "Dashboard" },
-    { href: "/admin/site", label: "Site Config" },
+    { href: "/admin/security", label: "Security" },
+    { href: "/admin/site", label: "Home" },
     { href: "/admin/users", label: "Users" },
     { href: "/admin/guests", label: "Guests" },
     { href: "/admin/parties", label: "Parties" },
+    { href: "/admin/rsvp", label: "RSVP" },
     { href: "/admin/schedule", label: "Schedule" },
     { href: "/admin/dress-code", label: "Dress Code" },
     { href: "/admin/lodging", label: "Lodging" },
     { href: "/admin/gifts", label: "Gifts" },
-    { href: "/admin/rsvp", label: "RSVP" },
     { href: "/admin/media", label: "Media" },
     { href: "/admin/help", label: "Help" },
-    { href: "/admin/security", label: "Security" },
   ];
 
   const isActive = (href: string) => {
@@ -65,6 +65,7 @@ export function AdminSidebar() {
       </button>
       <aside className="admin-sidebar" aria-label="Admin navigation">
         <h2>Admin Panel</h2>
+        <Link href="/home" className="sidebar-back-link">&larr; Back to Site</Link>
         {links.map(link => (
           <Link
             key={link.href}
@@ -74,8 +75,6 @@ export function AdminSidebar() {
             {link.label}
           </Link>
         ))}
-        <div className="flex-1" />
-        <Link href="/home" className="opacity-muted">&larr; Back to Site</Link>
       </aside>
     </>
   );

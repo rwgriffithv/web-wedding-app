@@ -8,6 +8,8 @@ import { setConfig } from "@/lib/repository/site-config";
 
 interface ScheduleState { success?: boolean; error?: string }
 
+const TIME_PATTERN = /^(?:(?:1[0-2]|0?[1-9]):[0-5]\d\s?(?:AM|PM|am|pm)|(?:[01]?\d|2[0-3]):[0-5]\d)$/;
+
 export async function addItem(prevState: ScheduleState | null, formData: FormData): Promise<ScheduleState> {
   if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
 
@@ -16,6 +18,10 @@ export async function addItem(prevState: ScheduleState | null, formData: FormDat
 
   if (!time || !label) {
     return { success: false, error: "Both fields are required." };
+  }
+
+  if (!TIME_PATTERN.test(time)) {
+    return { success: false, error: "Time must be 12-hour (e.g. \"3:00 PM\") or 24-hour (e.g. \"15:00\")." };
   }
 
   try {
@@ -41,6 +47,10 @@ export async function updateItem(prevState: ScheduleState | null, formData: Form
 
   if (!time || !label) {
     return { success: false, error: "Both fields are required." };
+  }
+
+  if (!TIME_PATTERN.test(time)) {
+    return { success: false, error: "Time must be 12-hour (e.g. \"3:00 PM\") or 24-hour (e.g. \"15:00\")." };
   }
 
   try {

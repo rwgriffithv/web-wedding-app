@@ -301,3 +301,40 @@ Tests import from their sibling directory using `../` relative paths. Vitest pic
 - `deploy.sh` only builds and restarts — it does not touch the database schema
 - `db.ts` uses `CREATE TABLE IF NOT EXISTS` — it creates new tables but never alters existing ones
 - `scripts/db-seed.ts` runs DDL and includes idempotent column migrations for dev/test databases (only adds missing columns, never drops or modifies existing ones)
+
+---
+
+## E2E Testing Pitfalls
+
+### Rate Limiting and Auto-Ban During Parallel Tests
+
+Playwright runs tests in parallel across multiple browser workers (default: CPU cores - 1). Each worker that logs in hits the same dev server. With low rate-limit thresholds, **the tests will ban localhost and break themselves**.
+
+**What happens:**
+1. 8 workers start simultaneously, each navigating to `/login`
+2. Multiple workers submit login forms within the same 60-second window
+3. Violations accumulate per-IP (not per-user) in `rate_limit_violations`
+4. When violations hit `auto_ban_login_threshold`, `::1`/`127.0.0.1` gets added to `banned_ips`
+5. The login page checks `isIpBanned(ip)` server-side and renders a "banned" screen instead of the login form
+6. All subsequent tests timeout waiting for form elements that never render
+
+**How to prevent it:**
+- `scripts/db-seed.ts` always resets rate-limit config and clears `banned_ips`/`rate_limit_violations` on every run (even when demo data already exists)
+- Dev defaults are set high enough for parallel tests: `rate_limit_max_attempts=100`, `auto_ban_login_threshold=50`
+- If you change these values, verify E2E tests still pass with `npm run test:e2e`
+
+**If tests are already broken:**
+```bash
+# Clear bans and violations manually
+sqlite3 data/dev.db "DELETE FROM banned_ips; DELETE FROM rate_limit_violations;"
+
+# Or re-seed (resets everything)
+npm run db:seed
+```
+
+**Key files:**
+- `scripts/db-seed.ts` — rate-limit config reset and ban cleanup
+- `playwright.config.ts` — worker count, webServer command
+- `src/app/login/page.tsx` — IP ban check (renders banned screen)
+- `src/app/login/actions.ts` — rate-limit check and auto-ban logic
+- `src/lib/ip.ts` — `getClientIp()` returns `127.0.0.1` in dev (no proxy headers)

@@ -32,7 +32,7 @@ export function SiteConfigForm({ config }: SiteConfigFormProps) {
         />
       )}
       <fieldset className="admin-fieldset form-group">
-        <legend>Login & Landing</legend>
+        <legend>Landing</legend>
         <div className="form-group">
           <label htmlFor="landing_title">Landing Page Title</label>
           <input id="landing_title" name="landing_title" type="text" defaultValue={config.landing_title} />

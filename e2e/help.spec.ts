@@ -86,5 +86,5 @@ test("party user can submit a question", async ({ page }) => {
   await page.getByRole("button", { name: "Submit Question" }).click();
 
   await expect(page.getByText("Question submitted!")).toBeVisible();
-  await expect(page.locator(".admin-item-content").filter({ hasText: "Is there parking available?" }).first()).toBeVisible();
+  await expect(page.locator(".faq-item").filter({ hasText: "Is there parking available?" }).first()).toBeVisible();
 });
