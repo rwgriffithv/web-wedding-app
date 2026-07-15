@@ -47,10 +47,15 @@ export default function AdminSecurityPage() {
           />
         </div>
       </details>
+      <details className="admin-section">
+        <summary>Suspicious IPs Settings</summary>
+        <div className="admin-section-body">
+          <SuspiciousSettingsForm threshold={String(suspiciousThreshold)} />
+        </div>
+      </details>
       <details className="admin-section" open>
         <summary>Suspicious IPs ({suspiciousIps.length})</summary>
         <div className="admin-section-body">
-          <SuspiciousSettingsForm threshold={String(suspiciousThreshold)} />
           <SuspiciousIpList violations={suspiciousIps} />
         </div>
       </details>

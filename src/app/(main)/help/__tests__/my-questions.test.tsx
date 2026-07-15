@@ -14,7 +14,7 @@ function getTextarea() {
 }
 
 function getSubmitButton() {
-  return screen.getByRole("button", { name: /submit question|submitting/i });
+  return screen.getByRole("button", { name: /submit question|submitting|please wait/i });
 }
 
 const emptyQuestions: Question[] = [];
@@ -22,6 +22,8 @@ const emptyQuestions: Question[] = [];
 describe("MyQuestions — form state persistence", () => {
   beforeEach(() => {
     mockSubmit.mockReset();
+    vi.useRealTimers();
+    document.cookie = "rl_q_until=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
   });
 
   it("textarea retains text after failed submit", async () => {
@@ -112,6 +114,8 @@ describe("MyQuestions — form state persistence", () => {
     mockSubmit.mockResolvedValue({
       success: false,
       error: "Your party has made too many requests. Please wait before trying again.",
+      action: "cooldown",
+      cooldownUntil: Date.now() + 60_000,
     });
 
     render(<MyQuestions questions={emptyQuestions} />);
@@ -123,10 +127,14 @@ describe("MyQuestions — form state persistence", () => {
     });
   });
 
-  it("form remains interactive after rate limit error", async () => {
+  it("shows cooldown after rate limit error, then re-enables", { timeout: 15_000 }, async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+
     mockSubmit.mockResolvedValueOnce({
       success: false,
       error: "Your party has made too many requests. Please wait before trying again.",
+      action: "cooldown",
+      cooldownUntil: Date.now() + 10_000,
     }).mockResolvedValueOnce({ success: true });
 
     render(<MyQuestions questions={emptyQuestions} />);
@@ -139,15 +147,27 @@ describe("MyQuestions — form state persistence", () => {
       expect(screen.getByText(/too many requests/i)).toBeVisible();
     });
 
-    // Textarea should retain text, button should be enabled
+    // Button should be disabled during cooldown
+    expect(getSubmitButton()).toBeDisabled();
+    expect(getSubmitButton().textContent).toMatch(/please wait/i);
+
+    // Wait for 10s cooldown to expire (shouldAdvanceTime lets real time tick the fake clock)
+    await waitFor(() => {
+      expect(getSubmitButton()).not.toBeDisabled();
+    }, { timeout: 12_000 });
+
+    // Button re-enables, textarea retains text
     expect(textarea.value).toBe("Help me");
-    expect(getSubmitButton()).not.toBeDisabled();
+
+    vi.useRealTimers();
   });
 
   it("textarea retains text after rate limit error", async () => {
     mockSubmit.mockResolvedValue({
       success: false,
       error: "Your party has made too many requests. Please wait before trying again.",
+      action: "cooldown",
+      cooldownUntil: Date.now() + 60_000,
     });
 
     render(<MyQuestions questions={emptyQuestions} />);

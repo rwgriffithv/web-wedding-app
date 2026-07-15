@@ -13,6 +13,8 @@ import { RATE_LIMIT_WINDOW_SECONDS_DEFAULT } from "@/lib/constants";
 export interface RsvpState {
   success?: boolean;
   error?: string;
+  action?: "cooldown";
+  cooldownUntil?: number;
 }
 
 const rsvpRateLimiter = createRateLimiter("rsvp");
@@ -51,8 +53,9 @@ export async function submitRsvp(_prevState: RsvpState | null, formData: FormDat
     const party = getPartyById(session.partyId);
     if (!party) return { success: false, error: "Party not found." };
 
-    if (!rsvpRateLimiter.check(`party:${session.partyId}`, getRsvpRateLimitConfig())) {
-      return { success: false, error: "Your party has made too many submissions. Please wait before trying again." };
+    const rlConfig = getRsvpRateLimitConfig();
+    if (!rsvpRateLimiter.check(`party:${session.partyId}`, rlConfig)) {
+      return { success: false, error: "Your party has made too many submissions. Please wait before trying again.", action: "cooldown", cooldownUntil: Date.now() + rlConfig.windowMs };
     }
 
     const member = getGuestById(memberId);

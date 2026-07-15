@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createSession, verifyPassword, hashPassword } from "../auth";
 
 vi.mock("next/headers", () => ({
@@ -19,6 +19,12 @@ vi.mock("../repository/users", () => ({
 vi.mock("../repository/party", () => ({
   getPartyById: vi.fn(),
   getPartyByCode: vi.fn(),
+}));
+
+const mockGetConfig = vi.fn();
+
+vi.mock("../repository/site-config", () => ({
+  getConfig: (...args: unknown[]) => mockGetConfig(...args),
 }));
 
 describe("auth", () => {
@@ -93,5 +99,59 @@ describe("isAdmin", () => {
 
     const { isAdmin } = await import("../auth");
     expect(await isAdmin()).toBe(false);
+  });
+});
+
+describe("getSessionMaxSeconds", () => {
+  beforeEach(() => {
+    mockGetConfig.mockReset();
+  });
+
+  it("returns 24h in seconds for default config", async () => {
+    mockGetConfig.mockReturnValue("24");
+    const { getSessionMaxSeconds } = await import("../auth");
+    expect(getSessionMaxSeconds()).toBe(24 * 60 * 60);
+  });
+
+  it("returns configured value in seconds", async () => {
+    mockGetConfig.mockReturnValue("8");
+    const { getSessionMaxSeconds } = await import("../auth");
+    expect(getSessionMaxSeconds()).toBe(8 * 60 * 60);
+  });
+
+  it("clamps values above 24 to 24h", async () => {
+    mockGetConfig.mockReturnValue("48");
+    const { getSessionMaxSeconds } = await import("../auth");
+    expect(getSessionMaxSeconds()).toBe(24 * 60 * 60);
+  });
+
+  it("clamps 0 to 24h default", async () => {
+    mockGetConfig.mockReturnValue("0");
+    const { getSessionMaxSeconds } = await import("../auth");
+    expect(getSessionMaxSeconds()).toBe(24 * 60 * 60);
+  });
+
+  it("falls back to 24h for empty string", async () => {
+    mockGetConfig.mockReturnValue("");
+    const { getSessionMaxSeconds } = await import("../auth");
+    expect(getSessionMaxSeconds()).toBe(24 * 60 * 60);
+  });
+
+  it("falls back to 24h for NaN", async () => {
+    mockGetConfig.mockReturnValue("abc");
+    const { getSessionMaxSeconds } = await import("../auth");
+    expect(getSessionMaxSeconds()).toBe(24 * 60 * 60);
+  });
+
+  it("falls back to 24h for negative values", async () => {
+    mockGetConfig.mockReturnValue("-5");
+    const { getSessionMaxSeconds } = await import("../auth");
+    expect(getSessionMaxSeconds()).toBe(24 * 60 * 60);
+  });
+
+  it("accepts minimum value of 1", async () => {
+    mockGetConfig.mockReturnValue("1");
+    const { getSessionMaxSeconds } = await import("../auth");
+    expect(getSessionMaxSeconds()).toBe(1 * 60 * 60);
   });
 });

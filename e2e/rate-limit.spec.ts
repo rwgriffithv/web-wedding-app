@@ -182,22 +182,27 @@ test.describe("rate limiting", () => {
     await loginAsAdmin(page);
     await page.goto("/admin/security");
 
-    // Suspicious IPs section is present (default open)
-    await expect(page.locator("summary").filter({ hasText: /Suspicious IPs/ })).toBeVisible();
+    // Both suspicious IPs sections are present: config (collapsed) and table (open)
+    await expect(page.locator("summary").getByText("Suspicious IPs Settings", { exact: true })).toBeVisible();
+    await expect(page.locator("summary").filter({ hasText: /Suspicious IPs \(/ })).toBeVisible();
 
     // Shows empty state when no violations
-    const suspiciousSection = page.locator("details").filter({ hasText: /Suspicious IPs/ });
-    await expect(suspiciousSection.getByText("No suspicious IPs detected.")).toBeVisible();
+    const tableSection = page.locator("details").filter({ hasText: /Suspicious IPs \(/ });
+    await expect(tableSection.getByText("No suspicious IPs detected.")).toBeVisible();
   });
 
   test("admin security page suspicious IPs has threshold input", async ({ page }) => {
     await loginAsAdmin(page);
     await page.goto("/admin/security");
 
-    // The suspicious IPs section has a threshold input
-    const suspiciousSection = page.locator("details").filter({ hasText: /Suspicious IPs/ });
-    await expect(suspiciousSection.getByLabel("Violation Threshold")).toBeVisible();
-    await expect(suspiciousSection.getByRole("button", { name: "Save" })).toBeVisible();
+    // The config section is collapsed — expand it
+    const configSummary = page.locator("summary").getByText("Suspicious IPs Settings", { exact: true });
+    await configSummary.click();
+
+    // The config section has a threshold input
+    const configSection = page.locator("details").filter({ hasText: "Violation Threshold" });
+    await expect(configSection.getByLabel("Violation Threshold")).toBeVisible();
+    await expect(configSection.getByRole("button", { name: "Save" })).toBeVisible();
   });
 
   test("suspicious IPs table shows violations and ban button works", async ({ page }) => {
@@ -207,14 +212,14 @@ test.describe("rate limiting", () => {
     await loginAsAdmin(page);
     await page.goto("/admin/security");
 
-    const suspiciousSection = page.locator("details").filter({ hasText: /Suspicious IPs/ });
+    const tableSection = page.locator("details").filter({ hasText: /Suspicious IPs \(/ });
 
     // The IP should appear in the suspicious table
-    await expect(suspiciousSection.getByText(testIp)).toBeVisible();
-    await expect(suspiciousSection.getByText("12")).toBeVisible();
+    await expect(tableSection.getByText(testIp)).toBeVisible();
+    await expect(tableSection.getByText("12")).toBeVisible();
 
     // Ban button should be present
-    const banForm = suspiciousSection.locator("tr").filter({ hasText: testIp }).getByRole("button", { name: "Ban" });
+    const banForm = tableSection.locator("tr").filter({ hasText: testIp }).getByRole("button", { name: "Ban" });
     await expect(banForm).toBeVisible();
 
     // Ban the IP
@@ -222,7 +227,7 @@ test.describe("rate limiting", () => {
     await page.waitForLoadState("networkidle");
 
     // IP should no longer be in suspicious list (it's now banned)
-    await expect(suspiciousSection.getByText(testIp)).not.toBeVisible();
+    await expect(tableSection.getByText(testIp)).not.toBeVisible();
   });
 
   test("suspicious IPs clear button removes violations", async ({ page }) => {
@@ -232,18 +237,18 @@ test.describe("rate limiting", () => {
     await loginAsAdmin(page);
     await page.goto("/admin/security");
 
-    const suspiciousSection = page.locator("details").filter({ hasText: /Suspicious IPs/ });
+    const tableSection = page.locator("details").filter({ hasText: /Suspicious IPs \(/ });
 
     // The IP should appear
-    await expect(suspiciousSection.getByText(testIp)).toBeVisible();
+    await expect(tableSection.getByText(testIp)).toBeVisible();
 
     // Clear violations
-    const clearBtn = suspiciousSection.locator("tr").filter({ hasText: testIp }).getByRole("button", { name: "Clear" });
+    const clearBtn = tableSection.locator("tr").filter({ hasText: testIp }).getByRole("button", { name: "Clear" });
     await clearBtn.click();
     await page.waitForLoadState("networkidle");
 
     // IP should no longer appear (violations cleared, below threshold)
-    await expect(suspiciousSection.getByText(testIp)).not.toBeVisible();
+    await expect(tableSection.getByText(testIp)).not.toBeVisible();
   });
 
   test("bad logins within rate limit do NOT record violations in DB", async ({ page }) => {
@@ -350,6 +355,9 @@ test.describe("rate limiting", () => {
       await page.waitForTimeout(1100);
 
       // --- Window 3: 2 allowed + 1 blocked = 3 violations → AUTO-BAN ---
+      // The 3rd attempt triggers the auto-ban. The server detects the IP is now banned
+      // and returns "banned" instead of "Too many attempts", so the client calls
+      // router.refresh() to immediately show the ban screen without requiring a manual refresh.
       await page.goto("/login");
       await page.getByRole("button", { name: "User sign in" }).click();
       for (let i = 0; i < 2; i++) {
@@ -361,13 +369,15 @@ test.describe("rate limiting", () => {
       await page.fill("input[name=username]", username);
       await page.fill("input[name=password]", "wrong");
       await page.locator("button[type=submit]").click();
-      await expect(page.getByText("Too many attempts")).toBeVisible();
+
+      // Auto-ban triggers → server returns "banned" error → client refreshes → ban screen shown
+      await expect(page.getByText("Your IP has been banned")).toBeVisible();
 
       // After 9 bad logins: 3 violations → BANNED
       expect(getViolationCountFromDb(clientIp)).toBe(3);
       expect(isIpBannedInDb(clientIp)).toBe(true);
 
-      // Verify: login page shows banned message
+      // Verify: ban persists across page navigation
       await page.goto("/login");
       await expect(page.getByText("Your IP has been banned")).toBeVisible();
     } finally {

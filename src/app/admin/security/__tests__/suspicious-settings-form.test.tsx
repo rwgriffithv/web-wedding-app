@@ -16,7 +16,7 @@ describe("SuspiciousSettingsForm", () => {
 
   it("renders help text describing the threshold", () => {
     render(<SuspiciousSettingsForm threshold="10" />);
-    expect(screen.getByText(/IPs with at least this many/)).toBeDefined();
+    expect(screen.getByText(/Minimum violations to appear/)).toBeDefined();
   });
 
   it("renders save button", () => {

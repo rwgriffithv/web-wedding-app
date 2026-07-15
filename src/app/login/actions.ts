@@ -2,23 +2,17 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { createSession, destroySession, verifyPassword, SESSION_COOKIE } from "@/lib/auth";
+import { createSession, destroySession, verifyPassword, SESSION_COOKIE, getSessionMaxSeconds } from "@/lib/auth";
 import { getUserWithPassword, getPartyUserWithPassword, recordLogin } from "@/lib/repository/users";
 import { getPartyByCode } from "@/lib/repository/party";
 import { getGuestsByPartyId } from "@/lib/repository/guests";
 import { createRateLimiter, getRateLimitConfig } from "@/lib/rate-limit";
-import { getConfig } from "@/lib/repository/site-config";
 import { isIpBanned, recordRateLimitViolation, getViolationCount, banIp, deleteOldViolations, getAutoBanConfig } from "@/lib/repository/ip-bans";
 import { getClientIp } from "@/lib/ip";
 import { getString } from "@/lib/form-data";
 import { RATE_LIMIT_MAX_ATTEMPTS_DEFAULT, RATE_LIMIT_WINDOW_SECONDS_DEFAULT } from "@/lib/constants";
 
-interface LoginState { error?: string }
-
-function getSessionMaxSeconds(): number {
-  const hours = parseInt(getConfig("session_max_hours"), 10);
-  return (Number.isFinite(hours) && hours > 0 ? Math.min(hours, 24) : 24) * 60 * 60;
-}
+interface LoginState { error?: string; action?: "refresh" | "cooldown"; cooldownUntil?: number }
 
 const rateLimiter = createRateLimiter("login");
 
@@ -52,14 +46,17 @@ export async function login(formData: FormData): Promise<LoginState> {
   const ip = await getClientIp();
 
   if (isIpBanned(ip)) {
-    return { error: "Your IP has been banned." };
+    return { error: "Your IP has been banned.", action: "refresh" };
   }
 
   const rlConfig = getLoginRateLimitConfig();
-  if (!rateLimiter.check(`${ip}:user:${username}`, rlConfig)) {
+  if (!rateLimiter.check(`${ip}:login`, rlConfig)) {
     recordRateLimitViolation(ip);
     tryAutoBan(ip);
-    return { error: "Too many attempts. Please wait before trying again." };
+    if (isIpBanned(ip)) {
+      return { error: "Your IP has been banned.", action: "refresh" };
+    }
+    return { error: "Too many attempts. Please wait before trying again.", action: "cooldown", cooldownUntil: Date.now() + rlConfig.windowMs };
   }
 
   const user = getUserWithPassword(username);
@@ -96,14 +93,17 @@ export async function loginByPartyCode(formData: FormData): Promise<LoginState> 
   const ip = await getClientIp();
 
   if (isIpBanned(ip)) {
-    return { error: "Your IP has been banned." };
+    return { error: "Your IP has been banned.", action: "refresh" };
   }
 
   const rlConfig = getLoginRateLimitConfig();
-  if (!rateLimiter.check(`${ip}:party:${trimmedCode}`, rlConfig)) {
+  if (!rateLimiter.check(`${ip}:login`, rlConfig)) {
     recordRateLimitViolation(ip);
     tryAutoBan(ip);
-    return { error: "Too many attempts. Please wait before trying again." };
+    if (isIpBanned(ip)) {
+      return { error: "Your IP has been banned.", action: "refresh" };
+    }
+    return { error: "Too many attempts. Please wait before trying again.", action: "cooldown", cooldownUntil: Date.now() + rlConfig.windowMs };
   }
 
   const party = getPartyByCode(trimmedCode);

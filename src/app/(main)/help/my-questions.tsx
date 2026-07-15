@@ -4,27 +4,39 @@ import { useState, type FormEvent } from "react";
 import { submitQuestion } from "./actions";
 import { CharCount } from "@/components/char-count";
 import { MAX_QUESTION_LENGTH } from "@/lib/constants";
+import { useRateLimitCooldown } from "@/lib/use-rate-limit-cooldown";
 import type { Question } from "@/lib/db";
 
 export function MyQuestions({ questions }: { questions: Question[] }) {
   const [state, setState] = useState<{ success?: boolean; error?: string } | null>(null);
   const [isPending, setIsPending] = useState(false);
   const [questionText, setQuestionText] = useState("");
+  const { cooldown, isLimited, checkRateLimit, syncFromResponse } = useRateLimitCooldown("rl_q_until");
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (checkRateLimit()) {
+      setState({ success: false, error: "Your party has made too many requests. Please wait before trying again." });
+      return;
+    }
     setIsPending(true);
     try {
       const formData = new FormData(e.currentTarget);
       const result = await submitQuestion(null, formData);
       setState(result);
-      if (result.success) setQuestionText("");
+      if (result.success) {
+        setQuestionText("");
+      } else if (result.action === "cooldown" && result.cooldownUntil) {
+        syncFromResponse(result.cooldownUntil);
+      }
     } catch {
       setState({ success: false, error: "Something went wrong. Please try again." });
     } finally {
       setIsPending(false);
     }
   }
+
+  const isDisabled = isPending || isLimited;
 
   return (
     <div>
@@ -40,6 +52,7 @@ export function MyQuestions({ questions }: { questions: Question[] }) {
             placeholder="Type your question here..."
             value={questionText}
             onChange={(e) => setQuestionText(e.target.value)}
+            disabled={isLimited}
           />
           <CharCount current={questionText.length} max={MAX_QUESTION_LENGTH} />
         </div>
@@ -47,8 +60,8 @@ export function MyQuestions({ questions }: { questions: Question[] }) {
           <p className="text-success text-sm mb-1" role="status">Question submitted!</p>
         )}
         {state?.error && <p className="text-error text-sm mb-1" role="alert">{state.error}</p>}
-        <button type="submit" className="btn btn-primary" disabled={isPending}>
-          {isPending ? "Submitting..." : "Submit Question"}
+        <button type="submit" className="btn btn-primary" disabled={isDisabled}>
+          {cooldown > 0 ? `Please wait ${cooldown}s...` : isPending ? "Submitting..." : "Submit Question"}
         </button>
       </form>
 

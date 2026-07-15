@@ -4,7 +4,7 @@ import { getConfig } from "@/lib/repository/site-config";
 import { getResponsesByGuests } from "@/lib/repository/rsvp";
 import { getGuestsByPartyId } from "@/lib/repository/guests";
 import { getPartyById } from "@/lib/repository/party";
-import { RsvpForm } from "./rsvp-form";
+import { RsvpFormList } from "./rsvp-form-list";
 
 export default async function RsvpPage() {
   const session = await parseSession();
@@ -71,28 +71,11 @@ export default async function RsvpPage() {
         RSVP Deadline: {formattedDeadline ?? "None"}
       </p>
 
-      {members.map((m) => {
-        const response = responsesByGuest.get(m.id);
-        return (
-          <div key={m.id} className="rsvp-member">
-            <div>
-              <div className="rsvp-member-name">{m.display_name}</div>
-              {response && (
-                <div className="rsvp-member-meta">
-                  {response.attending ? "Attending" : "Not attending"}
-                  {response.plus_one_name && <>, Plus-one: {response.plus_one_name}</>}
-                </div>
-              )}
-            </div>
-            <RsvpForm
-              memberId={m.id}
-              canBringPlusOne={m.can_bring_plus_one === 1}
-              existingResponse={response ?? undefined}
-              isLocked={isLocked}
-            />
-          </div>
-        );
-      })}
+      <RsvpFormList
+        members={members}
+        responsesByGuest={responsesByGuest}
+        isLocked={isLocked}
+      />
     </div>
   );
 }

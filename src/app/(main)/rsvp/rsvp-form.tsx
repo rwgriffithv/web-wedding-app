@@ -3,15 +3,20 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { submitRsvp, type RsvpState } from "./actions";
 import type { RsvpResponse } from "@/lib/types";
+import { useRateLimitCooldown, type CooldownProps } from "@/lib/use-rate-limit-cooldown";
 
 interface RsvpFormProps {
   memberId: number;
   canBringPlusOne: boolean;
   existingResponse?: Pick<RsvpResponse, "guest_name" | "attending" | "plus_one_name">;
   isLocked?: boolean;
+  cooldownProps?: CooldownProps;
 }
 
-export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked }: RsvpFormProps) {
+export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked, cooldownProps }: RsvpFormProps) {
+  const hook = useRateLimitCooldown("rl_r_until");
+  const { cooldown, isLimited, checkRateLimit, syncFromResponse } = cooldownProps ?? hook;
+
   const [state, setState] = useState<RsvpState | null>(null);
   const [isPending, setIsPending] = useState(false);
   const [attending, setAttending] = useState(existingResponse?.attending === 1 ? "yes" : existingResponse ? "no" : "");
@@ -37,17 +42,26 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (checkRateLimit()) {
+      setState({ success: false, error: "Your party has made too many submissions. Please wait before trying again." });
+      return;
+    }
     setIsPending(true);
     try {
       const formData = new FormData(e.currentTarget);
       const result = await submitRsvp(null, formData);
       setState(result);
+      if (!result.success && result.action === "cooldown" && result.cooldownUntil) {
+        syncFromResponse(result.cooldownUntil);
+      }
     } catch {
       setState({ success: false, error: "Something went wrong. Please try again." });
     } finally {
       setIsPending(false);
     }
   }
+
+  const isFormDisabled = isLocked || isLimited;
 
   return (
     <form onSubmit={handleSubmit} className="rsvp-form">
@@ -66,7 +80,7 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
                 checked={attending === "yes"}
                 onChange={() => setAttending("yes")}
                 required
-                disabled={isLocked}
+                disabled={isFormDisabled}
               />
               Yes
             </label>
@@ -78,7 +92,7 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
                 value="no"
                 checked={attending === "no"}
                 onChange={() => setAttending("no")}
-                disabled={isLocked}
+                disabled={isFormDisabled}
               />
               No
             </label>
@@ -97,7 +111,7 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
                   value="yes"
                   checked={bringPlusOne === "yes"}
                   onChange={() => setBringPlusOne("yes")}
-                  disabled={isLocked || attending === "no"}
+                  disabled={isFormDisabled || attending === "no"}
                 />
                 Yes
               </label>
@@ -109,7 +123,7 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
                   value="no"
                   checked={bringPlusOne === "no"}
                   onChange={() => setBringPlusOne("no")}
-                  disabled={isLocked || attending === "no"}
+                  disabled={isFormDisabled || attending === "no"}
                 />
                 No
               </label>
@@ -128,7 +142,7 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
             value={plusOneName}
             onChange={(e) => setPlusOneName(e.target.value)}
             placeholder="Guest's name"
-            disabled={isLocked || attending === "no"}
+            disabled={isFormDisabled || attending === "no"}
             required
           />
         </div>
@@ -142,15 +156,18 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
       {state?.error && (
         <p className="text-error text-sm mt-1" role="alert">{state.error}</p>
       )}
+      {!state && isLimited && (
+        <p className="text-error text-sm mt-1" role="alert">Your party has made too many submissions. Please wait before trying again.</p>
+      )}
       {isLocked ? (
         <p className="text-muted text-sm mt-1 italic">RSVP is closed.</p>
       ) : (
         <button
           type="submit"
           className="btn btn-primary btn-sm mt-1"
-          disabled={isPending}
+          disabled={isPending || isLimited}
         >
-          {isPending ? "Saving..." : hasResponse ? "Update" : "Submit"}
+          {cooldown > 0 ? `Please wait ${cooldown}s...` : isPending ? "Saving..." : hasResponse ? "Update" : "Submit"}
         </button>
       )}
     </form>

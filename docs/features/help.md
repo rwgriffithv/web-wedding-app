@@ -115,14 +115,14 @@ Stats bar showing total and unanswered counts. Searchable, filterable, sortable 
 
 ## Rate Limiting
 
-In-memory sliding-window rate limiter, per-party key (`party:{partyId}`).
+Question submissions are rate-limited per party using an in-memory sliding-window limiter (key: `party:{partyId}`). This is the same rate-limiting infrastructure used for login and RSVP — see [authentication.md](authentication.md#rate-limiting) for how it works.
 
 | Config Key | Default | Range |
 |---|---|---|
 | `question_rate_limit_max` | 5 | 1–1000 |
 | `question_rate_limit_window` | 60 | 1–1000 seconds |
 
-Error message: "Your party has made too many requests. Please wait before trying again."
+When the limit is exceeded, the server returns `{ error: "...", action: "cooldown", cooldownUntil }`. The client creates a `rl_q_until` cookie from the timestamp and displays a countdown timer ("Please wait Xs..."). The form is disabled during the cooldown. Config is editable via the Rate Limiting section on `/admin/help`.
 
 ## Files
 

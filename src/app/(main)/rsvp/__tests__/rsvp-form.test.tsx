@@ -13,12 +13,14 @@ function getRadio(name: string) {
 }
 
 function getSubmitButton() {
-  return screen.getByRole("button", { name: /submit|update/i });
+  return screen.getByRole("button", { name: /submit|update|please wait/i });
 }
 
 describe("RsvpForm — radio state persistence", () => {
   beforeEach(() => {
     mockSubmit.mockReset();
+    vi.useRealTimers();
+    document.cookie = "rl_r_until=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
   });
 
   it("attending radio stays checked after successful submit", async () => {
@@ -191,6 +193,8 @@ describe("RsvpForm — radio state persistence", () => {
     mockSubmit.mockResolvedValue({
       success: false,
       error: "Your party has made too many submissions. Please wait before trying again.",
+      action: "cooldown",
+      cooldownUntil: Date.now() + 60_000,
     });
 
     render(<RsvpForm memberId={1} canBringPlusOne={false} />);
@@ -202,10 +206,14 @@ describe("RsvpForm — radio state persistence", () => {
     });
   });
 
-  it("form remains interactive after rate limit error", async () => {
+  it("shows cooldown after rate limit error, then re-enables", { timeout: 15_000 }, async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+
     mockSubmit.mockResolvedValueOnce({
       success: false,
       error: "Your party has made too many submissions. Please wait before trying again.",
+      action: "cooldown",
+      cooldownUntil: Date.now() + 10_000,
     }).mockResolvedValueOnce({ success: true });
 
     render(<RsvpForm memberId={1} canBringPlusOne={false} />);
@@ -218,9 +226,19 @@ describe("RsvpForm — radio state persistence", () => {
       expect(screen.getByText(/too many submissions/i)).toBeVisible();
     });
 
-    // Form should still be interactive
-    expect(getSubmitButton()).not.toBeDisabled();
+    // Button should be disabled during cooldown
+    expect(getSubmitButton()).toBeDisabled();
+    expect(getSubmitButton().textContent).toMatch(/please wait/i);
+
+    // Wait for 10s cooldown to expire (shouldAdvanceTime lets real time tick the fake clock)
+    await waitFor(() => {
+      expect(getSubmitButton()).not.toBeDisabled();
+    }, { timeout: 12_000 });
+
+    // Button re-enables, radio state retained
     expect(yes.checked).toBe(true);
+
+    vi.useRealTimers();
   });
 
   it("displays server error without changing radio state", async () => {
@@ -250,5 +268,40 @@ describe("RsvpForm — radio state persistence", () => {
     // Radio should still be checked
     expect((attendYes as HTMLInputElement).checked).toBe(true);
     expect((plusOneYes as HTMLInputElement).checked).toBe(true);
+  });
+
+  it("shows rate limit error when cooldown is active without server response (page refresh)", () => {
+    const futureTime = Date.now() + 60_000;
+    document.cookie = `rl_r_until=${futureTime}; path=/; max-age=60`;
+
+    render(<RsvpForm memberId={1} canBringPlusOne={false} />);
+
+    expect(screen.getByText(/too many submissions/i)).toBeVisible();
+    expect(getSubmitButton()).toBeDisabled();
+    expect(getSubmitButton().textContent).toMatch(/please wait/i);
+  });
+
+  it("uses shared cooldownProps when provided instead of creating own hook", async () => {
+    mockSubmit.mockResolvedValue({
+      success: false,
+      error: "Too many.",
+      action: "cooldown",
+      cooldownUntil: Date.now() + 60_000,
+    });
+
+    const shared = {
+      cooldown: 0,
+      isLimited: false,
+      checkRateLimit: () => false,
+      syncFromResponse: vi.fn(),
+    };
+
+    render(<RsvpForm memberId={1} canBringPlusOne={false} cooldownProps={shared} />);
+    fireEvent.click(getRadio("Yes"));
+    fireEvent.submit(getSubmitButton().closest("form")!);
+
+    await waitFor(() => {
+      expect(shared.syncFromResponse).toHaveBeenCalled();
+    });
   });
 });

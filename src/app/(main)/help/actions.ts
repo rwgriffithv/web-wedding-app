@@ -7,7 +7,7 @@ import { MAX_QUESTION_LENGTH, RATE_LIMIT_MAX_ATTEMPTS_DEFAULT, RATE_LIMIT_WINDOW
 import { create } from "@/lib/repository/questions";
 import { createRateLimiter, getRateLimitConfig } from "@/lib/rate-limit";
 
-interface HelpState { success?: boolean; error?: string }
+interface HelpState { success?: boolean; error?: string; action?: "cooldown"; cooldownUntil?: number }
 
 const questionRateLimiter = createRateLimiter("question");
 
@@ -19,8 +19,9 @@ export async function submitQuestion(prevState: HelpState | null, formData: Form
   const session = await parseSession();
   if (!session?.partyId) return { success: false, error: "Not logged in as a party." };
 
-  if (!questionRateLimiter.check(`party:${session.partyId}`, getQuestionRateLimitConfig())) {
-    return { success: false, error: "Your party has made too many requests. Please wait before trying again." };
+  const rlConfig = getQuestionRateLimitConfig();
+  if (!questionRateLimiter.check(`party:${session.partyId}`, rlConfig)) {
+    return { success: false, error: "Your party has made too many requests. Please wait before trying again.", action: "cooldown", cooldownUntil: Date.now() + rlConfig.windowMs };
   }
 
   const question = getString(formData, "question")?.trim();

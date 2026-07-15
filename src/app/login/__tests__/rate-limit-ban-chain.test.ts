@@ -53,7 +53,7 @@ async function simulateLoginAttempt(
   const { recordRateLimitViolation, getViolationCount, isIpBanned, banIp } = await import("@/lib/repository/ip-bans");
 
   const rlConfig = { maxAttempts, windowMs: windowSeconds * 1000 };
-  const key = `${ip}:user:${username}`;
+  const key = `${ip}:login`;
   const blocked = !limiter.check(key, rlConfig);
 
   if (blocked) {
@@ -179,27 +179,28 @@ describe("rate-limit → violation → auto-ban chain", () => {
     expect(totalAttempts).toBe(30);
   });
 
-  it("different usernames get independent rate limit buckets", async () => {
+  it("login attempts share a single rate limit bucket per IP", async () => {
     const { getViolationCount } = await import("@/lib/repository/ip-bans");
-    const limiter = createRateLimiter("test-chain-buckets");
+    const limiter = createRateLimiter("test-chain-shared-bucket");
     limiter.reset();
 
     const ip = "10.0.0.6";
 
-    // Try 5 bad logins with username A (within limit)
-    for (let i = 0; i < 5; i++) {
+    // Try 3 bad logins with username A (within limit of 5)
+    for (let i = 0; i < 3; i++) {
       const result = await simulateLoginAttempt(limiter, ip, "userA");
       expect(result.blocked).toBe(false);
     }
 
-    // Try 5 bad logins with username B (also within limit, independent bucket)
-    for (let i = 0; i < 5; i++) {
+    // Try 3 bad logins with username B (shared bucket, now at 6 of 5 → blocked on 3rd)
+    let blockedCount = 0;
+    for (let i = 0; i < 3; i++) {
       const result = await simulateLoginAttempt(limiter, ip, "userB");
-      expect(result.blocked).toBe(false);
+      if (result.blocked) blockedCount++;
     }
 
-    // Zero violations — each username has its own bucket
-    expect(getViolationCount(ip, 3600)).toBe(0);
+    // At least one should be blocked since attempts share a bucket
+    expect(blockedCount).toBeGreaterThan(0);
   });
 
   it("different IPs get independent violation counts", async () => {

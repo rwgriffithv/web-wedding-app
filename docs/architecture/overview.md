@@ -84,7 +84,7 @@ Server-first Next.js 16 App Router application with SQLite, deployed via Docker 
 
 ## Authentication & Authorization
 
-Three session types:
+Three session types, each with a different access scope:
 
 | Session Type | Created By | Access |
 |---|---|---|
@@ -92,7 +92,26 @@ Three session types:
 | `party` | Party code login | `/(main)/*` + RSVP for party members |
 | `viewer` | Username/password login | `/(main)/*` only |
 
-Auth is enforced at the layout level (`isAdmin()` guard) and in every Server Action. `SafeUser` type (`Omit<User, "password">`) is returned by all repository functions except `getUserWithPassword` and `getPartyUserWithPassword`. Login attempts are protected by in-memory rate limiting with auto-ban on repeated violations — see [authentication.md](../features/authentication.md) and [ip-banning.md](../features/ip-banning.md) for details.
+### Cookie Architecture
+
+Two categories of cookies serve different purposes:
+
+**Session cookie (`session`)** — Set and read by the server. HTTP-only, HMAC-signed JSON containing `{userId, type, partyId?, pwChangedAt?}`. Validated against the database on every request. This is the only cookie the server uses for authentication.
+
+**Rate-limit cookies (`rl_until`, `rl_r_until`, `rl_q_until`)** — Set and read by the client only. Created from `cooldownUntil` timestamps returned in server responses. Never read by the server. These are UX helpers that provide pre-submit guards (block form before server call) and reload persistence (restore cooldown timer after page refresh). They have no security function — the server's in-memory rate limiter enforces limits regardless of cookies.
+
+### Protection Layers
+
+Requests pass through multiple protection layers:
+
+1. **Cloudflare Edge** — TLS, DDoS mitigation, bot detection
+2. **Caddy** — Connection-level rate limiting, security headers
+3. **Server Actions** — IP ban check → in-memory rate limiter → auto-ban → authentication → authorization
+4. **SQLite** — Parameterized queries, WAL mode, foreign keys
+
+The server enforces the same protection for UI clients (browsers) and non-UI clients (curl, scripts, bots). Rate-limit cookies are a UX convenience for browsers; the server's rate limiter is the actual enforcement.
+
+Auth is enforced at the layout level (`isAdmin()` guard) and in every Server Action. `SafeUser` type (`Omit<User, "password">`) is returned by all repository functions except `getUserWithPassword` and `getPartyUserWithPassword`. See [authentication.md](../features/authentication.md) for the full cookie architecture, client vs server responsibilities, and protection details.
 
 ## Technology Stack
 
@@ -187,7 +206,7 @@ src/
 | Error handling | Per-route error.tsx | Granular error boundaries per route segment |
 | Media auth | Session-based (not admin) | Any logged-in user can view media; login bg gets dedicated public endpoint |
 | Media tabs | Database-driven + URL routing | Reuses guide `?tab=` pattern for consistency; slug-based loose coupling |
-| Rate limiting | In-memory + SQLite violations | App-level login protection with configurable auto-ban. Caddy for IP-based defense. |
+| Rate limiting | In-memory + SQLite violations + client cookies | Server enforces per-key rate limits and auto-ban; client creates cookies from response timestamps for UX (pre-submit guard, reload persistence). Cookies are never read server-side — the rate limiter is the source of truth. |
 | Home page | ISR (revalidate: 60) | Zero personalization, safe to cache. All other pages are dynamic (session-dependent). |
 | Video poster | ffmpeg + sharp pipeline | Auto-generates 1920x1080 WebP from first frame. Reuses existing thumbnail infrastructure. |
 | RSVP deadline | Server-timezone comparison | `datetime-local` input parsed as server time (Pacific). Works because admin and server share timezone. |

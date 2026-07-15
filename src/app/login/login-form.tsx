@@ -1,20 +1,39 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { login, loginByPartyCode } from "./actions";
 import { isRedirectError } from "@/lib/utils";
+import { useRateLimitCooldown } from "@/lib/use-rate-limit-cooldown";
 
-function CredentialsForm() {
+interface CooldownProps {
+  cooldown: number;
+  isLimited: boolean;
+  checkRateLimit: () => boolean;
+  syncFromResponse: (cooldownUntil: number) => void;
+}
+
+function CredentialsForm({ cooldown, isLimited, checkRateLimit, syncFromResponse }: CooldownProps) {
   const [state, setState] = useState<{ error?: string } | null>(null);
   const [isPending, setIsPending] = useState(false);
+  const router = useRouter();
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (checkRateLimit()) {
+      setState({ error: "Too many attempts. Please wait before trying again." });
+      return;
+    }
     setIsPending(true);
     try {
       const formData = new FormData(e.currentTarget);
       const result = await login(formData);
       setState(result);
+      if (result.action === "refresh") {
+        router.refresh();
+      } else if (result.action === "cooldown" && result.cooldownUntil) {
+        syncFromResponse(result.cooldownUntil);
+      }
     } catch (err) {
       if (isRedirectError(err)) throw err;
       setState({ error: "Something went wrong. Please try again." });
@@ -22,38 +41,53 @@ function CredentialsForm() {
       setIsPending(false);
     }
   }
+
+  const isDisabled = isPending || isLimited;
 
   return (
     <form onSubmit={handleSubmit}>
       <div className="form-group">
         <label htmlFor="username">Username</label>
-        <input id="username" name="username" type="text" required placeholder="Your username" />
+        <input id="username" name="username" type="text" required placeholder="Your username" disabled={isLimited} />
       </div>
       <div className="form-group">
         <label htmlFor="password">Password</label>
-        <input id="password" name="password" type="password" required placeholder="Enter password" />
+        <input id="password" name="password" type="password" required placeholder="Enter password" disabled={isLimited} />
       </div>
       {state?.error && (
         <p className="text-error text-xs mb-1" role="alert">{state.error}</p>
       )}
-      <button type="submit" className="btn btn-primary w-full justify-center" disabled={isPending}>
-        {isPending ? "Signing in..." : "Sign In"}
+      {!state && isLimited && (
+        <p className="text-error text-xs mb-1" role="alert">Too many attempts. Please wait before trying again.</p>
+      )}
+      <button type="submit" className="btn btn-primary w-full justify-center" disabled={isDisabled}>
+        {cooldown > 0 ? `Please wait ${cooldown}s...` : isPending ? "Signing in..." : "Sign In"}
       </button>
     </form>
   );
 }
 
-function PartyCodeForm() {
+function PartyCodeForm({ cooldown, isLimited, checkRateLimit, syncFromResponse }: CooldownProps) {
   const [state, setState] = useState<{ error?: string } | null>(null);
   const [isPending, setIsPending] = useState(false);
+  const router = useRouter();
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (checkRateLimit()) {
+      setState({ error: "Too many attempts. Please wait before trying again." });
+      return;
+    }
     setIsPending(true);
     try {
       const formData = new FormData(e.currentTarget);
       const result = await loginByPartyCode(formData);
       setState(result);
+      if (result.action === "refresh") {
+        router.refresh();
+      } else if (result.action === "cooldown" && result.cooldownUntil) {
+        syncFromResponse(result.cooldownUntil);
+      }
     } catch (err) {
       if (isRedirectError(err)) throw err;
       setState({ error: "Something went wrong. Please try again." });
@@ -62,11 +96,13 @@ function PartyCodeForm() {
     }
   }
 
+  const isDisabled = isPending || isLimited;
+
   return (
     <form onSubmit={handleSubmit}>
       <div className="form-group">
         <label htmlFor="code">Party Code</label>
-        <input id="code" name="code" type="text" required placeholder="e.g. SMITH-A1B2" style={{ textTransform: "uppercase" }} />
+        <input id="code" name="code" type="text" required placeholder="e.g. SMITH-A1B2" style={{ textTransform: "uppercase" }} disabled={isLimited} />
         <p className="text-xs text-muted mt-1">
           Found on your invitation
         </p>
@@ -74,8 +110,11 @@ function PartyCodeForm() {
       {state?.error && (
         <p className="text-error text-xs mb-1" role="alert">{state.error}</p>
       )}
-      <button type="submit" className="btn btn-primary w-full justify-center" disabled={isPending}>
-        {isPending ? "Looking up..." : "Continue with Party Code"}
+      {!state && isLimited && (
+        <p className="text-error text-xs mb-1" role="alert">Too many attempts. Please wait before trying again.</p>
+      )}
+      <button type="submit" className="btn btn-primary w-full justify-center" disabled={isDisabled}>
+        {cooldown > 0 ? `Please wait ${cooldown}s...` : isPending ? "Looking up..." : "Continue with Party Code"}
       </button>
     </form>
   );
@@ -83,10 +122,13 @@ function PartyCodeForm() {
 
 export function LoginForm() {
   const [mode, setMode] = useState<"credentials" | "party">("party");
+  const cooldownProps = useRateLimitCooldown("rl_until");
 
   return (
     <div className="login-card">
-      {mode === "party" ? <PartyCodeForm /> : <CredentialsForm />}
+      {mode === "party"
+        ? <PartyCodeForm {...cooldownProps} />
+        : <CredentialsForm {...cooldownProps} />}
 
       <div className="mt-1 text-center">
         {mode === "party" ? (

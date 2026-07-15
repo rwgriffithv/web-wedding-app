@@ -38,8 +38,8 @@ export default function AdminDashboardPage() {
         <div className="stat-row">
           <h3 className="stat-row-title">Security</h3>
           <div className="stat-row-figures">
-            <span className={`stat-figure${bannedCount > 0 ? " stat-figure--danger" : ""}`}><span className="stat-number">{bannedCount}</span> Banned</span>
-            <span className={`stat-figure${suspiciousCount > 0 ? " stat-figure--warning" : ""}`}><span className="stat-number">{suspiciousCount}</span> Suspicious IPs</span>
+            <span className="stat-figure"><span className="stat-number">{bannedCount}</span> Banned</span>
+            <span className={`stat-figure${suspiciousCount > 0 ? " stat-figure--warning" : ""}`}><span className="stat-number">{suspiciousCount}</span> Suspicious</span>
           </div>
         </div>
       </div>
