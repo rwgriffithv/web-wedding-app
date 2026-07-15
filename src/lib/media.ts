@@ -15,11 +15,11 @@ export function isWithinMediaDir(resolved: string): boolean {
 }
 
 export const ALLOWED_EXTENSIONS = new Set([
-  ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg",
+  ".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".svg",
   ".mp4", ".webm", ".mov",
 ]);
 
-export const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"]);
+export const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".svg"]);
 
 export { VIDEO_EXTENSIONS, detectMediaType } from "./media-detect";
 
@@ -29,6 +29,7 @@ export const MIME_TYPES: Record<string, string> = {
   ".png": "image/png",
   ".gif": "image/gif",
   ".webp": "image/webp",
+  ".avif": "image/avif",
   ".svg": "image/svg+xml",
   ".mp4": "video/mp4",
   ".webm": "video/webm",
