@@ -98,7 +98,7 @@ export default async function GuidePage({ searchParams }: GuidePageProps) {
             <div className="lodging-grid">
               {lodgingOptions.map((option) => (
                 <div className="lodging-card" key={option.id}>
-                  <Image src={option.image_url} alt={option.title} width={600} height={200} style={{ objectFit: "cover", width: "100%", height: "200px" }} />
+                  <Image src={option.thumbnail_url || option.image_url} alt={option.title} width={600} height={200} style={{ objectFit: "cover", width: "100%", height: "200px" }} />
                   <div className="lodging-card-body">
                     <h3>{option.title}</h3>
                     <a href={option.url} target="_blank" rel="noopener noreferrer">
