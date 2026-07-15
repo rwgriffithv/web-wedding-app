@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { isAdmin } from "@/lib/auth";
+import { isAdmin, validateSessionForMutation } from "@/lib/auth";
 import { getString, getInt } from "@/lib/form-data";
 import { getDb } from "@/lib/db";
 import { updateGuest as updateGuestRepo, createGuest, deleteGuest, getGuestById } from "@/lib/repository/guests";
@@ -11,6 +11,7 @@ export interface GuestState { success?: boolean; error?: string; partyId?: numbe
 
 export async function createPartyInline(prevState: GuestState | null, formData: FormData): Promise<GuestState> {
   if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
 
   const name = getString(formData, "party_name");
   if (!name?.trim()) return { success: false, error: "Party name is required." };
@@ -27,6 +28,7 @@ export async function createPartyInline(prevState: GuestState | null, formData: 
 
 export async function updateGuest(prevState: GuestState | null, formData: FormData): Promise<GuestState> {
   if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "guest_id");
   if (id === null) return { success: false, error: "Invalid guest ID." };
@@ -73,6 +75,7 @@ export async function updateGuest(prevState: GuestState | null, formData: FormDa
 
 export async function addGuest(prevState: GuestState | null, formData: FormData): Promise<GuestState> {
   if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
 
   const displayName = getString(formData, "display_name");
   const partyIdRaw = getString(formData, "party_id");
@@ -101,6 +104,7 @@ export async function addGuest(prevState: GuestState | null, formData: FormData)
 
 export async function removeGuest(prevState: GuestState | null, formData: FormData): Promise<GuestState> {
   if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "guest_id");
   if (id === null) return { success: false, error: "Invalid guest ID." };

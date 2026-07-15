@@ -56,7 +56,7 @@ function verifySession(token: string): Session | null {
   }
 }
 
-async function validateSession(session: Session): Promise<Session | null> {
+async function validateSessionFields(session: Session): Promise<Session | null> {
   if (session.type === "admin" || session.type === "viewer") {
     if (!session.userId) return null;
     const user = getUserById(session.userId);
@@ -75,13 +75,19 @@ async function validateSession(session: Session): Promise<Session | null> {
   return null;
 }
 
+/** Fast path — crypto only, no DB. Used for page loads and read-only checks. */
 export async function parseSession(): Promise<Session | null> {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  const session = verifySession(token);
+  return verifySession(token);
+}
+
+/** Cold path — validates session fields against DB. Call only on mutations. */
+export async function validateSessionForMutation(): Promise<Session | null> {
+  const session = await parseSession();
   if (!session) return null;
-  return validateSession(session);
+  return validateSessionFields(session);
 }
 
 export async function isAdmin(): Promise<boolean> {

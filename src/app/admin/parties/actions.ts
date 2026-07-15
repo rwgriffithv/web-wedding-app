@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { isAdmin } from "@/lib/auth";
+import { isAdmin, validateSessionForMutation } from "@/lib/auth";
 import { getString, getInt } from "@/lib/form-data";
 import { updateParty as updatePartyRepo, deleteParty, getPartyById } from "@/lib/repository/party";
 
@@ -9,6 +9,7 @@ interface PartyState { success?: boolean; error?: string }
 
 export async function updateParty(prevState: PartyState | null, formData: FormData): Promise<PartyState> {
   if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "party_id");
   if (id === null) return { success: false, error: "Invalid party ID." };
@@ -42,6 +43,7 @@ export async function updateParty(prevState: PartyState | null, formData: FormDa
 
 export async function removeParty(prevState: PartyState | null, formData: FormData): Promise<PartyState> {
   if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "party_id");
   if (id === null) return { success: false, error: "Invalid party ID." };

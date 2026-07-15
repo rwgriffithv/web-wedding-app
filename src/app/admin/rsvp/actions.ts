@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { isAdmin } from "@/lib/auth";
+import { isAdmin, validateSessionForMutation } from "@/lib/auth";
 import { getString } from "@/lib/form-data";
 import { setConfig } from "@/lib/repository/site-config";
 
@@ -15,6 +15,7 @@ export async function saveRsvpDeadline(
   formData: FormData,
 ): Promise<DeadlineState> {
   if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
 
   const value = getString(formData, "rsvp_deadline") ?? "";
   if (value) {

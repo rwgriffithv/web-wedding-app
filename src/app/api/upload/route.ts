@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isAdmin } from "@/lib/auth";
+import { isAdmin, validateSessionForMutation } from "@/lib/auth";
 import { MEDIA_DIR, ensureMediaDir, ALLOWED_EXTENSIONS, IMAGE_EXTENSIONS, VIDEO_EXTENSIONS } from "@/lib/media";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
@@ -10,6 +10,9 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 export async function POST(request: Request) {
   if (!(await isAdmin())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!(await validateSessionForMutation())) {
+    return NextResponse.json({ error: "Session expired" }, { status: 401 });
   }
 
   const formData = await request.formData();

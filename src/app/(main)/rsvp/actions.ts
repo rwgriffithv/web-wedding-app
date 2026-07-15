@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { parseSession } from "@/lib/auth";
+import { validateSessionForMutation } from "@/lib/auth";
 import { getConfig } from "@/lib/repository/site-config";
 import { getGuestById } from "@/lib/repository/guests";
 import { getPartyById } from "@/lib/repository/party";
@@ -24,7 +24,7 @@ function getRsvpRateLimitConfig() {
 }
 
 export async function submitRsvp(_prevState: RsvpState | null, formData: FormData): Promise<RsvpState> {
-  const session = await parseSession();
+  const session = await validateSessionForMutation();
   if (!session) return { success: false, error: "Not authenticated." };
 
   if (session.type === "admin" || session.type === "viewer") {

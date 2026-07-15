@@ -43,7 +43,12 @@ interface Session {
 }
 ```
 
-**Session invalidation:** Every request validates `pwChangedAt` against the user's current `password_changed_at` in the database. If the password has been changed since the session was issued, the session is rejected.
+**Session invalidation:** The session uses two-tier validation:
+
+1. **Fast path (`parseSession()`)** — Crypto only (HMAC signature + expiry check). No database queries. Used for page loads, layouts, and read-only checks.
+2. **Mutation path (`validateSessionForMutation()`)** — Validates `pwChangedAt` against the user's current `password_changed_at` in the database. Called only in state-changing server actions (RSVP submission, admin CRUD, etc.).
+
+This eliminates database queries from the hot path (every page load) while still catching password changes on mutations.
 
 **Note:** The `Secure` flag is always set. Local development over plain HTTP (`npm run dev`) will not persist session cookies in the browser.
 
@@ -269,15 +274,21 @@ if (!rateLimiter.check(key, rlConfig)) {
 
 The rate limiter is an in-memory `Map` per feature name. Keys are namespaced by IP and user/party identifier. The check is synchronous and fast — no database query.
 
-**Step 3 — Authentication:**
+**Step 3 — Authentication (two-tier):**
 
+For **read-only** operations (page loads, layouts, API reads):
 ```typescript
-const session = await parseSession();
+const session = await parseSession();  // crypto only, no DB
 if (!session) return { error: "Not authenticated." };
-// ... authorization checks
 ```
 
-Sessions are validated against the database on every request (password change check).
+For **mutations** (RSVP submit, admin CRUD, etc.):
+```typescript
+if (!(await isAdmin())) return { error: "Unauthorized" };        // fast path: HMAC + type check
+if (!(await validateSessionForMutation())) return { error: "Session expired" };  // DB: pwChangedAt check
+```
+
+This two-tier approach means page loads incur zero database queries for authentication. Only mutations validate against the database (to catch password changes since the session was issued).
 
 **Step 4 — Business logic and database write:**
 
@@ -416,7 +427,7 @@ When a party code is updated by an admin, the corresponding party user's passwor
 
 | File | Role |
 |---|---|
-| `src/lib/auth.ts` | Session create/parse/destroy, password hash/verify |
+| `src/lib/auth.ts` | Session create/parse/destroy, `validateSessionForMutation`, password hash/verify |
 | `src/lib/config.ts` | Environment variable validation (`ADMIN_USERNAME`, `ADMIN_PASSWORD`, `SESSION_SECRET`) |
 | `src/lib/ip.ts` | `getClientIp()` — IP extraction from proxy headers |
 | `src/lib/rate-limit.ts` | `getRateLimitConfig()`, `createRateLimiter()` — in-memory rate limiter |

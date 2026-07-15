@@ -102,6 +102,114 @@ describe("isAdmin", () => {
   });
 });
 
+describe("parseSession (fast path)", () => {
+  it("returns valid session without DB lookup", async () => {
+    const token = createSession({ userId: 2, type: "admin" });
+    const mod = await import("next/headers");
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
+
+    const { parseSession } = await import("../auth");
+    const session = await parseSession();
+    expect(session).not.toBeNull();
+    expect(session?.type).toBe("admin");
+  });
+
+  it("returns session even for non-existent user (no DB check)", async () => {
+    const token = createSession({ userId: 999, type: "admin" });
+    const mod = await import("next/headers");
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
+
+    const { parseSession } = await import("../auth");
+    const session = await parseSession();
+    expect(session).not.toBeNull();
+    expect(session?.userId).toBe(999);
+  });
+
+  it("returns null for expired token", async () => {
+    const mod = await import("next/headers");
+    const token = createSession({ userId: 2, type: "admin" });
+    const decoded = Buffer.from(token, "base64url").toString();
+    const lastDot = decoded.lastIndexOf(".");
+    const payloadObj = JSON.parse(decoded.slice(0, lastDot));
+    payloadObj.exp = Date.now() - 10_000;
+    const expiredPayload = JSON.stringify(payloadObj);
+    const crypto = await import("crypto");
+    const hmac = crypto.createHmac("sha256", "rob-and-ana").update(expiredPayload).digest("hex");
+    const expiredToken = Buffer.from(`${expiredPayload}.${hmac}`).toString("base64url");
+
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: expiredToken }), set: vi.fn() } as never);
+
+    const { parseSession } = await import("../auth");
+    expect(await parseSession()).toBeNull();
+  });
+});
+
+describe("validateSessionForMutation", () => {
+  it("returns null when no session cookie", async () => {
+    const mod = await import("next/headers");
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => undefined, set: vi.fn() } as never);
+
+    const { validateSessionForMutation } = await import("../auth");
+    expect(await validateSessionForMutation()).toBeNull();
+  });
+
+  it("returns null for invalid token", async () => {
+    const mod = await import("next/headers");
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: "bad-token" }), set: vi.fn() } as never);
+
+    const { validateSessionForMutation } = await import("../auth");
+    expect(await validateSessionForMutation()).toBeNull();
+  });
+
+  it("returns null when admin user no longer exists", async () => {
+    const token = createSession({ userId: 999, type: "admin" });
+    const mod = await import("next/headers");
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
+
+    const { validateSessionForMutation } = await import("../auth");
+    expect(await validateSessionForMutation()).toBeNull();
+  });
+
+  it("returns null when user type doesn't match token", async () => {
+    const token = createSession({ userId: 2, type: "party" });
+    const mod = await import("next/headers");
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
+
+    const { validateSessionForMutation } = await import("../auth");
+    expect(await validateSessionForMutation()).toBeNull();
+  });
+
+  it("returns null when password changed since token was issued", async () => {
+    const token = createSession({ userId: 2, type: "admin", pwChangedAt: "old" });
+    const mod = await import("next/headers");
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
+
+    const { validateSessionForMutation } = await import("../auth");
+    expect(await validateSessionForMutation()).toBeNull();
+  });
+
+  it("returns session for valid admin", async () => {
+    const token = createSession({ userId: 2, type: "admin" });
+    const mod = await import("next/headers");
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
+
+    const { validateSessionForMutation } = await import("../auth");
+    const session = await validateSessionForMutation();
+    expect(session).not.toBeNull();
+    expect(session?.type).toBe("admin");
+    expect(session?.userId).toBe(2);
+  });
+
+  it("returns null for party session when party doesn't exist", async () => {
+    const token = createSession({ partyId: 1, type: "party" });
+    const mod = await import("next/headers");
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
+
+    const { validateSessionForMutation } = await import("../auth");
+    expect(await validateSessionForMutation()).toBeNull();
+  });
+});
+
 describe("getSessionMaxSeconds", () => {
   beforeEach(() => {
     mockGetConfig.mockReset();

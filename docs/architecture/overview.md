@@ -96,7 +96,7 @@ Three session types, each with a different access scope:
 
 Two categories of cookies serve different purposes:
 
-**Session cookie (`session`)** — Set and read by the server. HTTP-only, HMAC-signed JSON containing `{userId, type, partyId?, pwChangedAt?}`. Validated against the database on every request. This is the only cookie the server uses for authentication.
+**Session cookie (`session`)** — Set and read by the server. HTTP-only, HMAC-signed JSON containing `{userId, type, partyId?, pwChangedAt?}`. Uses two-tier validation: fast path (crypto-only, no DB) for page loads, mutation path (DB check) for state-changing actions. This is the only cookie the server uses for authentication.
 
 **Rate-limit cookies (`rl_until`, `rl_r_until`, `rl_q_until`)** — Set and read by the client only. Created from `cooldownUntil` timestamps returned in server responses. Never read by the server. These are UX helpers that provide pre-submit guards (block form before server call) and reload persistence (restore cooldown timer after page refresh). They have no security function — the server's in-memory rate limiter enforces limits regardless of cookies.
 
@@ -198,7 +198,7 @@ src/
 | Data fetching | Server Components | No client-server waterfall, smaller bundles |
 | Mutations | Server Actions | Type-safe, colocated, no API boilerplate |
 | Database | SQLite | Zero-config, file-based, no server process needed |
-| Auth | HMAC-signed JSON cookie + DB validation | Simple, secure (signed), sessions validated against DB on every request |
+| Auth | HMAC-signed JSON cookie + two-tier validation | Simple, secure (signed). Fast path: crypto-only for page loads (0 DB queries). Mutation path: validates `pwChangedAt` against DB on writes only. |
 | Access control | Layout-level guards + server actions | Every admin page and action validates `isAdmin()` server-side |
 | RSVP | Party model | Families RSVP once with a code (not per-person passwords) |
 | Styling | Plain CSS | Zero dependencies, themeable via custom properties. **No Tailwind CSS** — utility classes are hand-crafted in `globals.css`. |

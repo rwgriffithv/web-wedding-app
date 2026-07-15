@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { isAdmin } from "@/lib/auth";
+import { isAdmin, validateSessionForMutation } from "@/lib/auth";
 import { getString } from "@/lib/form-data";
 import { setConfig, setConfigs, getConfig } from "@/lib/repository/site-config";
 import { ensureVideoPoster } from "@/lib/thumbnail";
@@ -31,6 +31,7 @@ const CONFIG_KEYS = Object.keys(CONFIG_SCHEMA) as (keyof typeof CONFIG_SCHEMA)[]
 
 export async function saveSiteConfig(prevState: SiteConfigState | null, formData: FormData): Promise<SiteConfigState> {
   if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
 
   try {
     const entries: [string, string][] = [];

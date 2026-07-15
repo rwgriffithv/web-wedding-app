@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { isAdmin } from "@/lib/auth";
+import { isAdmin, validateSessionForMutation } from "@/lib/auth";
 import { getString } from "@/lib/form-data";
 import { setConfigs } from "@/lib/repository/site-config";
 
@@ -15,6 +15,7 @@ export async function saveRateLimitConfig(
   formData: FormData,
 ): Promise<RateLimitState> {
   if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
 
   try {
     const entries: [string, string][] = [];

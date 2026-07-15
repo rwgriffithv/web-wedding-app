@@ -10,7 +10,7 @@ vi.mock("next/cache", () => ({
 }));
 
 vi.mock("@/lib/auth", () => ({
-  parseSession: vi.fn(() => Promise.resolve({ partyId: 1, type: "party" })),
+  validateSessionForMutation: vi.fn(() => Promise.resolve({ partyId: 1, type: "party" })),
 }));
 
 vi.mock("@/lib/repository/site-config", () => ({

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { isAdmin } from "@/lib/auth";
+import { isAdmin, validateSessionForMutation } from "@/lib/auth";
 import { getString, getInt, validateMediaUrl } from "@/lib/form-data";
 import { create, deleteItem as deleteItemRepo, update, getAll, getBySection, swapItemSortOrder, createTab, updateTab, getAllTabs, deleteTab as deleteTabRepo, swapTabSortOrder } from "@/lib/repository/media";
 import { ensureThumbnail } from "@/lib/thumbnail";
@@ -15,6 +15,7 @@ function toSlug(label: string): string {
 
 export async function createTabInline(prevState: MediaState | null, formData: FormData): Promise<MediaState> {
   if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
 
   const name = getString(formData, "tab_name");
   if (!name?.trim()) return { success: false, error: "Tab name is required." };
@@ -35,6 +36,7 @@ export async function createTabInline(prevState: MediaState | null, formData: Fo
 
 export async function renameTab(prevState: MediaState | null, formData: FormData): Promise<MediaState> {
   if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "tab_id");
   const label = getString(formData, "tab_label");
@@ -53,6 +55,7 @@ export async function renameTab(prevState: MediaState | null, formData: FormData
 
 export async function deleteTab(prevState: MediaState | null, formData: FormData): Promise<MediaState> {
   if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "tab_id");
   if (id === null) return { success: false, error: "Invalid tab ID." };
@@ -70,6 +73,7 @@ export async function deleteTab(prevState: MediaState | null, formData: FormData
 
 export async function addItem(prevState: MediaState | null, formData: FormData): Promise<MediaState> {
   if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
 
   const url = getString(formData, "url");
   const title = getString(formData, "title");
@@ -104,6 +108,7 @@ export async function addItem(prevState: MediaState | null, formData: FormData):
 
 export async function deleteItem(prevState: MediaState | null, formData: FormData): Promise<MediaState> {
   if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "item_id");
   if (id === null) return { success: false, error: "Invalid item ID." };
@@ -121,6 +126,7 @@ export async function deleteItem(prevState: MediaState | null, formData: FormDat
 
 export async function updateItem(prevState: MediaState | null, formData: FormData): Promise<MediaState> {
   if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "item_id");
   if (id === null) return { success: false, error: "Invalid item ID." };
@@ -145,6 +151,7 @@ export async function updateItem(prevState: MediaState | null, formData: FormDat
 
 export async function moveItem(prevState: MediaState | null, formData: FormData): Promise<MediaState> {
   if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "item_id");
   const direction = getString(formData, "direction");
@@ -181,6 +188,7 @@ export async function moveItem(prevState: MediaState | null, formData: FormData)
 
 export async function moveTab(prevState: MediaState | null, formData: FormData): Promise<MediaState> {
   if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionForMutation())) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "tab_id");
   const direction = getString(formData, "direction");
