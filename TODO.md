@@ -164,7 +164,7 @@ Please help!
   * status: done
 
 * The Users list in the admin dashboard Users page needs to be searchable by User name and type. Please implement this. The System Accounts list on that page should also be searchable but just by user. The user activity table should also be searchable by party name.
-  * status: not done
+  * status: done
 
 * Now the Rate Limit Violations table and the Suspicous IPs and the Banned IPs tables in the Security portion of the admin dashboard need work. These should be combined (!) into one table. It will rows with the following columns (in order): IP, an editable "yes/no" "Banned" field, a "yes/no" "Suspicious" field, a total rate limit violations field, and a last violation timestamp field. The final column will be the standard edit and delete action buttons under the actions column. See how the Guests and Parties table do this in the admin dashboard. The table should be sortable by every column except for the IP address and the actions column. The only editable field is "banned" which is how the admin can unban someone. This combined table will be the ONLY table in the admin security page, and it will be below the Ban IP section.
   * status: not done

@@ -2,7 +2,8 @@ import { getAllUsers, getPartyActivity } from "@/lib/repository/users";
 import { getEnvConfig } from "@/lib/config";
 import { Header } from "@/components/header";
 import { UserForm } from "./user-form";
-import { UserList } from "./user-list";
+import { UserTable } from "./user-table";
+import { PartyUserTable } from "./party-user-table";
 import { ActivityTable } from "./activity-table";
 
 export default function AdminUsersPage() {
@@ -24,14 +25,7 @@ export default function AdminUsersPage() {
       <details className="admin-section" open>
         <summary>Users ({editableUsers.length})</summary>
         <div className="admin-section-body">
-          <div className="admin-list">
-            {editableUsers.length === 0 && (
-              <p className="empty-state">No users yet.</p>
-            )}
-            {editableUsers.map((u) => (
-              <UserList key={u.id} user={u} isPrimaryAdmin={u.type === "admin" && u.username === primaryAdminUsername} />
-            ))}
-          </div>
+          <UserTable users={editableUsers} primaryAdminUsername={primaryAdminUsername} />
         </div>
       </details>
       {partyUsers.length > 0 && (
@@ -41,18 +35,7 @@ export default function AdminUsersPage() {
             <p className="text-muted text-sm mb-3">
               These accounts are created automatically when parties are added. Their username and password match the party code used to log in. Manage them from the <a href="/admin/parties">Parties</a> page.
             </p>
-            <div className="admin-list">
-              {partyUsers.map((u) => (
-                <div key={u.id} className="admin-list-item">
-                  <div className="item-info">
-                    <div className="item-title">{u.display_name}</div>
-                    <div className="item-meta">
-                      <span className="font-mono">{u.username}</span> &middot; Type: party
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <PartyUserTable partyUsers={partyUsers} />
           </div>
         </details>
       )}

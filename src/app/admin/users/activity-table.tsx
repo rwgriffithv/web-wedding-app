@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { SafeUser } from "@/lib/db";
 
 interface ActivityTableProps {
@@ -26,10 +26,18 @@ function formatDateTime(iso: string | null): string {
 }
 
 export function ActivityTable({ users }: ActivityTableProps) {
+  const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("last_login_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
-  const sorted = [...users].sort((a, b) => {
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return users.filter(u =>
+      u.display_name.toLowerCase().includes(q)
+    );
+  }, [users, search]);
+
+  const sorted = [...filtered].sort((a, b) => {
     if (sortKey === "last_login_at") {
       const aVal = a.last_login_at ?? "";
       const bVal = b.last_login_at ?? "";
@@ -50,32 +58,43 @@ export function ActivityTable({ users }: ActivityTableProps) {
   const arrow = (key: SortKey) => sortKey === key ? (sortDir === "desc" ? " \u2193" : " \u2191") : "";
 
   return (
-    <div className="admin-table-wrapper">
-      <table className="activity-table">
-        <thead>
-          <tr>
-            <th>Party Name</th>
-            <th className="sortable" onClick={() => toggleSort("last_login_at")}>
-              Last Login{arrow("last_login_at")}
-            </th>
-            <th className="sortable" onClick={() => toggleSort("total_page_views")}>
-              Total Views{arrow("total_page_views")}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.length === 0 && (
-            <tr><td colSpan={3} className="empty-state">No party users yet.</td></tr>
-          )}
-          {sorted.map((u) => (
-            <tr key={u.id}>
-              <td>{u.display_name}</td>
-              <td>{formatDateTime(u.last_login_at)}</td>
-              <td>{u.total_page_views}</td>
+    <>
+      <div className="mb-2">
+        <input
+          type="text"
+          placeholder="Search by party name..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="admin-table-search"
+        />
+      </div>
+      <div className="admin-table-wrapper">
+        <table className="activity-table">
+          <thead>
+            <tr>
+              <th>Party Name</th>
+              <th className="sortable" onClick={() => toggleSort("last_login_at")}>
+                Last Login{arrow("last_login_at")}
+              </th>
+              <th className="sortable" onClick={() => toggleSort("total_page_views")}>
+                Total Views{arrow("total_page_views")}
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {sorted.length === 0 && (
+              <tr><td colSpan={3} className="empty-state">{search ? "No parties match your search." : "No party users yet."}</td></tr>
+            )}
+            {sorted.map((u) => (
+              <tr key={u.id}>
+                <td>{u.display_name}</td>
+                <td>{formatDateTime(u.last_login_at)}</td>
+                <td>{u.total_page_views}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
