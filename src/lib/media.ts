@@ -40,7 +40,9 @@ export function deleteThumbnail(thumbnailUrl: string | null): void {
   if (!thumbnailUrl || !thumbnailUrl.startsWith("/api/media/thumbnails/")) return;
   const filename = thumbnailUrl.replace("/api/media/thumbnails/", "");
   const filepath = path.join(THUMBNAILS_DIR, filename);
-  fs.promises.unlink(filepath).catch((err) => { console.warn("Failed to delete thumbnail:", err); });
+  const resolved = path.resolve(filepath);
+  if (!resolved.startsWith(THUMBNAILS_DIR + path.sep) && resolved !== THUMBNAILS_DIR) return;
+  fs.promises.unlink(resolved).catch((err) => { console.warn("Failed to delete thumbnail:", err); });
 }
 
 let ensured = false;

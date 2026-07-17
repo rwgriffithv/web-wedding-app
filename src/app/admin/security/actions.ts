@@ -1,10 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { parseAdminSession, validateSessionForMutation } from "@/lib/auth";
-import { getString } from "@/lib/form-data";
+import { requireAdminSessionOrNull, validateSessionInDb } from "@/lib/auth";
+import { getString, getInt } from "@/lib/form-data";
 import { setConfig } from "@/lib/repository/site-config";
-import { banIp, unbanIp, isIpBanned, clearViolations } from "@/lib/repository/ip-bans";
+import { banIp, unbanIp, isIpBanned, clearViolations, getBannedIpById } from "@/lib/repository/ip-bans";
+import { revokeSessionsByIpBan, unrevokeSessionsByIpBan } from "@/lib/session-revocation";
 
 interface SecurityState { success?: boolean; error?: string }
 
@@ -17,9 +18,9 @@ function isValidIp(ip: string): boolean {
 }
 
 export async function saveAutoBanSettings(prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
-  const session = await parseAdminSession();
+  const session = await requireAdminSessionOrNull();
   if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
+  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   try {
     const threshold = getString(formData, "auto_ban_login_threshold") ?? "";
@@ -29,10 +30,10 @@ export async function saveAutoBanSettings(prevState: SecurityState | null, formD
     const windowNum = parseInt(windowSeconds, 10);
 
     if (!Number.isFinite(thresholdNum) || thresholdNum < 1 || thresholdNum > 100) {
-      return { error: "Threshold must be a number between 1 and 100." };
+      return { success: false, error: "Threshold must be a number between 1 and 100." };
     }
     if (!Number.isFinite(windowNum) || windowNum < 60 || windowNum > 86400) {
-      return { error: "Window must be between 60 and 86400 seconds." };
+      return { success: false, error: "Window must be between 60 and 86400 seconds." };
     }
 
     setConfig("auto_ban_login_threshold", String(thresholdNum));
@@ -42,86 +43,90 @@ export async function saveAutoBanSettings(prevState: SecurityState | null, formD
     return { success: true };
   } catch (error) {
     console.error(error);
-    return { error: "Failed to save auto-ban settings." };
+    return { success: false, error: "Failed to save auto-ban settings." };
   }
 }
 
 async function banIpCommon(ip: string, reason: string): Promise<SecurityState> {
-  if (isIpBanned(ip)) return { error: "This IP is already banned." };
+  if (isIpBanned(ip)) return { success: false, error: "This IP is already banned." };
 
   try {
     banIp(ip, reason.slice(0, MAX_REASON_LENGTH));
   } catch (error) {
     console.error(error);
-    return { error: "This IP is already banned." };
+    return { success: false, error: "This IP is already banned." };
   }
+  revokeSessionsByIpBan(ip);
   revalidatePath("/admin/security");
   return { success: true };
 }
 
 export async function banIpAction(_prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
-  const session = await parseAdminSession();
+  const session = await requireAdminSessionOrNull();
   if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
+  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   try {
     const ip = getString(formData, "ip_address") ?? "";
     const reason = getString(formData, "reason") ?? "manual";
 
-    if (!ip) return { error: "IP address is required." };
+    if (!ip) return { success: false, error: "IP address is required." };
 
     if (!isValidIp(ip)) {
-      return { error: "Invalid IP address format." };
+      return { success: false, error: "Invalid IP address format." };
     }
 
     return await banIpCommon(ip, reason);
   } catch (error) {
     console.error(error);
-    return { error: "Failed to ban IP." };
+    return { success: false, error: "Failed to ban IP." };
   }
 }
 
 export async function unbanIpAction(_prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
-  const session = await parseAdminSession();
+  const session = await requireAdminSessionOrNull();
   if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
+  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   try {
-    const id = parseInt(getString(formData, "id") ?? "", 10);
-    if (!Number.isFinite(id)) return { error: "Invalid ID." };
+    const id = getInt(formData, "id");
+    if (id === null) return { success: false, error: "Invalid ID." };
+    const unbannedIp = getBannedIpById(id);
+    if (!unbannedIp) return { success: false, error: "Ban not found." };
     unbanIp(id);
+    unrevokeSessionsByIpBan(unbannedIp);
     revalidatePath("/admin/security");
     return { success: true };
   } catch (error) {
     console.error(error);
-    return { error: "Failed to unban IP." };
+    return { success: false, error: "Failed to unban IP." };
   }
 }
 
 export async function banViolationIpAction(_prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
-  const session = await parseAdminSession();
+  const session = await requireAdminSessionOrNull();
   if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
+  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   try {
     const ip = getString(formData, "ip_address") ?? "";
-    if (!ip) return { error: "IP address is required." };
+    if (!ip) return { success: false, error: "IP address is required." };
 
     if (!isValidIp(ip)) {
-      return { error: "Invalid IP address format." };
+      return { success: false, error: "Invalid IP address format." };
     }
 
     return await banIpCommon(ip, "manual");
   } catch (error) {
     console.error(error);
-    return { error: "Failed to ban IP." };
+    return { success: false, error: "Failed to ban IP." };
   }
 }
 
 export async function saveSessionSettings(prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
-  const session = await parseAdminSession();
+  const session = await requireAdminSessionOrNull();
   if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
+  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   try {
     const sessionMaxHours = getString(formData, "session_max_hours") ?? "";
@@ -131,10 +136,10 @@ export async function saveSessionSettings(prevState: SecurityState | null, formD
     const minutesNum = parseInt(pageViewDebounceMinutes, 10);
 
     if (!Number.isFinite(hoursNum) || hoursNum < 1 || hoursNum > 24) {
-      return { error: "Session expiry must be between 1 and 24 hours." };
+      return { success: false, error: "Session expiry must be between 1 and 24 hours." };
     }
     if (!Number.isFinite(minutesNum) || minutesNum < 1 || minutesNum > 1440) {
-      return { error: "Page view debounce must be between 1 and 1440 minutes." };
+      return { success: false, error: "Page view debounce must be between 1 and 1440 minutes." };
     }
 
     setConfig("session_max_hours", String(hoursNum));
@@ -143,21 +148,21 @@ export async function saveSessionSettings(prevState: SecurityState | null, formD
     return { success: true };
   } catch (error) {
     console.error(error);
-    return { error: "Failed to save session settings." };
+    return { success: false, error: "Failed to save session settings." };
   }
 }
 
 export async function saveSuspiciousSettings(prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
-  const session = await parseAdminSession();
+  const session = await requireAdminSessionOrNull();
   if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
+  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   try {
     const threshold = getString(formData, "suspicious_ip_threshold") ?? "";
     const thresholdNum = parseInt(threshold, 10);
 
     if (!Number.isFinite(thresholdNum) || thresholdNum < 1 || thresholdNum > 100) {
-      return { error: "Threshold must be a number between 1 and 100." };
+      return { success: false, error: "Threshold must be a number between 1 and 100." };
     }
 
     setConfig("suspicious_ip_threshold", String(thresholdNum));
@@ -166,21 +171,21 @@ export async function saveSuspiciousSettings(prevState: SecurityState | null, fo
     return { success: true };
   } catch (error) {
     console.error(error);
-    return { error: "Failed to save suspicious IP settings." };
+    return { success: false, error: "Failed to save suspicious IP settings." };
   }
 }
 
 export async function clearViolationsAction(_prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
-  const session = await parseAdminSession();
+  const session = await requireAdminSessionOrNull();
   if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
+  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   try {
     const ip = getString(formData, "ip_address") ?? "";
-    if (!ip) return { error: "IP address is required." };
+    if (!ip) return { success: false, error: "IP address is required." };
 
     if (!isValidIp(ip)) {
-      return { error: "Invalid IP address format." };
+      return { success: false, error: "Invalid IP address format." };
     }
 
     clearViolations(ip);
@@ -189,6 +194,6 @@ export async function clearViolationsAction(_prevState: SecurityState | null, fo
     return { success: true };
   } catch (error) {
     console.error(error);
-    return { error: "Failed to clear violations." };
+    return { success: false, error: "Failed to clear violations." };
   }
 }

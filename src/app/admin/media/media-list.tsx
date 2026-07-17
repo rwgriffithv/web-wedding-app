@@ -63,12 +63,12 @@ function MediaListItem({ item, index, total }: { item: MediaItem; index: number;
             <form action={moveDispatch} className="inline-flex">
               <input type="hidden" name="item_id" value={item.id} />
               <input type="hidden" name="direction" value="up" />
-              <button type="submit" className="btn btn-sm btn-ghost" disabled={movePending || index === 0} title="Move up">&#9650;</button>
+              <button type="submit" className="btn btn-sm btn-ghost" disabled={movePending || index === 0} aria-label="Move up">&#9650;</button>
             </form>
             <form action={moveDispatch} className="inline-flex">
               <input type="hidden" name="item_id" value={item.id} />
               <input type="hidden" name="direction" value="down" />
-              <button type="submit" className="btn btn-sm btn-ghost" disabled={movePending || index === total - 1} title="Move down">&#9660;</button>
+              <button type="submit" className="btn btn-sm btn-ghost" disabled={movePending || index === total - 1} aria-label="Move down">&#9660;</button>
             </form>
             <button type="button" className="btn btn-sm btn-ghost" onClick={() => setEditing(true)}>Edit</button>
           </>
@@ -79,7 +79,6 @@ function MediaListItem({ item, index, total }: { item: MediaItem; index: number;
         </form>
         {moveState?.error && <span className="table-error">{moveState.error}</span>}
         {delState?.error && <span className="table-error">{delState.error}</span>}
-        {editState?.error && <span className="table-error">{editState.error}</span>}
       </div>
     </div>
   );
@@ -132,12 +131,12 @@ function MediaTabGroup({ tab, slug, items, tabIndex, tabTotal }: { tab: MediaTab
             <form action={moveDispatch} className="inline-flex">
               <input type="hidden" name="tab_id" value={tab.id} />
               <input type="hidden" name="direction" value="up" />
-              <button type="submit" className="btn btn-sm btn-ghost" disabled={movePending || tabIndex === 0} title="Move up">&#9650;</button>
+              <button type="submit" className="btn btn-sm btn-ghost" disabled={movePending || tabIndex === 0} aria-label="Move up">&#9650;</button>
             </form>
             <form action={moveDispatch} className="inline-flex">
               <input type="hidden" name="tab_id" value={tab.id} />
               <input type="hidden" name="direction" value="down" />
-              <button type="submit" className="btn btn-sm btn-ghost" disabled={movePending || tabIndex === tabTotal - 1} title="Move down">&#9660;</button>
+              <button type="submit" className="btn btn-sm btn-ghost" disabled={movePending || tabIndex === tabTotal - 1} aria-label="Move down">&#9660;</button>
             </form>
             <button type="button" className="btn btn-sm btn-ghost" onClick={() => setRenaming(true)}>Edit</button>
             <form action={delDispatch} onSubmit={e => { e.stopPropagation(); if (!confirm("This will remove all media items in this tab from the website. Files on disk are not deleted. Continue?")) e.preventDefault(); }}>

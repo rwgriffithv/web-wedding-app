@@ -6,10 +6,6 @@ const { mockCheck, mockIsIpBanned } = vi.hoisted(() => ({
   mockIsIpBanned: vi.fn(() => false),
 }));
 
-vi.mock("next/navigation", () => ({
-  redirect: vi.fn(),
-}));
-
 vi.mock("@/lib/ip", () => ({
   getClientIp: vi.fn(() => Promise.resolve("10.0.0.99")),
 }));

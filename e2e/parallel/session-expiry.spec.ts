@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import crypto from "crypto";
 
-const SESSION_SECRET = "rob-and-ana";
+const SESSION_SECRET = process.env.SESSION_SECRET ?? "super-secret-secret-at-least-32chars";
 
 function createExpiredSession(data: Record<string, unknown>): string {
   const payload = { ...data, exp: Date.now() - 10_000 };

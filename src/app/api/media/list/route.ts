@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
-import { isAdmin } from "@/lib/auth";
+import { requireAdminSessionOrNull, validateSessionInDb } from "@/lib/auth";
 import { MEDIA_DIR, ALLOWED_EXTENSIONS, isWithinMediaDir } from "@/lib/media";
 import fs from "node:fs";
 import path from "node:path";
 
 export async function GET(request: Request) {
-  if (!(await isAdmin())) {
+  const session = await requireAdminSessionOrNull();
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!(await validateSessionInDb(session))) {
+    return NextResponse.json({ error: "Session expired" }, { status: 401 });
   }
 
   const { searchParams } = new URL(request.url);

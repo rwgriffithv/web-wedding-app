@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { banViolationIpAction } from "./actions";
 import { IpTable } from "./ip-table";
-import type { RateLimitViolation } from "@/lib/db";
+import type { RateLimitViolation } from "@/lib/types";
 
 interface ViolationListProps {
   violations: RateLimitViolation[];

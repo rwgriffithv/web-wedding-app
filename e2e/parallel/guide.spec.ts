@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { loginAsParty } from "./helpers";
+import { loginAsParty } from "../utils/helpers";
 
 test("guide page requires auth", async ({ page }) => {
   await page.goto("/guide");

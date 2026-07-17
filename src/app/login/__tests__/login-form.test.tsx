@@ -5,6 +5,7 @@ import { LoginForm } from "../login-form";
 const mockLogin = vi.fn();
 const mockLoginByPartyCode = vi.fn();
 const mockRefresh = vi.fn();
+const mockPush = vi.fn();
 
 vi.mock("../actions", () => ({
   login: (...args: unknown[]) => mockLogin(...args),
@@ -12,15 +13,11 @@ vi.mock("../actions", () => ({
 }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh: mockRefresh }),
-}));
-
-vi.mock("@/lib/utils", () => ({
-  isRedirectError: () => false,
+  useRouter: () => ({ refresh: mockRefresh, push: mockPush }),
 }));
 
 function getCodeInput() {
-  return screen.getByPlaceholderText("e.g. SMITH-A1B2") as HTMLInputElement;
+  return screen.getByPlaceholderText("Enter code") as HTMLInputElement;
 }
 
 function getUsernameInput() {
@@ -35,16 +32,14 @@ function getSubmitButton() {
   return screen.getByRole("button", { name: /^(Continue with Party Code|Sign In|Please wait|Looking up|Signing in)/i });
 }
 
-function clearCookie(name: string) {
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-}
-
 describe("LoginForm", () => {
   beforeEach(() => {
     mockLogin.mockReset();
     mockLoginByPartyCode.mockReset();
     mockRefresh.mockReset();
-    clearCookie("rl_until");
+    mockPush.mockReset();
+    localStorage.removeItem("rl_until");
+    localStorage.removeItem("cookie_health_until");
   });
 
   it("renders party code form by default", () => {
@@ -104,16 +99,16 @@ describe("LoginForm", () => {
     });
   });
 
-  it("shows rate limit cooldown when cookie is present", () => {
-    document.cookie = `rl_until=${Date.now() + 10_000}`;
+  it("shows rate limit cooldown when key is present", () => {
+    localStorage.setItem("rl_until", String(Date.now() + 10_000));
     render(<LoginForm />);
     expect(getSubmitButton()).toBeDisabled();
     expect(getSubmitButton().textContent).toMatch(/please wait/i);
     expect(getCodeInput()).toBeDisabled();
   });
 
-  it("prevents submit when rate limited by cookie", () => {
-    document.cookie = `rl_until=${Date.now() + 10_000}`;
+  it("prevents submit when rate limited by key", () => {
+    localStorage.setItem("rl_until", String(Date.now() + 10_000));
     render(<LoginForm />);
     fireEvent.change(getCodeInput(), { target: { value: "SMITH-1234" } });
     fireEvent.submit(getSubmitButton().closest("form")!);
@@ -141,5 +136,31 @@ describe("LoginForm", () => {
     await waitFor(() => {
       expect(mockRefresh).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it("party code success stores cookie_health_until and navigates", async () => {
+    const until = Date.now() + 3600_000;
+    mockLoginByPartyCode.mockResolvedValue({ success: true, cookieHealthUntil: until, redirectTo: "/home" });
+    render(<LoginForm />);
+    fireEvent.change(getCodeInput(), { target: { value: "DEMO-1234" } });
+    fireEvent.submit(getSubmitButton().closest("form")!);
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith("/home");
+    });
+    expect(localStorage.getItem("cookie_health_until")).toBe(String(until));
+  });
+
+  it("credentials success stores cookie_health_until and navigates", async () => {
+    const until = Date.now() + 3600_000;
+    mockLogin.mockResolvedValue({ success: true, cookieHealthUntil: until, redirectTo: "/admin" });
+    render(<LoginForm />);
+    fireEvent.click(screen.getByText(/user sign in/i));
+    fireEvent.change(getUsernameInput(), { target: { value: "admin" } });
+    fireEvent.change(getPasswordInput(), { target: { value: "pass" } });
+    fireEvent.submit(getSubmitButton().closest("form")!);
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith("/admin");
+    });
+    expect(localStorage.getItem("cookie_health_until")).toBe(String(until));
   });
 });

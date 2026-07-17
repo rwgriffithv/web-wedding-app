@@ -109,9 +109,13 @@ if (existingParty.count === 0) {
     insertDress.run("https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400", 1);
 
     const insertMedia = db.prepare("INSERT INTO media_items (type, url, thumbnail_url, title, section, sort_order) VALUES (?, ?, ?, ?, ?, ?)");
-    insertMedia.run("image", "https://images.unsplash.com/photo-1519741497674-611481863552?w=600", null, "Engagement", "Engagement", 0);
-    insertMedia.run("image", "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=600", null, "Ceremony Venue", "Venue", 0);
-    insertMedia.run("image", "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=600", null, "Reception Hall", "Venue", 1);
+    insertMedia.run("image", "https://images.unsplash.com/photo-1519741497674-611481863552?w=600", null, "Engagement", "engagement", 0);
+    insertMedia.run("image", "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=600", null, "Ceremony Venue", "venue", 0);
+    insertMedia.run("image", "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=600", null, "Reception Hall", "venue", 1);
+
+    const insertTab = db.prepare("INSERT INTO media_tabs (slug, label, sort_order) VALUES (?, ?, ?)");
+    insertTab.run("engagement", "Engagement", 0);
+    insertTab.run("venue", "Venue", 1);
 
     const insertSchedule = db.prepare("INSERT INTO schedule_items (time, label, sort_order) VALUES (?, ?, ?)");
     insertSchedule.run("3:00 PM", "Ceremony", 0);

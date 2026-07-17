@@ -1,8 +1,26 @@
+import crypto from "crypto";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createSession, verifyPassword, hashPassword } from "../auth";
+import {
+  revokeSessionsByPasswordChange,
+  clearPasswordRevocation,
+  revokeSessionsByIpBan,
+  unrevokeSessionsByIpBan,
+} from "../session-revocation";
+
+const mockHeaders = vi.fn();
+const mockRedirect = vi.fn();
 
 vi.mock("next/headers", () => ({
   cookies: vi.fn(),
+  headers: (...args: unknown[]) => mockHeaders(...args),
+}));
+
+vi.mock("next/navigation", () => ({
+  redirect: (...args: unknown[]) => {
+    mockRedirect(...args);
+    throw new Error("NEXT_REDIRECT");
+  },
 }));
 
 vi.mock("../repository/users", () => ({
@@ -59,57 +77,14 @@ describe("auth", () => {
   });
 });
 
-describe("isAdmin", () => {
-  it("returns false when no session", async () => {
-    const mod = await import("next/headers");
-    vi.mocked(mod.cookies).mockReturnValue({ get: () => undefined, set: vi.fn() } as never);
-
-    const { isAdmin } = await import("../auth");
-    expect(await isAdmin()).toBe(false);
-  });
-
-  it("returns true for admin session", async () => {
-    const token = createSession({ userId: 2, type: "admin" });
-
-    const mod = await import("next/headers");
-    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
-
-    const { isAdmin } = await import("../auth");
-    expect(await isAdmin()).toBe(true);
-  });
-
-  it("rejects corrupted token", async () => {
-    const mod = await import("next/headers");
-    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: "not-a-valid-token" }), set: vi.fn() } as never);
-
-    const { isAdmin } = await import("../auth");
-    expect(await isAdmin()).toBe(false);
-  });
-
-  it("rejects token with tampered payload", async () => {
-    const token = createSession({ userId: 2, type: "admin" });
-    const decoded = Buffer.from(token, "base64url").toString();
-    const lastDot = decoded.lastIndexOf(".");
-    const payload = decoded.slice(0, lastDot);
-    const sig = decoded.slice(lastDot + 1);
-    const tampered = Buffer.from(payload + "X." + sig).toString("base64url");
-
-    const mod = await import("next/headers");
-    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: tampered }), set: vi.fn() } as never);
-
-    const { isAdmin } = await import("../auth");
-    expect(await isAdmin()).toBe(false);
-  });
-});
-
-describe("parseSession (fast path)", () => {
+describe("verifyTokenInCookie (fast path)", () => {
   it("returns valid session without DB lookup", async () => {
     const token = createSession({ userId: 2, type: "admin" });
     const mod = await import("next/headers");
     vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
 
-    const { parseSession } = await import("../auth");
-    const session = await parseSession();
+    const { verifyTokenInCookie } = await import("../auth");
+    const session = await verifyTokenInCookie();
     expect(session).not.toBeNull();
     expect(session?.type).toBe("admin");
   });
@@ -119,8 +94,8 @@ describe("parseSession (fast path)", () => {
     const mod = await import("next/headers");
     vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
 
-    const { parseSession } = await import("../auth");
-    const session = await parseSession();
+    const { verifyTokenInCookie } = await import("../auth");
+    const session = await verifyTokenInCookie();
     expect(session).not.toBeNull();
     expect(session?.userId).toBe(999);
   });
@@ -134,32 +109,32 @@ describe("parseSession (fast path)", () => {
     payloadObj.exp = Date.now() - 10_000;
     const expiredPayload = JSON.stringify(payloadObj);
     const crypto = await import("crypto");
-    // Secret must match vitest.config.ts SESSION_SECRET ("test-secret-key-not-for-production")
-    const hmac = crypto.createHmac("sha256", "test-secret-key-not-for-production").update(expiredPayload).digest("hex");
+    // Secret must match vitest.config.ts SESSION_SECRET ("test-secret-key-not-for-production-ok")
+    const hmac = crypto.createHmac("sha256", "test-secret-key-not-for-production-ok").update(expiredPayload).digest("hex");
     const expiredToken = Buffer.from(`${expiredPayload}.${hmac}`).toString("base64url");
 
     vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: expiredToken }), set: vi.fn() } as never);
 
-    const { parseSession } = await import("../auth");
-    expect(await parseSession()).toBeNull();
+    const { verifyTokenInCookie } = await import("../auth");
+    expect(await verifyTokenInCookie()).toBeNull();
   });
 });
 
-describe("validateSessionForMutation", () => {
+describe("validateSessionInDb", () => {
   it("returns null when no session cookie", async () => {
     const mod = await import("next/headers");
     vi.mocked(mod.cookies).mockReturnValue({ get: () => undefined, set: vi.fn() } as never);
 
-    const { validateSessionForMutation } = await import("../auth");
-    expect(await validateSessionForMutation()).toBeNull();
+    const { validateSessionInDb } = await import("../auth");
+    expect(await validateSessionInDb()).toBeNull();
   });
 
   it("returns null for invalid token", async () => {
     const mod = await import("next/headers");
     vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: "bad-token" }), set: vi.fn() } as never);
 
-    const { validateSessionForMutation } = await import("../auth");
-    expect(await validateSessionForMutation()).toBeNull();
+    const { validateSessionInDb } = await import("../auth");
+    expect(await validateSessionInDb()).toBeNull();
   });
 
   it("returns null when admin user no longer exists", async () => {
@@ -167,8 +142,8 @@ describe("validateSessionForMutation", () => {
     const mod = await import("next/headers");
     vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
 
-    const { validateSessionForMutation } = await import("../auth");
-    expect(await validateSessionForMutation()).toBeNull();
+    const { validateSessionInDb } = await import("../auth");
+    expect(await validateSessionInDb()).toBeNull();
   });
 
   it("returns null when user type doesn't match token", async () => {
@@ -176,8 +151,8 @@ describe("validateSessionForMutation", () => {
     const mod = await import("next/headers");
     vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
 
-    const { validateSessionForMutation } = await import("../auth");
-    expect(await validateSessionForMutation()).toBeNull();
+    const { validateSessionInDb } = await import("../auth");
+    expect(await validateSessionInDb()).toBeNull();
   });
 
   it("returns null when password changed since token was issued", async () => {
@@ -185,17 +160,18 @@ describe("validateSessionForMutation", () => {
     const mod = await import("next/headers");
     vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
 
-    const { validateSessionForMutation } = await import("../auth");
-    expect(await validateSessionForMutation()).toBeNull();
+    const { validateSessionInDb } = await import("../auth");
+    expect(await validateSessionInDb()).toBeNull();
   });
 
   it("returns session for valid admin", async () => {
     const token = createSession({ userId: 2, type: "admin" });
     const mod = await import("next/headers");
     vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
+    mockHeaders.mockReturnValue({ get: () => null });
 
-    const { validateSessionForMutation } = await import("../auth");
-    const session = await validateSessionForMutation();
+    const { validateSessionInDb } = await import("../auth");
+    const session = await validateSessionInDb();
     expect(session).not.toBeNull();
     expect(session?.type).toBe("admin");
     expect(session?.userId).toBe(2);
@@ -206,8 +182,8 @@ describe("validateSessionForMutation", () => {
     const mod = await import("next/headers");
     vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
 
-    const { validateSessionForMutation } = await import("../auth");
-    expect(await validateSessionForMutation()).toBeNull();
+    const { validateSessionInDb } = await import("../auth");
+    expect(await validateSessionInDb()).toBeNull();
   });
 });
 
@@ -286,5 +262,197 @@ describe("getSessionMaxSeconds", () => {
     mockGetConfig.mockReturnValue("0.0001");
     const { getSessionMaxSeconds } = await import("../auth");
     expect(getSessionMaxSeconds()).toBe(1);
+  });
+});
+
+describe("requireAdminSessionOrNull (revocation)", () => {
+  beforeEach(() => {
+    clearPasswordRevocation(2);
+    unrevokeSessionsByIpBan("10.0.0.9");
+  });
+
+  it("returns null when IP is banned", async () => {
+    revokeSessionsByIpBan("10.0.0.9");
+    mockHeaders.mockReturnValue({ get: (h: string) => h === "cf-connecting-ip" ? "10.0.0.9" : undefined });
+
+    const token = createSession({ userId: 2, type: "admin" });
+    const mod = await import("next/headers");
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
+
+    const { requireAdminSessionOrNull } = await import("../auth");
+    expect(await requireAdminSessionOrNull()).toBeNull();
+  });
+
+  it("returns null when password changed after session", async () => {
+    revokeSessionsByPasswordChange(2);
+    mockHeaders.mockReturnValue({ get: () => undefined });
+
+    const token = createSession({ userId: 2, type: "admin" });
+    const mod = await import("next/headers");
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
+
+    const { requireAdminSessionOrNull } = await import("../auth");
+    expect(await requireAdminSessionOrNull()).toBeNull();
+  });
+});
+
+describe("requireSession", () => {
+  beforeEach(() => {
+    mockHeaders.mockReturnValue({ get: () => undefined });
+  });
+
+  it("returns null when no cookie", async () => {
+    const mod = await import("next/headers");
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => undefined, set: vi.fn() } as never);
+
+    const { requireSession } = await import("../auth");
+    expect(await requireSession()).toBeNull();
+  });
+
+  it("returns session for valid party token", async () => {
+    const token = createSession({ partyId: 1, type: "party" });
+    const mod = await import("next/headers");
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
+
+    const { requireSession } = await import("../auth");
+    const session = await requireSession();
+    expect(session).not.toBeNull();
+    expect(session?.type).toBe("party");
+  });
+
+  it("returns null when session is revoked by IP ban", async () => {
+    revokeSessionsByIpBan("10.0.0.5");
+    mockHeaders.mockReturnValue({ get: (h: string) => h === "x-real-ip" ? "10.0.0.5" : undefined });
+
+    const token = createSession({ userId: 2, type: "admin" });
+    const mod = await import("next/headers");
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
+
+    const { requireSession } = await import("../auth");
+    expect(await requireSession()).toBeNull();
+    unrevokeSessionsByIpBan("10.0.0.5");
+  });
+});
+
+describe("verifyToken", () => {
+  const SECRET = "test-secret-key-not-for-production-ok";
+
+  it("returns null for empty string", async () => {
+    const { verifyToken } = await import("../auth");
+    expect(verifyToken("")).toBeNull();
+  });
+
+  it("returns null for malformed base64", async () => {
+    const { verifyToken } = await import("../auth");
+    expect(verifyToken("not-valid-base64!!")).toBeNull();
+  });
+
+  it("returns null for token missing dot separator", async () => {
+    const payload = JSON.stringify({ userId: 1, type: "admin" });
+    const token = Buffer.from(payload).toString("base64url");
+    const { verifyToken } = await import("../auth");
+    expect(verifyToken(token)).toBeNull();
+  });
+
+  it("returns null for tampered HMAC", async () => {
+    const payload = JSON.stringify({ userId: 1, type: "admin" });
+    const hmac = crypto.createHmac("sha256", SECRET).update(payload).digest("hex");
+    const tampered = hmac.slice(0, 2) + "ff" + hmac.slice(4);
+    const token = Buffer.from(`${payload}.${tampered}`).toString("base64url");
+    const { verifyToken } = await import("../auth");
+    expect(verifyToken(token)).toBeNull();
+  });
+
+  it("returns null for expired token", async () => {
+    const payload = JSON.stringify({ userId: 1, type: "admin", exp: Date.now() - 10_000 });
+    const hmac = crypto.createHmac("sha256", SECRET).update(payload).digest("hex");
+    const token = Buffer.from(`${payload}.${hmac}`).toString("base64url");
+    const { verifyToken } = await import("../auth");
+    expect(verifyToken(token)).toBeNull();
+  });
+
+  it("returns valid session for a properly signed, non-expired token", async () => {
+    const token = createSession({ userId: 1, type: "admin" });
+    const { verifyToken } = await import("../auth");
+    const session = verifyToken(token);
+    expect(session).not.toBeNull();
+    expect(session?.userId).toBe(1);
+    expect(session?.type).toBe("admin");
+  });
+
+  it("returns session with correct userId, type, partyId fields", async () => {
+    const token = createSession({ userId: 5, type: "party", partyId: 3 });
+    const { verifyToken } = await import("../auth");
+    const session = verifyToken(token);
+    expect(session).not.toBeNull();
+    expect(session?.userId).toBe(5);
+    expect(session?.type).toBe("party");
+    expect(session?.partyId).toBe(3);
+  });
+});
+
+describe("requireSessionOrRedirect", () => {
+  beforeEach(() => {
+    mockRedirect.mockReset();
+    mockHeaders.mockReturnValue({ get: () => undefined });
+    clearPasswordRevocation(2);
+  });
+
+  it("redirects to /login when no session", async () => {
+    const mod = await import("next/headers");
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => undefined, set: vi.fn() } as never);
+
+    const { requireSessionOrRedirect } = await import("../auth");
+    await expect(requireSessionOrRedirect()).rejects.toThrow("NEXT_REDIRECT");
+    expect(mockRedirect).toHaveBeenCalledWith("/login");
+  });
+
+  it("redirects to /login when session is revoked", async () => {
+    revokeSessionsByIpBan("10.0.0.5");
+    mockHeaders.mockReturnValue({ get: (h: string) => h === "cf-connecting-ip" ? "10.0.0.5" : undefined });
+
+    const token = createSession({ userId: 2, type: "admin" });
+    const mod = await import("next/headers");
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
+
+    const { requireSessionOrRedirect } = await import("../auth");
+    await expect(requireSessionOrRedirect()).rejects.toThrow("NEXT_REDIRECT");
+    expect(mockRedirect).toHaveBeenCalledWith("/login");
+    unrevokeSessionsByIpBan("10.0.0.5");
+  });
+
+  it("redirects to /home when session type doesn't match", async () => {
+    const token = createSession({ userId: 2, type: "admin" });
+    const mod = await import("next/headers");
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
+
+    const { requireSessionOrRedirect } = await import("../auth");
+    await expect(requireSessionOrRedirect({ type: "party" })).rejects.toThrow("NEXT_REDIRECT");
+    expect(mockRedirect).toHaveBeenCalledWith("/home");
+  });
+
+  it("returns session when valid and type matches", async () => {
+    const token = createSession({ userId: 2, type: "admin" });
+    const mod = await import("next/headers");
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
+
+    const { requireSessionOrRedirect } = await import("../auth");
+    const session = await requireSessionOrRedirect({ type: "admin" });
+    expect(session).not.toBeNull();
+    expect(session.type).toBe("admin");
+    expect(session.userId).toBe(2);
+    expect(mockRedirect).not.toHaveBeenCalled();
+  });
+
+  it("returns session when valid and no type constraint", async () => {
+    const token = createSession({ userId: 2, type: "admin" });
+    const mod = await import("next/headers");
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
+
+    const { requireSessionOrRedirect } = await import("../auth");
+    const session = await requireSessionOrRedirect();
+    expect(session).not.toBeNull();
+    expect(session.type).toBe("admin");
+    expect(mockRedirect).not.toHaveBeenCalled();
   });
 });

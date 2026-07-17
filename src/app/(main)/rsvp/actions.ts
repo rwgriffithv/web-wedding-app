@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { validateSessionForMutation } from "@/lib/auth";
+import { validateSessionInDb } from "@/lib/auth";
 import { getConfig } from "@/lib/repository/site-config";
 import { getGuestById } from "@/lib/repository/guests";
 import { getPartyById } from "@/lib/repository/party";
@@ -13,8 +13,9 @@ import { RATE_LIMIT_WINDOW_SECONDS_DEFAULT } from "@/lib/constants";
 export interface RsvpState {
   success?: boolean;
   error?: string;
-  action?: "cooldown";
+  action?: "cooldown" | "redirect";
   cooldownUntil?: number;
+  href?: string;
 }
 
 const rsvpRateLimiter = createRateLimiter("rsvp");
@@ -24,8 +25,8 @@ function getRsvpRateLimitConfig() {
 }
 
 export async function submitRsvp(_prevState: RsvpState | null, formData: FormData): Promise<RsvpState> {
-  const session = await validateSessionForMutation();
-  if (!session) return { success: false, error: "Not authenticated." };
+  const session = await validateSessionInDb();
+  if (!session) return { success: false, action: "redirect", href: "/login" };
 
   if (session.type === "admin" || session.type === "viewer") {
     return { success: false, error: "RSVP is not available for user logins. Please use your Party Code to RSVP." };

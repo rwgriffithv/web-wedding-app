@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { parseSession } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { MEDIA_DIR, ALLOWED_EXTENSIONS, isWithinMediaDir, MIME_TYPES } from "@/lib/media";
 import fs from "node:fs";
 import path from "node:path";
@@ -8,7 +8,7 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ path: string[] }> },
 ) {
-  const session = await parseSession();
+  const session = await requireSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

@@ -7,9 +7,14 @@ import { useRateLimitCooldown, type CooldownProps } from "@/lib/use-rate-limit-c
 import type { ReactNode } from "react";
 
 const mockSubmit = vi.fn();
+const mockPush = vi.fn();
 
 vi.mock("../actions", () => ({
   submitRsvp: (...args: unknown[]) => mockSubmit(...args),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: mockPush }),
 }));
 
 function getSingleRadio(name: string) {
@@ -63,7 +68,7 @@ describe("RsvpForm — radio state persistence", () => {
   beforeEach(() => {
     mockSubmit.mockReset();
     vi.useRealTimers();
-    document.cookie = "rl_r_until=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+    localStorage.removeItem("rl_r_until");
   });
 
   it("attending radio stays checked after successful submit", async () => {
@@ -320,8 +325,9 @@ describe("RsvpForm — radio state persistence", () => {
 describe("RsvpForm — shared cooldown across forms", () => {
   beforeEach(() => {
     mockSubmit.mockReset();
+    mockPush.mockReset();
     vi.useRealTimers();
-    document.cookie = "rl_r_until=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+    localStorage.removeItem("rl_r_until");
   });
 
   it("rate limit on one form disables all sibling forms immediately", async () => {

@@ -13,38 +13,42 @@ Server-first Next.js 16 App Router application with SQLite, deployed via Docker 
 ## System Architecture
 
 ```
-                          ┌─────────────────────┐
-                          │  Cloudflare Edge     │
-                          │  (TLS termination)   │
-                          └──────────┬──────────┘
-                                     │
-                          ┌──────────▼──────────┐
-                          │  cloudflared         │
-                          │  (outbound tunnel)   │
-                          └──────────┬──────────┘
-                                     │
-                          ┌──────────▼──────────┐
-                          │  Caddy               │
-                          │  (reverse proxy,     │
-                          │   TLS, rate limit,   │
-                          │   security headers)  │
+                           ┌─────────────────────┐
+                           │  Cloudflare Edge     │
+                           │  (TLS termination)   │
                            └──────────┬──────────┘
                                       │
                            ┌──────────▼──────────┐
-                           │  Next.js App         │
-                           │  (port 3000)         │
-                          │  ┌────────────────┐  │
-                          │  │ Server Actions │  │
-                          │  │ Route Handlers │  │
-                          │  │ Server Comps   │  │
-                          │  └────────┬───────┘  │
-                          └──────────┬──────────┘
-                                     │
-                          ┌──────────▼──────────┐
-                          │  SQLite              │
-                          │  (WAL mode,          │
-                          │   server-only)       │
-                          └─────────────────────┘
+                           │  cloudflared         │
+                           │  (outbound tunnel)   │
+                           └──────────┬──────────┘
+                                      │
+                           ┌──────────▼──────────┐
+                           │  Caddy               │
+                           │  (reverse proxy,     │
+                           │   TLS, rate limit,   │
+                           │   security headers)  │
+                            └──────────┬──────────┘
+                                       │
+                            ┌──────────▼──────────┐
+                            │  Next.js App         │
+                            │  (port 3000)         │
+                           │  ┌────────────────┐  │
+                           │  │ proxy.ts       │  │
+                           │  │ (cookie clear, │  │
+                           │  │  revocation)   │  │
+                           │  ├────────────────┤  │
+                           │  │ Server Actions │  │
+                           │  │ Route Handlers │  │
+                           │  │ Server Comps   │  │
+                           │  └────────┬───────┘  │
+                           └──────────┬──────────┘
+                                      │
+                           ┌──────────▼──────────┐
+                           │  SQLite              │
+                           │  (WAL mode,          │
+                           │   server-only)       │
+                           └─────────────────────┘
 ```
 
 ### Network Topology
@@ -58,29 +62,31 @@ Server-first Next.js 16 App Router application with SQLite, deployed via Docker 
 
 | Route | Type | Auth | Purpose |
 |---|---|---|---|
-| `/` | Dynamic | None | Landing page with login form |
-| `/login` | Dynamic | None | Authentication (credentials or party code) |
-| `/(main)/home` | Dynamic | Any session | Wedding home with countdown timer |
-| `/(main)/lodging` | Dynamic | Any session | Hotel/resort recommendations |
-| `/(main)/dress-code` | Dynamic | Any session | Dress code mood board |
-| `/(main)/rsvp` | Dynamic | Party session | Party-based RSVP with per-member forms |
-| `/(main)/media` | Dynamic | Any session | Photo/video gallery with tab routing |
-| `/(main)/schedule` | Dynamic | Any session | Wedding day timeline |
-| `/admin` | Dynamic | Admin only | Dashboard with stats and RSVP table |
-| `/admin/users` | Dynamic | Admin only | User management (admin, viewer, party) |
-| `/admin/guests` | Dynamic | Admin only | Guest CRUD with party assignment |
-| `/admin/site` | Dynamic | Admin only | Site configuration editor |
-| `/admin/lodging` | Dynamic | Admin only | Lodging recommendations CRUD |
-| `/admin/dress-code` | Dynamic | Admin only | Dress code image management |
-| `/admin/rsvp` | Dynamic | Admin only | RSVP response viewer (sortable table) |
-| `/admin/media` | Dynamic | Admin only | Media gallery CRUD |
-| `/admin/schedule` | Dynamic | Admin only | Wedding day schedule CRUD |
-| `/admin/security` | Dynamic | Admin only | IP banning, auto-ban settings, rate limit config |
+| `/` | Dynamic | `requireSessionOrRedirect()` | Root router — redirects to `/home` |
+| `/login` | Dynamic | `requireSession()` | Authentication (credentials or party code) |
+| `/(main)/home` | Dynamic | `requireSessionOrRedirect()` | Wedding home with countdown timer |
+| `/(main)/lodging` | Dynamic | `requireSessionOrRedirect()` | Hotel/resort recommendations |
+| `/(main)/dress-code` | Dynamic | `requireSessionOrRedirect()` | Dress code mood board |
+| `/(main)/rsvp` | Dynamic | `requireSessionOrRedirect()` | Party-based RSVP with per-member forms |
+| `/(main)/media` | Dynamic | `requireSessionOrRedirect()` | Photo/video gallery with tab routing |
+| `/(main)/schedule` | Dynamic | `requireSessionOrRedirect()` | Wedding day timeline |
+| `/admin` | Dynamic | `requireSessionOrRedirect({ type: "admin" })` | Dashboard with stats and RSVP table |
+| `/admin/users` | Dynamic | `requireSessionOrRedirect({ type: "admin" })` | User management (admin, viewer, party) |
+| `/admin/guests` | Dynamic | `requireSessionOrRedirect({ type: "admin" })` | Guest CRUD with party assignment |
+| `/admin/site` | Dynamic | `requireSessionOrRedirect({ type: "admin" })` | Site configuration editor |
+| `/admin/lodging` | Dynamic | `requireSessionOrRedirect({ type: "admin" })` | Lodging recommendations CRUD |
+| `/admin/dress-code` | Dynamic | `requireSessionOrRedirect({ type: "admin" })` | Dress code image management |
+| `/admin/rsvp` | Dynamic | `requireSessionOrRedirect({ type: "admin" })` | RSVP response viewer (sortable table) |
+| `/admin/media` | Dynamic | `requireSessionOrRedirect({ type: "admin" })` | Media gallery CRUD |
+| `/admin/schedule` | Dynamic | `requireSessionOrRedirect({ type: "admin" })` | Wedding day schedule CRUD |
+| `/admin/security` | Dynamic | `requireSessionOrRedirect({ type: "admin" })` | IP banning, auto-ban settings, rate limit config |
 | `/api/health` | Static | None | Health check endpoint |
-| `/api/upload` | Dynamic | Admin only | File upload (multipart) |
-| `/api/media/[...path]` | Dynamic | Session | File serving (any logged-in user) |
-| `/api/media/list` | Dynamic | Admin only | Directory listing for file browser |
+| `/api/upload` | Dynamic | `requireAdminSessionOrNull()` | File upload (multipart) |
+| `/api/media/[...path]` | Dynamic | `requireSession()` | File serving (any logged-in user) |
+| `/api/media/list` | Dynamic | `requireAdminSessionOrNull()` | Directory listing for file browser |
 | `/api/login-background` | Static | None | Login background image (public) |
+
+All routes are also checked by `proxy.ts` before rendering — expired, tampered, or revoked session cookies are cleared automatically.
 
 ## Authentication & Authorization
 
@@ -92,13 +98,29 @@ Three session types, each with a different access scope:
 | `party` | Party code login | `/(main)/*` + RSVP for party members |
 | `viewer` | Username/password login | `/(main)/*` only |
 
+### Auth Function Naming Convention
+
+All auth functions follow a strict prefix convention that communicates the validation layer and side effects:
+
+| Prefix | Meaning | Examples |
+|---|---|---|
+| `verify` | Crypto/integrity check (pure, no DB) | `verifyToken()`, `verifyTokenInCookie()`, `verifyPassword()` |
+| `validate` | Business rule check (reads DB) | `validateSessionInDb()` |
+| `require` | Gatekeeper (redirects or returns null) | `requireSessionOrRedirect()`, `requireAdminSessionOrNull()` |
+
+Each layer adds checks: `verify` → crypto only, `validate` → DB truth, `require` → rejects on failure. See [authentication.md](../features/authentication.md#auth-function-naming-convention) for the full convention and call chain.
+
 ### Cookie Architecture
 
 Two categories of cookies serve different purposes:
 
-**Session cookie (`session`)** — Set and read by the server. HTTP-only, HMAC-signed JSON containing `{userId, type, partyId?, pwChangedAt?}`. Uses two-tier validation: fast path (crypto-only, no DB) for page loads, mutation path (DB check) for state-changing actions. This is the only cookie the server uses for authentication.
+**Session cookie (`session`)** — Set and read by the server. HTTP-only, HMAC-signed JSON containing `{userId, type, partyId?, pwChangedAt?}`. Uses four-tier validation: proxy (crypto + revocation via `verifyToken()`), fast path (`verifyTokenInCookie()` — crypto-only, no DB) for page loads, revocation check (in-memory maps via `isSessionRevoked()`), mutation path (`validateSessionInDb()` — DB check) for state-changing actions. This is the only cookie the server uses for authentication.
 
 **Rate-limit cookies (`rl_until`, `rl_r_until`, `rl_q_until`)** — Set and read by the client only. Created from `cooldownUntil` timestamps returned in server responses. Never read by the server. These are UX helpers that provide pre-submit guards (block form before server call) and reload persistence (restore cooldown timer after page refresh). They have no security function — the server's in-memory rate limiter enforces limits regardless of cookies.
+
+### Session Revocation
+
+When an admin changes a user's password or bans an IP, active sessions are immediately invalidated via in-memory caches. The proxy (`proxy.ts`) checks these caches on every page request via `verifyToken()` + `isSessionRevoked()` and clears the cookie for revoked sessions. Server actions check them via `requireAdminSessionOrNull()`. This eliminates the window where a user could continue using a stale session after a password change or IP ban. See [authentication.md](../features/authentication.md#session-revocation) for the full revocation architecture.
 
 ### Protection Layers
 
@@ -106,12 +128,13 @@ Requests pass through multiple protection layers:
 
 1. **Cloudflare Edge** — TLS, DDoS mitigation, bot detection
 2. **Caddy** — Connection-level rate limiting, security headers
-3. **Server Actions** — IP ban check → in-memory rate limiter → auto-ban → authentication → authorization
-4. **SQLite** — Parameterized queries, WAL mode, foreign keys
+3. **proxy.ts** — Session cookie: crypto check + revocation check; clears cookie for invalid/revoked sessions
+4. **Server Actions** — IP ban check → in-memory rate limiter → auto-ban → authentication → authorization
+5. **SQLite** — Parameterized queries, WAL mode, foreign keys
 
 The server enforces the same protection for UI clients (browsers) and non-UI clients (curl, scripts, bots). Rate-limit cookies are a UX convenience for browsers; the server's rate limiter is the actual enforcement.
 
-Auth is enforced at the layout level (`parseAdminSession()` guard) and in every Server Action. `SafeUser` type (`Omit<User, "password">`) is returned by all repository functions except `getUserWithPassword` and `getPartyUserWithPassword`. See [authentication.md](../features/authentication.md) for the full cookie architecture, client vs server responsibilities, and protection details.
+Auth is enforced at the layout level (`requireSessionOrRedirect()` guard) and in every Server Action (`requireAdminSessionOrNull()` / `validateSessionInDb()`). `SafeUser` type (`Omit<User, "password">`) is returned by all repository functions except `getUserWithPassword` and `getPartyUserWithPassword`. See [authentication.md](../features/authentication.md) for the full cookie architecture, session revocation, client vs server responsibilities, and protection details.
 
 ## Technology Stack
 
@@ -124,7 +147,7 @@ Auth is enforced at the layout level (`parseAdminSession()` guard) and in every 
 | Styling | Plain CSS (custom properties) | Zero-dependency, themeable via `:root`. **No Tailwind CSS.** Utility classes are hand-crafted in `globals.css`. |
 | Proxy | Caddy 2.11 (alpine) | TLS, rate limiting, security headers |
 | Tunnel | cloudflared 2026.6.1 | Outbound-only Cloudflare Tunnel |
-| Testing | Vitest + Playwright | 313 unit tests + E2E specs |
+| Testing | Vitest + Playwright | 340 unit tests + 68 E2E specs (57 parallel + 11 serial) |
 | Deployment | Docker Compose | Multi-stage build, isolated networks |
 
 ## Directory Layout
@@ -144,7 +167,7 @@ src/
 │   │   │   ├── page.tsx
 │   │   │   └── media-gallery.tsx # Grid + lightbox (client)
 │   │   ├── schedule/page.tsx     # Wedding day timeline
-│   │   └── layout.tsx            # Auth guard + bottom nav
+│   │   └── layout.tsx            # Auth guard (requireSessionOrRedirect) + bottom nav
 │   ├── admin/                    # Admin dashboard
 │   │   ├── users/                # User management
 │   │   ├── guests/               # Guest CRUD + party assignment
@@ -159,25 +182,28 @@ src/
 │   │   │   └── actions.ts        # addItem, deleteItem, updateItem, createTabInline, renameTab, deleteTab
 │   │   ├── schedule/             # Schedule CRUD
 │   │   ├── security/             # IP banning, auto-ban, rate limit config
-│   │   └── layout.tsx            # Admin guard + responsive sidebar
+│   │   └── layout.tsx            # Admin guard (requireSessionOrRedirect({ type: "admin" })) + responsive sidebar
 │   ├── login/                    # Login page + actions
 │   ├── api/health/route.ts       # Health check
 │   ├── api/upload/route.ts       # File upload (admin)
-│   ├── api/media/[...path]/      # File serving (session auth)
+│   ├── api/media/[...path]/      # File serving (session auth via requireSession)
 │   ├── api/media/list/route.ts   # Directory listing (admin)
 │   ├── api/login-background/     # Login bg image (public)
 │   └── (page.tsx, layout.tsx, error.tsx, not-found.tsx)
+├── proxy.ts                      # Cookie-clearing proxy — runs before page renders, checks revocation
 ├── components/                   # Shared UI (6 client components)
 │   ├── searchable-select.tsx     # WAI-ARIA combobox
 │   ├── countdown-timer.tsx       # T-XYZ / T+XYZ timer
 │   ├── file-upload.tsx           # Drag-and-drop upload
 │   ├── file-browser.tsx          # Text-based file explorer
 │   ├── logout-button.tsx         # Logout form wrapper
+│   ├── cookie-block-warning.tsx  # Client-side cookie blocking detection
 │   └── rate-limit-form/          # Reusable rate limit config form
 ├── lib/                          # Server-only utilities
-│   ├── repository/               # Data access (10 entity files)
+│   ├── repository/               # Data access (12 entity files)
 │   ├── types.ts                  # All interfaces + SafeUser
-│   ├── auth.ts                   # Session + password hashing
+│   ├── auth.ts                   # Session create/destroy, verifyToken, verifyTokenInCookie, requireSessionOrRedirect, requireSession, requireAdminSessionOrNull, validateSessionInDb, password hash/verify
+│   ├── session-revocation.ts     # In-memory revocation maps (password changes + IP bans)
 │   ├── db.ts                     # Connection + DDL + seed
 │   ├── schema.ts                 # DDL (12 tables)
 │   ├── config.ts                 # Env validation
@@ -198,8 +224,9 @@ src/
 | Data fetching | Server Components | No client-server waterfall, smaller bundles |
 | Mutations | Server Actions | Type-safe, colocated, no API boilerplate |
 | Database | SQLite | Zero-config, file-based, no server process needed |
-| Auth | HMAC-signed JSON cookie + two-tier validation | Simple, secure (signed). Fast path: crypto-only for page loads (0 DB queries). Mutation path: validates `pwChangedAt` against DB on writes only. |
-| Access control | Layout-level guards + server actions | Every admin page and action validates `isAdmin()` server-side |
+| Auth | HMAC-signed JSON cookie + four-tier validation | Simple, secure (signed). Proxy: crypto + revocation + cookie clear. Fast path: crypto-only for page loads (0 DB queries). Revocation: in-memory maps for immediate invalidation. Mutation path: validates `pwChangedAt` against DB on writes only. |
+| Session revocation | In-memory maps + proxy | Immediate invalidation on password change or IP ban. Proxy clears cookie before page renders. Maps reset on server restart — intentional (expired sessions already handled by `exp` field). |
+| Access control | Layout-level guards + server actions | Every admin page and action validates session server-side via `requireSessionOrRedirect()` / `requireAdminSessionOrNull()` |
 | RSVP | Party model | Families RSVP once with a code (not per-person passwords) |
 | Styling | Plain CSS | Zero dependencies, themeable via custom properties. **No Tailwind CSS** — utility classes are hand-crafted in `globals.css`. |
 | Deployment | Docker Compose | Isolated networks, multi-stage builds, health checks |

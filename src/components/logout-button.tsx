@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { logout } from "@/app/login/actions";
 import { isRedirectError } from "@/lib/utils";
+import { COOKIE_HEALTH_KEY } from "@/lib/constants";
 
 export function LogoutButton() {
   const [isPending, setIsPending] = useState(false);
@@ -11,6 +12,7 @@ export function LogoutButton() {
     e.preventDefault();
     setIsPending(true);
     try {
+      try { localStorage.removeItem(COOKIE_HEALTH_KEY); } catch { /* localStorage unavailable */ }
       await logout();
     } catch (err) {
       if (isRedirectError(err)) throw err;

@@ -1,10 +1,8 @@
 import { test, expect } from "@playwright/test";
+import { loginAsParty, loginAsAdmin } from "../utils/helpers";
 
 test("guest logout clears session and redirects to login", async ({ page }) => {
-  await page.goto("/");
-  await page.fill("input[name=code]", "DEMO-1234");
-  await page.getByRole("button", { name: "Continue with Party Code" }).click();
-  await expect(page).toHaveURL(/\/home/);
+  await loginAsParty(page);
 
   await page.getByRole("button", { name: "Logout" }).click();
   await expect(page).toHaveURL("/login");
@@ -14,12 +12,7 @@ test("guest logout clears session and redirects to login", async ({ page }) => {
 });
 
 test("admin logout clears session and redirects to login", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByRole("button", { name: "User sign in" }).click();
-  await page.fill("input[name=username]", "admin");
-  await page.fill("input[name=password]", "admin");
-  await page.locator("button[type=submit]").click();
-  await expect(page).toHaveURL(/\/admin/);
+  await loginAsAdmin(page);
 
   // Admin layout has no Logout button; clear session via cookie removal
   await page.context().clearCookies();

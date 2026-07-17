@@ -1,13 +1,14 @@
 import { redirect } from "next/navigation";
-import { parseSession } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { getConfig } from "@/lib/repository/site-config";
 import { isIpBanned } from "@/lib/repository/ip-bans";
 import { getClientIp } from "@/lib/ip";
 import { validateMediaUrl } from "@/lib/form-data";
 import { LoginForm } from "./login-form";
+import { CookieBlockWarning } from "@/components/cookie-block-warning";
 
 export default async function LoginPage() {
-  const session = await parseSession();
+  const session = await requireSession();
   if (session) {
     const redirectTo = session.type === "admin" ? "/admin" : "/home";
     redirect(redirectTo);
@@ -43,6 +44,7 @@ export default async function LoginPage() {
 
   return (
     <div className="landing">
+      <CookieBlockWarning />
       <div
         className="landing-bg"
         style={{ backgroundImage: safeBackground }}

@@ -36,7 +36,7 @@ Rate limiter blocks request
 
 The `action: "refresh"` response tells the client to re-fetch the page from the server. This is necessary because the page was initially rendered with the user's valid session, but now their IP is banned. A refresh causes the server to re-check the IP and render the banned screen.
 
-For the full server action flow (IP ban check → rate limiter → auto-ban → auth), see [authentication.md](authentication.md#rate-limiting).
+For the full server action flow (IP ban check → rate limiter → auto-ban → auth), see [authentication.md](authentication.md).
 
 ---
 

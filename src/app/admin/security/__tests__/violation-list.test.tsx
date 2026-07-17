@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ViolationList } from "../violation-list";
-import type { RateLimitViolation } from "@/lib/db";
+import type { RateLimitViolation } from "@/lib/types";
 
 vi.mock("../actions", () => ({
   banViolationIpAction: vi.fn(),

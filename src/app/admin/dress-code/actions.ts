@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { parseAdminSession, validateSessionForMutation } from "@/lib/auth";
+import { requireAdminSessionOrNull, validateSessionInDb } from "@/lib/auth";
 import { getString, getInt, validateMediaUrl } from "@/lib/form-data";
 import { createImage, deleteImage as deleteImageRepo, getImages, swapSortOrder } from "@/lib/repository/dress-code";
 import { setConfig } from "@/lib/repository/site-config";
@@ -10,9 +10,9 @@ import { ensureThumbnail } from "@/lib/thumbnail";
 interface DressCodeState { success?: boolean; error?: string }
 
 export async function addImage(prevState: DressCodeState | null, formData: FormData): Promise<DressCodeState> {
-  const session = await parseAdminSession();
+  const session = await requireAdminSessionOrNull();
   if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
+  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   const imageUrl = getString(formData, "image_url");
   if (!imageUrl) return { success: false, error: "Image URL is required." };
@@ -32,9 +32,9 @@ export async function addImage(prevState: DressCodeState | null, formData: FormD
 }
 
 export async function deleteImage(prevState: DressCodeState | null, formData: FormData): Promise<DressCodeState> {
-  const session = await parseAdminSession();
+  const session = await requireAdminSessionOrNull();
   if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
+  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "image_id");
   if (id === null) return { success: false, error: "Invalid image ID." };
@@ -51,9 +51,9 @@ export async function deleteImage(prevState: DressCodeState | null, formData: Fo
 }
 
 export async function moveImage(prevState: DressCodeState | null, formData: FormData): Promise<DressCodeState> {
-  const session = await parseAdminSession();
+  const session = await requireAdminSessionOrNull();
   if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
+  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "image_id");
   const direction = getString(formData, "direction");
@@ -85,9 +85,9 @@ export async function moveImage(prevState: DressCodeState | null, formData: Form
 }
 
 export async function saveDressCodeText(prevState: DressCodeState | null, formData: FormData): Promise<DressCodeState> {
-  const session = await parseAdminSession();
+  const session = await requireAdminSessionOrNull();
   if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
+  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   const text = getString(formData, "dress_code_text");
   if (text && text.length > 5000) {

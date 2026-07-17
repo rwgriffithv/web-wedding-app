@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { parseAdminSession, validateSessionForMutation } from "@/lib/auth";
+import { requireAdminSessionOrNull, validateSessionInDb } from "@/lib/auth";
 import { getString, getInt, validateMediaUrl } from "@/lib/form-data";
 import { create, update, getAll, swapSortOrder, deleteOption as deleteOptionRepo } from "@/lib/repository/lodging";
 import { setConfig } from "@/lib/repository/site-config";
@@ -10,9 +10,9 @@ import { ensureThumbnail } from "@/lib/thumbnail";
 interface LodgingState { success?: boolean; error?: string }
 
 export async function addOption(prevState: LodgingState | null, formData: FormData): Promise<LodgingState> {
-  const session = await parseAdminSession();
+  const session = await requireAdminSessionOrNull();
   if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
+  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   const title = getString(formData, "title");
   const imageUrl = getString(formData, "image_url");
@@ -41,9 +41,9 @@ export async function addOption(prevState: LodgingState | null, formData: FormDa
 }
 
 export async function updateOption(prevState: LodgingState | null, formData: FormData): Promise<LodgingState> {
-  const session = await parseAdminSession();
+  const session = await requireAdminSessionOrNull();
   if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
+  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "option_id");
   if (id === null) return { success: false, error: "Invalid option ID." };
@@ -78,9 +78,9 @@ export async function updateOption(prevState: LodgingState | null, formData: For
 }
 
 export async function moveOption(prevState: LodgingState | null, formData: FormData): Promise<LodgingState> {
-  const session = await parseAdminSession();
+  const session = await requireAdminSessionOrNull();
   if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
+  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "option_id");
   const direction = getString(formData, "direction");
@@ -112,9 +112,9 @@ export async function moveOption(prevState: LodgingState | null, formData: FormD
 }
 
 export async function deleteOption(prevState: LodgingState | null, formData: FormData): Promise<LodgingState> {
-  const session = await parseAdminSession();
+  const session = await requireAdminSessionOrNull();
   if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
+  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "option_id");
   if (id === null) return { success: false, error: "Invalid option ID." };
@@ -131,9 +131,9 @@ export async function deleteOption(prevState: LodgingState | null, formData: For
 }
 
 export async function saveLodgingText(prevState: LodgingState | null, formData: FormData): Promise<LodgingState> {
-  const session = await parseAdminSession();
+  const session = await requireAdminSessionOrNull();
   if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
+  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   const text = getString(formData, "lodging_text");
   if (text && text.length > 1000) {

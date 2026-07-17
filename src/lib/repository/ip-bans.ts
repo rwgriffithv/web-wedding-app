@@ -58,6 +58,14 @@ export function banIp(ip: string, reason: string): void {
   ).run(ip, reason);
 }
 
+export function getBannedIpById(id: number): string | null {
+  const db = getDb();
+  const row = db.prepare(
+    "SELECT ip_address FROM banned_ips WHERE id = ?"
+  ).get(id) as { ip_address: string } | undefined;
+  return row?.ip_address ?? null;
+}
+
 export function unbanIp(id: number): void {
   const db = getDb();
   db.prepare(

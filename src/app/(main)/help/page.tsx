@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { parseSession } from "@/lib/auth";
+import { verifyTokenInCookie } from "@/lib/auth";
 import { getAll as getAllFaq } from "@/lib/repository/faq";
 import { getByPartyId } from "@/lib/repository/questions";
 import { FaqContent } from "./faq-content";
@@ -22,7 +22,7 @@ function isValidTab(tab: string | undefined): tab is TabId {
 
 export default async function HelpPage({ searchParams }: HelpPageProps) {
   const params = await searchParams;
-  const session = await parseSession();
+  const session = await verifyTokenInCookie();
   const activeTab: TabId = isValidTab(params.tab) ? params.tab : "faq";
 
   const faqItems = getAllFaq();

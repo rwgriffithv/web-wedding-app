@@ -1,9 +1,7 @@
 import { redirect } from "next/navigation";
-import { parseSession } from "@/lib/auth";
+import { requireSessionOrRedirect } from "@/lib/auth";
 
 export default async function HomePage() {
-  const session = await parseSession();
-  if (!session) redirect("/login");
-
+  await requireSessionOrRedirect();
   redirect("/home");
 }

@@ -1,13 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { validateSessionForMutation } from "@/lib/auth";
+import { validateSessionInDb } from "@/lib/auth";
 import { getString } from "@/lib/form-data";
 import { MAX_QUESTION_LENGTH, RATE_LIMIT_MAX_ATTEMPTS_DEFAULT, RATE_LIMIT_WINDOW_SECONDS_DEFAULT } from "@/lib/constants";
 import { create } from "@/lib/repository/questions";
 import { createRateLimiter, getRateLimitConfig } from "@/lib/rate-limit";
 
-interface HelpState { success?: boolean; error?: string; action?: "cooldown"; cooldownUntil?: number }
+interface HelpState { success?: boolean; error?: string; action?: "cooldown" | "redirect"; cooldownUntil?: number; href?: string }
 
 const questionRateLimiter = createRateLimiter("question");
 
@@ -16,8 +16,8 @@ function getQuestionRateLimitConfig() {
 }
 
 export async function submitQuestion(prevState: HelpState | null, formData: FormData): Promise<HelpState> {
-  const session = await validateSessionForMutation();
-  if (!session?.partyId) return { success: false, error: "Not logged in as a party." };
+  const session = await validateSessionInDb();
+  if (!session?.partyId) return { success: false, action: "redirect", href: "/login" };
 
   const rlConfig = getQuestionRateLimitConfig();
   if (!questionRateLimiter.check(`party:${session.partyId}`, rlConfig)) {

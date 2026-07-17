@@ -1,16 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { parseAdminSession, validateSessionForMutation } from "@/lib/auth";
+import { requireAdminSessionOrNull, validateSessionInDb } from "@/lib/auth";
 import { getString } from "@/lib/form-data";
 import { setConfig } from "@/lib/repository/site-config";
 
 interface GiftsState { success?: boolean; error?: string }
 
 export async function saveGiftsText(prevState: GiftsState | null, formData: FormData): Promise<GiftsState> {
-  const session = await parseAdminSession();
+  const session = await requireAdminSessionOrNull();
   if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
+  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   const text = getString(formData, "gifts_text");
   if (text && text.length > 1000) {

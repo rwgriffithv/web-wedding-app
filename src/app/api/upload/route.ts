@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { parseAdminSession, validateSessionForMutation } from "@/lib/auth";
+import { requireAdminSessionOrNull, validateSessionInDb } from "@/lib/auth";
 import { MEDIA_DIR, ensureMediaDir, ALLOWED_EXTENSIONS, IMAGE_EXTENSIONS, VIDEO_EXTENSIONS } from "@/lib/media";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
@@ -8,11 +8,11 @@ import path from "node:path";
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
 export async function POST(request: Request) {
-  const session = await parseAdminSession();
+  const session = await requireAdminSessionOrNull();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (!(await validateSessionForMutation(session))) {
+  if (!(await validateSessionInDb(session))) {
     return NextResponse.json({ error: "Session expired" }, { status: 401 });
   }
 

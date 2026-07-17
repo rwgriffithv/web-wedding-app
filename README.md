@@ -79,8 +79,8 @@ npm run dev
 |---|---|
 | `npm run dev` | Start dev server with hot reload |
 | `npm run build` | Production build (verifies compilation) |
-| `npm test` | Run unit tests (Vitest) |
-| `npm run test:e2e` | Run E2E tests (Playwright, headless) |
+| `npm test` | Run all tests (unit + E2E) |
+| `npm run test:e2e` | Run all E2E tests (parallel then serial) |
 | `npm run typecheck` | TypeScript strict-mode check |
 | `npm run lint` | ESLint (flat config) |
 | `npm run db:seed` | Seed database with demo data |
@@ -185,11 +185,14 @@ See [docs/architecture/deployment-pipeline.md](docs/architecture/deployment-pipe
 
 | Suite | Command | Count |
 |---|---|---|
-| Unit tests | `npm test` | 37 tests (10 files) |
-| E2E tests | `npm run test:e2e` | 17 tests (6 specs) |
+| Unit tests | `npm run test:unit` | 383 tests (38 files) |
+| E2E (parallel) | `npm run test:e2e:parallel` | 56 tests (13 specs) |
+| E2E (serial) | `npm run test:e2e:serial` | 11 tests (2 specs) |
+| All | `npm test` | 450 tests |
 
-- Unit tests cover: auth, db init, all repositories (guests, RSVP, lodging, dress code, media, site config), header, navigation.
-- E2E tests cover: landing page, home page, admin auth, admin CRUD (lodging, guests, media), RSVP flows (party code login, submission, plus ones, view-only guest, invalid code), health check.
+- Unit tests cover: auth, session revocation, db init, all repositories (guests, RSVP, lodging, dress code, media, site config, users, IP bans, sessions), all server actions (security, RSVP, help, media, lodging, users), components (header, navigation, RSVP form, media forms, cookie warning, char count, rate-limit cooldown), rate limiting, and more.
+- E2E tests cover: login/logout, session expiry, session indicator, admin auth, admin CRUD (lodging, guests, media), admin security (rate limits, violations, IP banning, suspicious IPs), RSVP flows (party code login, submission, plus ones, deadline locking, view-only guest, invalid code), help/FAQ, guide tabs, media sections, health check.
+- Serial E2E tests (rate limiting, session revocation) run separately with a fresh server to avoid interfering with parallel tests.
 
 ---
 

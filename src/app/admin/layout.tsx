@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { isAdmin } from "@/lib/auth";
+import { requireSessionOrRedirect } from "@/lib/auth";
 import { AdminSidebar } from "@/components/admin-sidebar";
 import type { Metadata } from "next";
 
@@ -12,7 +11,7 @@ interface AdminLayoutProps {
 }
 
 export default async function AdminLayout({ children }: AdminLayoutProps) {
-  if (!(await isAdmin())) redirect("/");
+  await requireSessionOrRedirect({ type: "admin" });
 
   return (
     <div className="admin-layout">

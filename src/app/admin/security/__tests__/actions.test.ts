@@ -3,19 +3,29 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const mockIsAdmin = vi.fn();
 const mockValidateSessionForMutation = vi.fn();
 const mockBanIp = vi.fn();
+const mockUnbanIp = vi.fn();
 const mockIsIpBanned = vi.fn();
 const mockClearViolations = vi.fn();
+const mockGetBannedIpById = vi.fn();
 const mockSetConfig = vi.fn();
 const mockRevalidatePath = vi.fn();
+const mockRevokeSessionsByIpBan = vi.fn();
+const mockUnrevokeSessionsByIpBan = vi.fn();
 
-vi.mock("@/lib/auth", () => ({ parseAdminSession: () => mockIsAdmin(), validateSessionForMutation: () => mockValidateSessionForMutation() }));
+vi.mock("@/lib/auth", () => ({ requireAdminSessionOrNull: () => mockIsAdmin(), validateSessionInDb: () => mockValidateSessionForMutation() }));
 vi.mock("@/lib/repository/ip-bans", () => ({
   banIp: (...args: unknown[]) => mockBanIp(...args),
+  unbanIp: (...args: unknown[]) => mockUnbanIp(...args),
   isIpBanned: (...args: unknown[]) => mockIsIpBanned(...args),
   clearViolations: (...args: unknown[]) => mockClearViolations(...args),
+  getBannedIpById: (...args: unknown[]) => mockGetBannedIpById(...args),
 }));
 vi.mock("@/lib/repository/site-config", () => ({
   setConfig: (...args: unknown[]) => mockSetConfig(...args),
+}));
+vi.mock("@/lib/session-revocation", () => ({
+  revokeSessionsByIpBan: (...args: unknown[]) => mockRevokeSessionsByIpBan(...args),
+  unrevokeSessionsByIpBan: (...args: unknown[]) => mockUnrevokeSessionsByIpBan(...args),
 }));
 vi.mock("next/cache", () => ({
   revalidatePath: (...args: unknown[]) => mockRevalidatePath(...args),
@@ -42,7 +52,7 @@ describe("saveSuspiciousSettings", () => {
     expect(result.error).toBe("Unauthorized");
   });
 
-  it("rejects expired session (isAdmin passes, validateSessionForMutation fails)", async () => {
+  it("rejects expired session (isAdmin passes, validateSessionInDb fails)", async () => {
     mockIsAdmin.mockResolvedValue(true);
     mockValidateSessionForMutation.mockResolvedValue(null);
     const { saveSuspiciousSettings } = await import("../actions");
@@ -155,5 +165,167 @@ describe("banIpAction", () => {
     const result = await banIpAction(null, formData({ ip_address: "5.6.7.8", reason: "auto:threshold" }));
     expect(result.success).toBe(true);
     expect(mockBanIp).toHaveBeenCalledWith("5.6.7.8", "auto:threshold");
+  });
+});
+
+describe("saveAutoBanSettings", () => {
+  it("rejects non-admin", async () => {
+    mockIsAdmin.mockResolvedValue(false);
+    const { saveAutoBanSettings } = await import("../actions");
+    const result = await saveAutoBanSettings(null, formData({ auto_ban_login_threshold: "5", auto_ban_window_seconds: "300" }));
+    expect(result.error).toBe("Unauthorized");
+  });
+
+  it("rejects expired session", async () => {
+    mockValidateSessionForMutation.mockResolvedValue(null);
+    const { saveAutoBanSettings } = await import("../actions");
+    const result = await saveAutoBanSettings(null, formData({ auto_ban_login_threshold: "5", auto_ban_window_seconds: "300" }));
+    expect(result.error).toBe("Session expired");
+  });
+
+  it("rejects non-numeric threshold", async () => {
+    const { saveAutoBanSettings } = await import("../actions");
+    const result = await saveAutoBanSettings(null, formData({ auto_ban_login_threshold: "abc", auto_ban_window_seconds: "300" }));
+    expect(result.error).toBe("Threshold must be a number between 1 and 100.");
+  });
+
+  it("rejects threshold below 1", async () => {
+    const { saveAutoBanSettings } = await import("../actions");
+    const result = await saveAutoBanSettings(null, formData({ auto_ban_login_threshold: "0", auto_ban_window_seconds: "300" }));
+    expect(result.error).toBe("Threshold must be a number between 1 and 100.");
+  });
+
+  it("rejects threshold above 100", async () => {
+    const { saveAutoBanSettings } = await import("../actions");
+    const result = await saveAutoBanSettings(null, formData({ auto_ban_login_threshold: "101", auto_ban_window_seconds: "300" }));
+    expect(result.error).toBe("Threshold must be a number between 1 and 100.");
+  });
+
+  it("rejects non-numeric window", async () => {
+    const { saveAutoBanSettings } = await import("../actions");
+    const result = await saveAutoBanSettings(null, formData({ auto_ban_login_threshold: "5", auto_ban_window_seconds: "abc" }));
+    expect(result.error).toBe("Window must be between 60 and 86400 seconds.");
+  });
+
+  it("rejects window below 60", async () => {
+    const { saveAutoBanSettings } = await import("../actions");
+    const result = await saveAutoBanSettings(null, formData({ auto_ban_login_threshold: "5", auto_ban_window_seconds: "30" }));
+    expect(result.error).toBe("Window must be between 60 and 86400 seconds.");
+  });
+
+  it("rejects window above 86400", async () => {
+    const { saveAutoBanSettings } = await import("../actions");
+    const result = await saveAutoBanSettings(null, formData({ auto_ban_login_threshold: "5", auto_ban_window_seconds: "86401" }));
+    expect(result.error).toBe("Window must be between 60 and 86400 seconds.");
+  });
+
+  it("saves valid threshold and window", async () => {
+    const { saveAutoBanSettings } = await import("../actions");
+    const result = await saveAutoBanSettings(null, formData({ auto_ban_login_threshold: "10", auto_ban_window_seconds: "600" }));
+    expect(result.success).toBe(true);
+    expect(mockSetConfig).toHaveBeenCalledWith("auto_ban_login_threshold", "10");
+    expect(mockSetConfig).toHaveBeenCalledWith("auto_ban_window_seconds", "600");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/admin/security");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/admin");
+  });
+});
+
+describe("saveSessionSettings", () => {
+  it("rejects non-admin", async () => {
+    mockIsAdmin.mockResolvedValue(false);
+    const { saveSessionSettings } = await import("../actions");
+    const result = await saveSessionSettings(null, formData({ session_max_hours: "8", page_view_debounce_minutes: "5" }));
+    expect(result.error).toBe("Unauthorized");
+  });
+
+  it("rejects expired session", async () => {
+    mockValidateSessionForMutation.mockResolvedValue(null);
+    const { saveSessionSettings } = await import("../actions");
+    const result = await saveSessionSettings(null, formData({ session_max_hours: "8", page_view_debounce_minutes: "5" }));
+    expect(result.error).toBe("Session expired");
+  });
+
+  it("rejects non-numeric hours", async () => {
+    const { saveSessionSettings } = await import("../actions");
+    const result = await saveSessionSettings(null, formData({ session_max_hours: "abc", page_view_debounce_minutes: "5" }));
+    expect(result.error).toBe("Session expiry must be between 1 and 24 hours.");
+  });
+
+  it("rejects hours below 1", async () => {
+    const { saveSessionSettings } = await import("../actions");
+    const result = await saveSessionSettings(null, formData({ session_max_hours: "0", page_view_debounce_minutes: "5" }));
+    expect(result.error).toBe("Session expiry must be between 1 and 24 hours.");
+  });
+
+  it("rejects hours above 24", async () => {
+    const { saveSessionSettings } = await import("../actions");
+    const result = await saveSessionSettings(null, formData({ session_max_hours: "25", page_view_debounce_minutes: "5" }));
+    expect(result.error).toBe("Session expiry must be between 1 and 24 hours.");
+  });
+
+  it("rejects non-numeric minutes", async () => {
+    const { saveSessionSettings } = await import("../actions");
+    const result = await saveSessionSettings(null, formData({ session_max_hours: "8", page_view_debounce_minutes: "abc" }));
+    expect(result.error).toBe("Page view debounce must be between 1 and 1440 minutes.");
+  });
+
+  it("rejects minutes below 1", async () => {
+    const { saveSessionSettings } = await import("../actions");
+    const result = await saveSessionSettings(null, formData({ session_max_hours: "8", page_view_debounce_minutes: "0" }));
+    expect(result.error).toBe("Page view debounce must be between 1 and 1440 minutes.");
+  });
+
+  it("rejects minutes above 1440", async () => {
+    const { saveSessionSettings } = await import("../actions");
+    const result = await saveSessionSettings(null, formData({ session_max_hours: "8", page_view_debounce_minutes: "1441" }));
+    expect(result.error).toBe("Page view debounce must be between 1 and 1440 minutes.");
+  });
+
+  it("saves valid hours and minutes", async () => {
+    const { saveSessionSettings } = await import("../actions");
+    const result = await saveSessionSettings(null, formData({ session_max_hours: "8", page_view_debounce_minutes: "5" }));
+    expect(result.success).toBe(true);
+    expect(mockSetConfig).toHaveBeenCalledWith("session_max_hours", "8");
+    expect(mockSetConfig).toHaveBeenCalledWith("page_view_debounce_minutes", "5");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/admin/security");
+  });
+});
+
+describe("unbanIpAction", () => {
+  it("rejects non-admin", async () => {
+    mockIsAdmin.mockResolvedValue(false);
+    const { unbanIpAction } = await import("../actions");
+    const result = await unbanIpAction(null, formData({ id: "1" }));
+    expect(result.error).toBe("Unauthorized");
+  });
+
+  it("rejects expired session", async () => {
+    mockValidateSessionForMutation.mockResolvedValue(null);
+    const { unbanIpAction } = await import("../actions");
+    const result = await unbanIpAction(null, formData({ id: "1" }));
+    expect(result.error).toBe("Session expired");
+  });
+
+  it("rejects null ID (missing field)", async () => {
+    const { unbanIpAction } = await import("../actions");
+    const result = await unbanIpAction(null, formData({}));
+    expect(result.error).toBe("Invalid ID.");
+  });
+
+  it("returns Ban not found when getBannedIpById returns null", async () => {
+    mockGetBannedIpById.mockReturnValue(null);
+    const { unbanIpAction } = await import("../actions");
+    const result = await unbanIpAction(null, formData({ id: "42" }));
+    expect(result.error).toBe("Ban not found.");
+  });
+
+  it("successfully unbans when ban exists", async () => {
+    mockGetBannedIpById.mockReturnValue({ id: 7, ip_address: "10.0.0.5" });
+    const { unbanIpAction } = await import("../actions");
+    const result = await unbanIpAction(null, formData({ id: "7" }));
+    expect(result.success).toBe(true);
+    expect(mockUnbanIp).toHaveBeenCalledWith(7);
+    expect(mockUnrevokeSessionsByIpBan).toHaveBeenCalledWith({ id: 7, ip_address: "10.0.0.5" });
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/admin/security");
   });
 });

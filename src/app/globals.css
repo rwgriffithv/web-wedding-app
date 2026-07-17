@@ -101,6 +101,17 @@ a:hover {
   color: var(--color-primary);
 }
 
+/* Session Warning */
+.session-warning {
+  background: var(--color-warning);
+  color: white;
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  margin: 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+}
+
 /* Landing Page */
 .landing {
   position: relative;
@@ -1975,6 +1986,10 @@ footer {
 
 .font-mono {
   font-family: var(--font-mono, ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace);
+}
+
+.uppercase {
+  text-transform: uppercase;
 }
 
 .opacity-muted {

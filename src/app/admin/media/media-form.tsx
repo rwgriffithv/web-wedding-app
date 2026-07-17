@@ -46,6 +46,8 @@ export function MediaForm({ tabs }: { tabs: MediaTab[] }) {
       } else if (result.error) {
         setTabError(result.error);
       }
+    } catch (e) {
+      setTabError(e instanceof Error ? e.message : "Failed to create tab.");
     } finally {
       setCreatingTab(false);
     }
@@ -102,7 +104,6 @@ export function MediaForm({ tabs }: { tabs: MediaTab[] }) {
         <input id="title" name="title" type="text" placeholder="Media description" />
       </div>
       <div className="form-group">
-        <label>Tab</label>
         <SearchableSelect
           options={tabOptions}
           value={selectedTabId}
@@ -110,12 +111,13 @@ export function MediaForm({ tabs }: { tabs: MediaTab[] }) {
           onCreateNew={handleCreateNewTab}
           placeholder="Select a tab (optional)..."
           disabled={creatingTab}
+          label="Tab"
         />
       </div>
       {state?.success && <p className="text-success text-sm mb-1" role="status">Media added.</p>}
       {state?.error && <p className="text-error text-sm mb-1" role="alert">{state.error}</p>}
       {tabError && <p className="text-error text-sm mb-1" role="alert">{tabError}</p>}
-      <button type="submit" className="btn btn-primary" disabled={isPending || creatingTab}>{isPending ? "Adding..." : "Add Media"}</button>
+      <button type="submit" className="btn btn-primary btn-sm" disabled={isPending || creatingTab}>{isPending ? "Adding..." : "Add Media"}</button>
     </form>
   );
 }

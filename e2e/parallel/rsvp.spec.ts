@@ -1,23 +1,16 @@
 import { test, expect } from "@playwright/test";
+import { loginAsParty, loginAsAdmin } from "../utils/helpers";
 
 test.describe.serial("RSVP flows", () => {
   test("party code login redirects to home, RSVP accessible", async ({ page }) => {
-    await page.goto("/");
-    await page.getByRole("button", { name: "Party Code" }).click();
-    await page.fill("input[name=code]", "DEMO-1234");
-    await page.getByRole("button", { name: "Continue with Party Code" }).click();
-    await expect(page).toHaveURL(/\/home/);
+    await loginAsParty(page);
     await page.goto("/rsvp");
     await expect(page.getByRole("heading", { name: "RSVP" })).toBeVisible();
     await expect(page.getByText("Party: Demo Family")).toBeVisible();
   });
 
   test("party can submit RSVP", async ({ page }) => {
-    await page.goto("/");
-    await page.getByRole("button", { name: "Party Code" }).click();
-    await page.fill("input[name=code]", "DEMO-1234");
-    await page.getByRole("button", { name: "Continue with Party Code" }).click();
-    await expect(page).toHaveURL(/\/home/);
+    await loginAsParty(page);
     await page.goto("/rsvp");
 
     const yesRadio = page.locator("input[type=radio][value=yes]").first();
@@ -28,11 +21,7 @@ test.describe.serial("RSVP flows", () => {
   });
 
   test("radio state persists after submission without page reload", async ({ page }) => {
-    await page.goto("/");
-    await page.getByRole("button", { name: "Party Code" }).click();
-    await page.fill("input[name=code]", "DEMO-1234");
-    await page.getByRole("button", { name: "Continue with Party Code" }).click();
-    await expect(page).toHaveURL(/\/home/);
+    await loginAsParty(page);
     await page.goto("/rsvp");
 
     const member = page.locator(".rsvp-member").first();
@@ -64,11 +53,7 @@ test.describe.serial("RSVP flows", () => {
   });
 
   test("existing RSVP shown on return", async ({ page }) => {
-    await page.goto("/");
-    await page.getByRole("button", { name: "Party Code" }).click();
-    await page.fill("input[name=code]", "DEMO-1234");
-    await page.getByRole("button", { name: "Continue with Party Code" }).click();
-    await expect(page).toHaveURL(/\/home/);
+    await loginAsParty(page);
     await page.goto("/rsvp");
 
     const yesRadio = page.locator("input[type=radio][value=yes]").first();
@@ -83,12 +68,7 @@ test.describe.serial("RSVP flows", () => {
 
   test("RSVP form is locked when deadline is past", async ({ page }) => {
     // Set deadline as admin
-    await page.goto("/login");
-    await page.getByRole("button", { name: "User sign in" }).click();
-    await page.fill("input[name=username]", "admin");
-    await page.fill("input[name=password]", "admin");
-    await page.locator("button[type=submit]").click();
-    await expect(page).toHaveURL(/\/admin/);
+    await loginAsAdmin(page);
     await page.goto("/admin/rsvp");
     await page.getByText("RSVP Settings").click();
     const deadlineInput = page.locator("input[name=rsvp_deadline]");
@@ -98,22 +78,14 @@ test.describe.serial("RSVP flows", () => {
 
     // Logout, login as party, verify locked
     await page.context().clearCookies();
-    await page.goto("/");
-    await page.fill("input[name=code]", "DEMO-1234");
-    await page.getByRole("button", { name: "Continue with Party Code" }).click();
-    await expect(page).toHaveURL(/\/home/);
+    await loginAsParty(page);
     await page.goto("/rsvp");
     await expect(page.getByText(/rsvp is closed/i).first()).toBeVisible();
     await expect(page.locator("input[type=radio]").first()).toBeDisabled();
 
     // Cleanup: clear the deadline
     await page.context().clearCookies();
-    await page.goto("/login");
-    await page.getByRole("button", { name: "User sign in" }).click();
-    await page.fill("input[name=username]", "admin");
-    await page.fill("input[name=password]", "admin");
-    await page.locator("button[type=submit]").click();
-    await expect(page).toHaveURL(/\/admin/);
+    await loginAsAdmin(page);
     await page.goto("/admin/rsvp");
     await page.getByText("RSVP Settings").click();
     await deadlineInput.clear();
@@ -122,22 +94,14 @@ test.describe.serial("RSVP flows", () => {
   });
 
   test("RSVP form is editable when no deadline is set", async ({ page }) => {
-    await page.goto("/");
-    await page.getByRole("button", { name: "Party Code" }).click();
-    await page.fill("input[name=code]", "DEMO-1234");
-    await page.getByRole("button", { name: "Continue with Party Code" }).click();
-    await expect(page).toHaveURL(/\/home/);
+    await loginAsParty(page);
     await page.goto("/rsvp");
     await expect(page.locator("input[type=radio]").first()).toBeEnabled();
     await expect(page.getByRole("button", { name: "Submit" }).first()).toBeVisible();
   });
 
   test("selecting No for attending disables plus-one fields", async ({ page }) => {
-    await page.goto("/");
-    await page.getByRole("button", { name: "Party Code" }).click();
-    await page.fill("input[name=code]", "DEMO-1234");
-    await page.getByRole("button", { name: "Continue with Party Code" }).click();
-    await expect(page).toHaveURL(/\/home/);
+    await loginAsParty(page);
     await page.goto("/rsvp");
     await expect(page.getByRole("heading", { name: "RSVP" })).toBeVisible();
 
@@ -157,11 +121,7 @@ test.describe.serial("RSVP flows", () => {
   });
 
   test("selecting No for attending resets plus-one selection", async ({ page }) => {
-    await page.goto("/");
-    await page.getByRole("button", { name: "Party Code" }).click();
-    await page.fill("input[name=code]", "DEMO-1234");
-    await page.getByRole("button", { name: "Continue with Party Code" }).click();
-    await expect(page).toHaveURL(/\/home/);
+    await loginAsParty(page);
     await page.goto("/rsvp");
     await expect(page.getByRole("heading", { name: "RSVP" })).toBeVisible();
 

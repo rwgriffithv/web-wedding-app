@@ -25,21 +25,33 @@ A production-ready Next.js starter web application with admin dashboard, SQLite 
 - Server Actions via `"use server"` in dedicated files (`actions.ts`)
 - Structured return types `{ success, data?, error? }` from actions
 - SQLite queries return typed interfaces from `src/lib/db.ts`
-- Admin routes protected via `isAdmin()` check in layout
+- Admin routes protected via `requireAdminSessionOrNull()` check in layout
 - No Client Components unless interactivity requires it
 
 ## Testing
-- **Unit tests:** Vitest with testing-library + jsdom, files colocated as `*.test.ts(x)`
-- **E2E tests:** Playwright with Chromium, files in `e2e/`, auto-starts dev server
-- **MCP integration:** Playwright MCP for browser automation, SQLite MCP connected to `data/dev.db`
+
+**Always use `npm run test` to verify changes.** It runs all test suites sequentially with isolated servers:
+
+1. `test:unit` — Vitest unit tests (fast, no server)
+2. `test:e2e:parallel` — Playwright parallel E2E tests (fresh server)
+3. `test:e2e:serial` — Playwright serial E2E tests (fresh server, modifies rate-limit config)
+
+Each E2E suite gets its own server build + seed, so rate-limit tests in the serial suite don't interfere with parallel tests.
+
+| Command | What it runs |
+|---|---|
+| `npm run test` | **All tests** — unit + parallel E2E + serial E2E |
+| `npm run test:check` | Typecheck + lint + all tests (full CI) |
+| `npm run test:unit` | Unit tests only (Vitest) |
+| `npm run test:watch` | Unit tests in watch mode |
+| `npm run test:e2e` | All E2E tests (parallel then serial) |
+| `npm run test:e2e:parallel` | Parallel E2E tests only (Playwright, headless) |
+| `npm run test:e2e:serial` | Serial E2E tests only |
+| `npm run test:e2e:ui` | E2E tests with Playwright UI mode |
 
 ## Key Commands
 - `npm run dev` — Start dev server
 - `npm run build` — Production build
-- `npm test` — Run unit tests (Vitest)
-- `npm run test:watch` — Unit tests in watch mode
-- `npm run test:e2e` — Run E2E tests (Playwright, headless)
-- `npm run test:e2e:ui` — Run E2E tests with Playwright UI mode
 - `npm run typecheck` — Standalone TypeScript check
 - `npm run lint` — ESLint (flat config)
 - `npm run db:seed` — Seed with demo data

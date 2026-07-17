@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { submitQuestion } from "./actions";
 import { CharCount } from "@/components/char-count";
 import { MAX_QUESTION_LENGTH } from "@/lib/constants";
@@ -8,7 +9,8 @@ import { useRateLimitCooldown } from "@/lib/use-rate-limit-cooldown";
 import type { Question } from "@/lib/db";
 
 export function MyQuestions({ questions }: { questions: Question[] }) {
-  const [state, setState] = useState<{ success?: boolean; error?: string } | null>(null);
+  const router = useRouter();
+  const [state, setState] = useState<{ success?: boolean; error?: string; action?: string; href?: string } | null>(null);
   const [isPending, setIsPending] = useState(false);
   const [questionText, setQuestionText] = useState("");
   const { cooldown, isLimited, checkRateLimit, syncFromResponse } = useRateLimitCooldown("rl_q_until");
@@ -24,7 +26,9 @@ export function MyQuestions({ questions }: { questions: Question[] }) {
       const formData = new FormData(e.currentTarget);
       const result = await submitQuestion(null, formData);
       setState(result);
-      if (result.success) {
+      if (result.action === "redirect" && result.href) {
+        router.push(result.href);
+      } else if (result.success) {
         setQuestionText("");
       } else if (result.action === "cooldown" && result.cooldownUntil) {
         syncFromResponse(result.cooldownUntil);

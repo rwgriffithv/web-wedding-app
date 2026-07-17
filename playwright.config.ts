@@ -1,4 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
+import path from "path";
+
+const dbPath = path.resolve("data/dev.db");
 
 export default defineConfig({
   testDir: "./e2e",
@@ -13,7 +16,15 @@ export default defineConfig({
   },
   projects: [
     {
-      name: "chromium",
+      name: "serial",
+      testDir: "./e2e/serial",
+      fullyParallel: false,
+      workers: 1,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "parallel",
+      testDir: "./e2e/parallel",
       use: { ...devices["Desktop Chrome"] },
     },
   ],
@@ -21,14 +32,20 @@ export default defineConfig({
     // db:seed always resets rate-limit config and clears bans/violations
     // to prevent parallel workers from self-banning localhost.
     // See docs/architecture/conventions.md — "E2E Testing Pitfalls".
-    command: "npm run db:seed && npm run dev",
+    command:
+      "npm run db:seed && npm run build && " +
+      "cp -r .next/static .next/standalone/.next/ && " +
+      "node .next/standalone/server.js",
     url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
-    timeout: 60000,
+    reuseExistingServer: false,
+    timeout: 120000,
     env: {
+      DATABASE_URL: `file:${dbPath}`,
       ADMIN_USERNAME: "admin",
       ADMIN_PASSWORD: "admin",
-      SESSION_SECRET: "rob-and-ana",
+      SESSION_SECRET: "super-secret-secret-at-least-32chars",
+      PORT: "3000",
+      HOSTNAME: "localhost",
     },
   },
 });

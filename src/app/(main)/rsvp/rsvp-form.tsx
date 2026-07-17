@@ -1,9 +1,13 @@
 "use client";
 
 import { useState, useEffect, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { submitRsvp, type RsvpState } from "./actions";
 import type { RsvpResponse } from "@/lib/types";
 import { useSharedCooldown } from "./rate-limit-context";
+import { CharCount } from "@/components/char-count";
+
+const MAX_PLUS_ONE_LENGTH = 128;
 
 interface RsvpFormProps {
   memberId: number;
@@ -13,6 +17,7 @@ interface RsvpFormProps {
 }
 
 export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked }: RsvpFormProps) {
+  const router = useRouter();
   const { cooldown, isLimited, checkRateLimit, syncFromResponse } = useSharedCooldown();
 
   const [state, setState] = useState<RsvpState | null>(null);
@@ -49,7 +54,9 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
       const formData = new FormData(e.currentTarget);
       const result = await submitRsvp(null, formData);
       setState(result);
-      if (!result.success && result.action === "cooldown" && result.cooldownUntil) {
+      if (result.action === "redirect" && result.href) {
+        router.push(result.href);
+      } else if (!result.success && result.action === "cooldown" && result.cooldownUntil) {
         syncFromResponse(result.cooldownUntil);
       }
     } catch {
@@ -131,7 +138,7 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
       </div>
 
       {canBringPlusOne && bringPlusOne === "yes" && (
-        <div className="form-group mt-1">
+        <div className="form-group">
           <label htmlFor={`plus_one_${memberId}`}>Plus-one name</label>
           <input
             id={`plus_one_${memberId}`}
@@ -142,27 +149,29 @@ export function RsvpForm({ memberId, canBringPlusOne, existingResponse, isLocked
             placeholder="Guest's name"
             disabled={isInputDisabled || attending === "no"}
             required
+            maxLength={MAX_PLUS_ONE_LENGTH}
           />
+          <CharCount current={plusOneName.length} max={MAX_PLUS_ONE_LENGTH} />
         </div>
       )}
 
       {state?.success && (
-        <p className="text-success text-sm mt-1" role="status">
+        <p className="text-success text-sm mb-1" role="status">
           {hasResponse ? "Response updated." : "Response submitted."}
         </p>
       )}
       {state?.error && (
-        <p className="text-error text-sm mt-1" role="alert">{state.error}</p>
+        <p className="text-error text-sm mb-1" role="alert">{state.error}</p>
       )}
       {!state && isLimited && (
-        <p className="text-error text-sm mt-1" role="alert">Your party has made too many submissions. Please wait before trying again.</p>
+        <p className="text-error text-sm mb-1" role="alert">Your party has made too many submissions. Please wait before trying again.</p>
       )}
       {isLocked ? (
-        <p className="text-muted text-sm mt-1 italic">RSVP is closed.</p>
+        <p className="text-muted text-sm mb-1 italic">RSVP is closed.</p>
       ) : (
         <button
           type="submit"
-          className="btn btn-primary btn-sm mt-1"
+          className="btn btn-primary btn-sm mb-1"
           disabled={isPending || isLimited}
         >
           {cooldown > 0 ? `Please wait ${cooldown}s...` : isPending ? "Saving..." : hasResponse ? "Update" : "Submit"}

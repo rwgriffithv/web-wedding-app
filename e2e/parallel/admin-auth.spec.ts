@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { loginAsAdmin } from "./helpers";
+import { loginAsAdmin } from "../utils/helpers";
 
 test("redirects to login when accessing admin without auth", async ({ page }) => {
   await page.goto("/admin");

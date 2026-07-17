@@ -98,7 +98,8 @@ Common patterns:
 
 ```typescript
 // Auth check
-if (!(await isAdmin())) return { success: false, error: "Unauthorized" };
+const session = await requireAdminSessionOrNull();
+if (!session) return { success: false, error: "Unauthorized" };
 
 // Validation
 const id = getInt(formData, "id");
@@ -321,7 +322,7 @@ Playwright runs tests in parallel across multiple browser workers (default: CPU 
 **How to prevent it:**
 - `scripts/db-seed.ts` always resets rate-limit config and clears `banned_ips`/`rate_limit_violations` on every run (even when demo data already exists)
 - Dev defaults are set high enough for parallel tests: `rate_limit_max_attempts=100`, `auto_ban_login_threshold=50`
-- If you change these values, verify E2E tests still pass with `npm run test:e2e`
+- If you change these values, verify E2E tests still pass with `npm run test:e2e:parallel`
 
 **If tests are already broken:**
 ```bash

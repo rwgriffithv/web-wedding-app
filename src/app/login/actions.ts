@@ -12,7 +12,14 @@ import { getClientIp } from "@/lib/ip";
 import { getString } from "@/lib/form-data";
 import { RATE_LIMIT_MAX_ATTEMPTS_DEFAULT, RATE_LIMIT_WINDOW_SECONDS_DEFAULT } from "@/lib/constants";
 
-interface LoginState { error?: string; action?: "refresh" | "cooldown"; cooldownUntil?: number }
+interface LoginState {
+  success?: boolean;
+  error?: string;
+  action?: "refresh" | "cooldown";
+  cooldownUntil?: number;
+  cookieHealthUntil?: number;
+  redirectTo?: string;
+}
 
 const rateLimiter = createRateLimiter("login");
 
@@ -77,9 +84,20 @@ export async function login(formData: FormData): Promise<LoginState> {
     sessionData.partyId = user.party_id;
   }
   const sessionMaxAge = getSessionMaxSeconds();
-  store.set(SESSION_COOKIE, createSession(sessionData, sessionMaxAge), { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: sessionMaxAge });
+  store.set(SESSION_COOKIE, createSession(sessionData, sessionMaxAge), {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: sessionMaxAge,
+  });
 
-  redirect(user.type === "admin" ? "/admin" : "/home");
+  const redirectTo = user.type === "admin" ? "/admin" : "/home";
+  return {
+    success: true,
+    cookieHealthUntil: Date.now() + sessionMaxAge * 1000,
+    redirectTo,
+  };
 }
 
 export async function loginByPartyCode(formData: FormData): Promise<LoginState> {
@@ -125,9 +143,19 @@ export async function loginByPartyCode(formData: FormData): Promise<LoginState> 
 
   const store = await cookies();
   const sessionMaxAge = getSessionMaxSeconds();
-  store.set(SESSION_COOKIE, createSession({ userId: partyUser.id, partyId: party.id, type: "party", pwChangedAt: partyUser.password_changed_at }, sessionMaxAge), { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: sessionMaxAge });
+  store.set(SESSION_COOKIE, createSession({ userId: partyUser.id, partyId: party.id, type: "party", pwChangedAt: partyUser.password_changed_at }, sessionMaxAge), {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: sessionMaxAge,
+  });
 
-  redirect("/home");
+  return {
+    success: true,
+    cookieHealthUntil: Date.now() + sessionMaxAge * 1000,
+    redirectTo: "/home",
+  };
 }
 
 export async function logout(): Promise<void> {

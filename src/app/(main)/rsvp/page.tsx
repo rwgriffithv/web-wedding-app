@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { parseSession } from "@/lib/auth";
+import { verifyTokenInCookie } from "@/lib/auth";
 import { getConfig } from "@/lib/repository/site-config";
 import { getResponsesByGuests } from "@/lib/repository/rsvp";
 import { getGuestsByPartyId } from "@/lib/repository/guests";
@@ -7,7 +7,7 @@ import { getPartyById } from "@/lib/repository/party";
 import { RsvpFormList } from "./rsvp-form-list";
 
 export default async function RsvpPage() {
-  const session = await parseSession();
+  const session = await verifyTokenInCookie();
   if (!session) redirect("/");
 
   if (session.type === "admin" || session.type === "viewer") {

@@ -3,14 +3,11 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { login, loginByPartyCode } from "./actions";
-import { isRedirectError } from "@/lib/utils";
-import { useRateLimitCooldown } from "@/lib/use-rate-limit-cooldown";
+import { useRateLimitCooldown, type CooldownProps } from "@/lib/use-rate-limit-cooldown";
+import { COOKIE_HEALTH_KEY, RATE_LIMIT_ERROR } from "@/lib/constants";
 
-interface CooldownProps {
-  cooldown: number;
-  isLimited: boolean;
-  checkRateLimit: () => boolean;
-  syncFromResponse: (cooldownUntil: number) => void;
+function storeCookieHealth(until: number) {
+  try { localStorage.setItem(COOKIE_HEALTH_KEY, String(until)); } catch { /* localStorage unavailable */ }
 }
 
 function CredentialsForm({ cooldown, isLimited, checkRateLimit, syncFromResponse }: CooldownProps) {
@@ -28,14 +25,18 @@ function CredentialsForm({ cooldown, isLimited, checkRateLimit, syncFromResponse
     try {
       const formData = new FormData(e.currentTarget);
       const result = await login(formData);
+      if (result.success && result.cookieHealthUntil && result.redirectTo) {
+        storeCookieHealth(result.cookieHealthUntil);
+        router.push(result.redirectTo);
+        return;
+      }
       setState(result);
       if (result.action === "refresh") {
         router.refresh();
       } else if (result.action === "cooldown" && result.cooldownUntil) {
         syncFromResponse(result.cooldownUntil);
       }
-    } catch (err) {
-      if (isRedirectError(err)) throw err;
+    } catch {
       setState({ error: "Something went wrong. Please try again." });
     } finally {
       setIsPending(false);
@@ -58,7 +59,7 @@ function CredentialsForm({ cooldown, isLimited, checkRateLimit, syncFromResponse
         <p className="text-error text-xs mb-1" role="alert">{state.error}</p>
       )}
       {!state && isLimited && (
-        <p className="text-error text-xs mb-1" role="alert">Too many attempts. Please wait before trying again.</p>
+        <p className="text-error text-xs mb-1" role="alert">{RATE_LIMIT_ERROR}</p>
       )}
       <button type="submit" className="btn btn-primary w-full justify-center" disabled={isDisabled}>
         {cooldown > 0 ? `Please wait ${cooldown}s...` : isPending ? "Signing in..." : "Sign In"}
@@ -82,14 +83,18 @@ function PartyCodeForm({ cooldown, isLimited, checkRateLimit, syncFromResponse }
     try {
       const formData = new FormData(e.currentTarget);
       const result = await loginByPartyCode(formData);
+      if (result.success && result.cookieHealthUntil && result.redirectTo) {
+        storeCookieHealth(result.cookieHealthUntil);
+        router.push(result.redirectTo);
+        return;
+      }
       setState(result);
       if (result.action === "refresh") {
         router.refresh();
       } else if (result.action === "cooldown" && result.cooldownUntil) {
         syncFromResponse(result.cooldownUntil);
       }
-    } catch (err) {
-      if (isRedirectError(err)) throw err;
+    } catch {
       setState({ error: "Something went wrong. Please try again." });
     } finally {
       setIsPending(false);
@@ -102,8 +107,8 @@ function PartyCodeForm({ cooldown, isLimited, checkRateLimit, syncFromResponse }
     <form onSubmit={handleSubmit}>
       <div className="form-group">
         <label htmlFor="code">Party Code</label>
-        <input id="code" name="code" type="text" required placeholder="Enter code" autoComplete="off" style={{ textTransform: "uppercase" }} disabled={isLimited} />
-        <p className="text-xs text-muted mt-1">
+        <input id="code" name="code" type="text" required placeholder="Enter code" autoComplete="off" className="uppercase" disabled={isLimited} />
+        <p className="text-xs text-muted mt-1 uppercase">
           Found on your invitation
         </p>
       </div>
@@ -111,7 +116,7 @@ function PartyCodeForm({ cooldown, isLimited, checkRateLimit, syncFromResponse }
         <p className="text-error text-xs mb-1" role="alert">{state.error}</p>
       )}
       {!state && isLimited && (
-        <p className="text-error text-xs mb-1" role="alert">Too many attempts. Please wait before trying again.</p>
+        <p className="text-error text-xs mb-1" role="alert">{RATE_LIMIT_ERROR}</p>
       )}
       <button type="submit" className="btn btn-primary w-full justify-center" disabled={isDisabled}>
         {cooldown > 0 ? `Please wait ${cooldown}s...` : isPending ? "Looking up..." : "Continue with Party Code"}

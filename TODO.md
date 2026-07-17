@@ -156,3 +156,6 @@ Please help!
 
 * Ok so the suspicous IPs portion of the admin dashboard doesn't quite work as intended, since it currently is redundant or meaningless with the autoban functionality (which is great). please compute suspicious IPs instead as IPs that have hit rate limit violations a certain number of times, regardless of window (and are not banned). That value should be configurable in the Security page. Also swap the order of banned ips and suspicoius IPs in the admin main dashboard. Then, in the security tab keep a table of suspicious IPs that can be sorted by total violations or time of last violation. Add a "clear" button or "ban" button to those suspicious IPs in the table.
   * status: done
+
+* We have just done a massive massive ton of auth work in the last commit. One primary thing you will notice is highly improved hot vs cold path handling. I want you to investigate the hot vs cold path handling for rate limiting in the web app now. I want you to generate a report about how localstorage is used at the client, how the new nextjs proxy (src/proxy.ts) could be used, and the current server hot (if it exists) and server cold (DB access) paths work. Please generate a report/audit and a plan to make improvements to bring it up to the quality of the auth system arhitecture.
+  * status: not done

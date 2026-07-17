@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { useRateLimitCooldown } from "@/lib/use-rate-limit-cooldown";
 import { RateLimitContext } from "./rate-limit-context";
 import { RsvpForm } from "./rsvp-form";
@@ -20,10 +19,9 @@ interface RsvpFormListProps {
 
 export function RsvpFormList({ members, responsesByGuest, isLocked }: RsvpFormListProps) {
   const cooldown = useRateLimitCooldown("rl_r_until");
-  const value = useMemo(() => cooldown, [cooldown.cooldown]);
 
   return (
-    <RateLimitContext.Provider value={value}>
+    <RateLimitContext.Provider value={cooldown}>
       {members.map((m) => {
         const response = responsesByGuest.get(m.id);
         return (

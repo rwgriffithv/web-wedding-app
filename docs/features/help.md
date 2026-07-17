@@ -63,7 +63,7 @@ src/app/(main)/help/actions.ts
 
 | Step | Detail |
 |---|---|
-| Auth | Requires party session (`parseSession().partyId`) |
+| Auth | Requires party session (`verifyTokenInCookie().partyId`) |
 | Rate limit | Per-party sliding window (default: 5 req/60s, configurable) |
 | Validation | Question required, max 1000 chars |
 | Database | `INSERT INTO questions` |
@@ -83,7 +83,7 @@ src/app/admin/help/actions.ts
 | `moveFaq` | `faq_id`, `direction` ("up"/"down") | Swaps `sort_order` with neighbor |
 | `answerQuestion` | `question_id`, `answer` | Only answers unanswered questions |
 
-All admin actions are guarded by `isAdmin()` and revalidate both `/admin/help` and `/help`.
+All admin actions are guarded by `requireAdminSessionOrNull()` and revalidate both `/admin/help` and `/help`.
 
 ## Admin Dashboard
 

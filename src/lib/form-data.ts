@@ -34,7 +34,7 @@ function validateHttpUrl(url: string): string | null {
   return null;
 }
 
-const LOCAL_MEDIA_PATH_RE = /^\/[a-zA-Z0-9_\-/.]+$/;
+const LOCAL_MEDIA_PATH_RE = /^\/[a-zA-Z0-9_\-]+(?:\/[a-zA-Z0-9_\-]+)*\/?$/;
 
 export function validateMediaUrl(url: string): string | null {
   if (url.startsWith("/")) {

@@ -1,10 +1,14 @@
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import crypto from "crypto";
 import { getEnvConfig } from "./config";
 import { getConfig } from "./repository/site-config";
 import { getUserById } from "./repository/users";
 import { getPartyById } from "./repository/party";
 import { getPartyUserWithPassword } from "./repository/users";
+import { isSessionRevoked } from "./session-revocation";
+import { isIpBanned } from "./repository/ip-bans";
+import { getClientIp } from "./ip";
 
 export const SESSION_COOKIE = "session";
 
@@ -31,7 +35,8 @@ function signSession(obj: Record<string, unknown>, expiresInSeconds?: number): s
   return Buffer.from(`${signed}.${hmac}`).toString("base64url");
 }
 
-function verifySession(token: string): Session | null {
+/** Proxy path — HMAC + expiry check, sync, pure. Used in proxy.ts. */
+export function verifyToken(token: string): Session | null {
   let decoded: string;
   try {
     decoded = Buffer.from(token, "base64url").toString();
@@ -75,36 +80,70 @@ async function validateSessionFields(session: Session): Promise<Session | null> 
   return null;
 }
 
-/** Fast path — crypto only, no DB. Used for page loads and read-only checks. */
-export async function parseSession(): Promise<Session | null> {
+/** Hot path — read cookie via next/headers, verify HMAC + expiry. Used for page loads. */
+export async function verifyTokenInCookie(): Promise<Session | null> {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  return verifySession(token);
-}
-
-/** Fast path — parse session and verify it belongs to an admin. No DB query. */
-export async function parseAdminSession(): Promise<Session | null> {
-  const session = await parseSession();
-  if (!session || session.type !== "admin") return null;
-  return session;
-}
-
-/** Cold path — validates session fields against DB. Call only on mutations. */
-export async function validateSessionForMutation(session?: Session | null): Promise<Session | null> {
-  const s = session ?? await parseSession();
-  if (!s) return null;
-  return validateSessionFields(s);
+  return verifyToken(token);
 }
 
 /**
- * Fast path — parse session and verify it belongs to an admin. No DB query.
- * Used by read-only endpoints (e.g. media list). For admin mutations,
- * prefer `parseAdminSession()` + `validateSessionForMutation(session)`.
+ * Hot path — parse cookie, verify admin type, check in-memory session revocation.
+ * Returns null on failure (server actions handle error responses).
  */
-export async function isAdmin(): Promise<boolean> {
-  const session = await parseSession();
-  return session?.type === "admin";
+export async function requireAdminSessionOrNull(): Promise<Session | null> {
+  const session = await verifyTokenInCookie();
+  if (!session || session.type !== "admin") return null;
+  const ip = await getClientIp();
+  if (isSessionRevoked(session, ip)) return null;
+  return session;
+}
+
+/**
+ * Cold path — crypto + DB fields + IP ban check.
+ * Used by all mutation server actions (admin and party).
+ * Checks user/party existence, type match, password unchanged, and IP not banned — all against DB truth.
+ */
+export async function validateSessionInDb(session?: Session | null): Promise<Session | null> {
+  const s = session ?? await verifyTokenInCookie();
+  if (!s) return null;
+  if (!(await validateSessionFields(s))) return null;
+  if (isIpBanned(await getClientIp())) return null;
+  return s;
+}
+
+/**
+ * Hot path — parse cookie, check in-memory session revocation. Returns null if invalid or revoked.
+ * For API routes and server actions that accept any authenticated user.
+ * Does NOT clear cookies or redirect — the caller handles error responses.
+ */
+export async function requireSession(): Promise<Session | null> {
+  const session = await verifyTokenInCookie();
+  if (!session) return null;
+  const ip = await getClientIp();
+  if (isSessionRevoked(session, ip)) return null;
+  return session;
+}
+
+/**
+ * Hot path — parse cookie, check revocation, enforce optional type constraint.
+ * For page layouts and page.tsx. Redirects but does NOT clear cookies
+ * (cookies().set() is only allowed in Server Actions/Route Handlers).
+ *
+ * - No session or revoked → redirect("/login")
+ * - Wrong type → redirect("/home")
+ * - Valid → return session
+ */
+export async function requireSessionOrRedirect(options?: { type?: Session["type"] }): Promise<Session> {
+  const session = await requireSession();
+  if (!session) {
+    redirect("/login");
+  }
+  if (options?.type && session.type !== options.type) {
+    redirect("/home");
+  }
+  return session;
 }
 
 export function createSession(data: { userId?: number; partyId?: number; type: "admin" | "viewer" | "party"; pwChangedAt?: string | null }, expiresInSeconds?: number): string {

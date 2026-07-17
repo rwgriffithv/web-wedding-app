@@ -12,7 +12,7 @@ export default defineConfig({
     env: {
       ADMIN_USERNAME: "test-admin",
       ADMIN_PASSWORD: "test-admin-pass",
-      SESSION_SECRET: "test-secret-key-not-for-production",
+      SESSION_SECRET: "test-secret-key-not-for-production-ok",
     },
   },
   resolve: {

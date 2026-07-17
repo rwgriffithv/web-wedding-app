@@ -9,6 +9,17 @@ function requireEnv(name: string): string {
   return value;
 }
 
+function requireEnvMinLength(name: string, minLength: number): string {
+  const value = requireEnv(name);
+  if (value.length < minLength) {
+    throw new Error(
+      `[config] ${name} must be at least ${minLength} characters ` +
+      `(got ${value.length}). Set a stronger value in your environment or .env file.`,
+    );
+  }
+  return value;
+}
+
 let _config: {
   siteName: string;
   adminUsername: string;
@@ -22,7 +33,7 @@ export function getEnvConfig() {
       siteName: process.env.APP_NAME || "Wedding",
       adminUsername: requireEnv("ADMIN_USERNAME"),
       adminPassword: requireEnv("ADMIN_PASSWORD"),
-      sessionSecret: requireEnv("SESSION_SECRET"),
+      sessionSecret: requireEnvMinLength("SESSION_SECRET", 32),
     };
   }
   return _config;

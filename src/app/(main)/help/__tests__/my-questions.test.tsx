@@ -4,9 +4,14 @@ import { MyQuestions } from "../my-questions";
 import type { Question } from "@/lib/db";
 
 const mockSubmit = vi.fn();
+const mockPush = vi.fn();
 
 vi.mock("../actions", () => ({
   submitQuestion: (...args: unknown[]) => mockSubmit(...args),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: mockPush }),
 }));
 
 function getTextarea() {
@@ -22,8 +27,9 @@ const emptyQuestions: Question[] = [];
 describe("MyQuestions — form state persistence", () => {
   beforeEach(() => {
     mockSubmit.mockReset();
+    mockPush.mockReset();
     vi.useRealTimers();
-    document.cookie = "rl_q_until=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+    localStorage.removeItem("rl_q_until");
   });
 
   it("textarea retains text after failed submit", async () => {

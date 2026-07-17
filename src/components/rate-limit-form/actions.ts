@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { parseAdminSession, validateSessionForMutation } from "@/lib/auth";
+import { requireAdminSessionOrNull, validateSessionInDb } from "@/lib/auth";
 import { getString } from "@/lib/form-data";
 import { setConfigs } from "@/lib/repository/site-config";
 
@@ -23,9 +23,9 @@ export async function saveRateLimitConfig(
   _prev: RateLimitState | null,
   formData: FormData,
 ): Promise<RateLimitState> {
-  const session = await parseAdminSession();
+  const session = await requireAdminSessionOrNull();
   if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
+  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   try {
     const entries: [string, string][] = [];

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { parseAdminSession, validateSessionForMutation } from "@/lib/auth";
+import { requireAdminSessionOrNull, validateSessionInDb } from "@/lib/auth";
 import { getString } from "@/lib/form-data";
 import { MAX_QUESTION_LENGTH, MAX_ANSWER_LENGTH } from "@/lib/constants";
 import * as faqRepo from "@/lib/repository/faq";
@@ -26,9 +26,9 @@ function validateFaqFields(formData: FormData): { ok: true; question: string; an
 }
 
 export async function addFaq(prevState: HelpState | null, formData: FormData): Promise<HelpState> {
-  const session = await parseAdminSession();
+  const session = await requireAdminSessionOrNull();
   if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
+  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   const fields = validateFaqFields(formData);
   if (!fields.ok) return { success: false, error: fields.error };
@@ -45,9 +45,9 @@ export async function addFaq(prevState: HelpState | null, formData: FormData): P
 }
 
 export async function updateFaq(prevState: HelpState | null, formData: FormData): Promise<HelpState> {
-  const session = await parseAdminSession();
+  const session = await requireAdminSessionOrNull();
   if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
+  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   const idRaw = getString(formData, "faq_id");
   if (!idRaw) return { success: false, error: "Invalid FAQ item ID." };
@@ -69,9 +69,9 @@ export async function updateFaq(prevState: HelpState | null, formData: FormData)
 }
 
 export async function deleteFaq(prevState: HelpState | null, formData: FormData): Promise<HelpState> {
-  const session = await parseAdminSession();
+  const session = await requireAdminSessionOrNull();
   if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
+  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   const idRaw = getString(formData, "faq_id");
   if (!idRaw) return { success: false, error: "Invalid FAQ item ID." };
@@ -90,9 +90,9 @@ export async function deleteFaq(prevState: HelpState | null, formData: FormData)
 }
 
 export async function moveFaq(prevState: HelpState | null, formData: FormData): Promise<HelpState> {
-  const session = await parseAdminSession();
+  const session = await requireAdminSessionOrNull();
   if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
+  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   const idRaw = getString(formData, "faq_id");
   const direction = getString(formData, "direction");
@@ -126,9 +126,9 @@ export async function moveFaq(prevState: HelpState | null, formData: FormData): 
 }
 
 export async function answerQuestion(prevState: HelpState | null, formData: FormData): Promise<HelpState> {
-  const session = await parseAdminSession();
+  const session = await requireAdminSessionOrNull();
   if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionForMutation(session))) return { success: false, error: "Session expired" };
+  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   const idRaw = getString(formData, "question_id");
   if (!idRaw) return { success: false, error: "Invalid question ID." };
