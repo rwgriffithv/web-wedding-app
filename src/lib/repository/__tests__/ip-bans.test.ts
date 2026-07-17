@@ -287,6 +287,42 @@ describe("ip-bans repository", () => {
     });
   });
 
+  describe("tryAutoBan", () => {
+    it("bans IP when violation count reaches threshold", async () => {
+      const { recordRateLimitViolation, tryAutoBan, isIpBanned } = await import("@/lib/repository/ip-bans");
+      for (let i = 0; i < 4; i++) recordRateLimitViolation("192.168.1.100");
+      recordRateLimitViolation("192.168.1.100"); // 5th violation = threshold
+
+      tryAutoBan("192.168.1.100");
+
+      expect(isIpBanned("192.168.1.100")).toBe(true);
+    });
+
+    it("does not ban IP when violation count is below threshold", async () => {
+      const { recordRateLimitViolation, tryAutoBan, isIpBanned } = await import("@/lib/repository/ip-bans");
+      for (let i = 0; i < 4; i++) recordRateLimitViolation("192.168.1.101");
+
+      tryAutoBan("192.168.1.101");
+
+      expect(isIpBanned("192.168.1.101")).toBe(false);
+    });
+
+    it("does not re-ban IP that is already banned", async () => {
+      const ipBans = await import("@/lib/repository/ip-bans");
+      const banSpy = vi.spyOn(ipBans, "banIp");
+      banSpy.mockClear();
+      ipBans.banIp("192.168.1.102", "manual");
+      expect(banSpy).toHaveBeenCalledTimes(1);
+      for (let i = 0; i < 5; i++) ipBans.recordRateLimitViolation("192.168.1.102");
+
+      ipBans.tryAutoBan("192.168.1.102");
+
+      expect(ipBans.isIpBanned("192.168.1.102")).toBe(true);
+      expect(banSpy).toHaveBeenCalledTimes(1);
+      banSpy.mockRestore();
+    });
+  });
+
   describe("clearViolations", () => {
     it("removes all violations for an IP", async () => {
       const { recordRateLimitViolation, clearViolations, getViolationCount } = await import("@/lib/repository/ip-bans");

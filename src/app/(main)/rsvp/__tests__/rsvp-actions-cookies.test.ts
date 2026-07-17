@@ -10,6 +10,7 @@ vi.mock("next/cache", () => ({
 }));
 
 vi.mock("@/lib/auth", () => ({
+  requireSession: vi.fn(() => Promise.resolve({ userId: 1, type: "party", partyId: 1 })),
   validateSessionInDb: vi.fn(() => Promise.resolve({ partyId: 1, type: "party" })),
   destroySession: vi.fn(),
 }));
@@ -36,7 +37,18 @@ vi.mock("@/lib/repository/rsvp", () => ({
 }));
 
 describe("submitRsvp — session validation", () => {
-  it("redirects to /login when session is null", async () => {
+  it("redirects to /login when hot path fails (requireSession returns null)", async () => {
+    const { requireSession } = await import("@/lib/auth");
+    vi.mocked(requireSession).mockResolvedValueOnce(null);
+
+    const result = await submitRsvp(null, new FormData());
+
+    expect(result.action).toBe("redirect");
+    expect(result.href).toBe("/login");
+    expect(result.success).toBe(false);
+  });
+
+  it("redirects to /login when cold path fails (validateSessionInDb returns null)", async () => {
     const { validateSessionInDb } = await import("@/lib/auth");
     vi.mocked(validateSessionInDb).mockResolvedValueOnce(null);
 

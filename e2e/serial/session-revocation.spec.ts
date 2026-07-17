@@ -129,7 +129,7 @@ test("banned party user navigates cached site, RSVP submission kicks to ban scre
     await partyPage.waitForURL(/\/rsvp/, { timeout: 10000 });
 
     await partyPage.locator("form.rsvp-form").first().locator('input[type="radio"][value="yes"]').first().click();
-    await partyPage.locator("form.rsvp-form").first().getByRole("button", { name: "Update" }).click();
+    await partyPage.locator("form.rsvp-form").first().getByRole("button", { name: "Submit" }).click();
 
     await partyPage.goto("/home");
     await partyPage.waitForURL(/\/login/, { timeout: 10000 });

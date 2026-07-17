@@ -131,7 +131,7 @@ If the client IP is banned, the login page renders a minimal banned screen inste
 
 ## Session Revocation on Ban
 
-When an IP is banned, `revokeSessionsByIpBan(ip)` adds the IP to an in-memory `Set` in `session-revocation.ts`. The proxy (`proxy.ts`) checks this set on every matched request — if the request's IP is in the set, the session cookie is cleared and the user is redirected to `/login`. Server actions also check via `requireAdminSessionOrNull()` (admin) or `validateSessionInDb()` (party) for defense-in-depth.
+When an IP is banned, `revokeSessionsByIpBan(ip)` adds the IP to an in-memory `Set` in `session-revocation.ts`. The proxy (`proxy.ts`) checks this set on every matched request — if the request's IP is in the set, the session cookie is cleared and the user is redirected to `/login`. Server actions also check via `requireAdminSessionOrNull()` (admin) or `requireSession()` + `validateSessionInDb(session)` (party) for defense-in-depth.
 
 ### Client-side prefetch cache limitation
 
@@ -153,9 +153,9 @@ See [authentication.md](authentication.md#known-limitations) for the full sessio
 
 The banned IP check runs as a Server Component check in `login/page.tsx` before any images or assets load. This avoids serving the landing page background (which can be a large image/video) to banned clients.
 
-### `tryAutoBan` extracted as helper
+### `tryAutoBan` extracted as shared module
 
-Both `login()` and `loginByPartyCode()` call the same auto-ban logic. The helper is defined once at module scope to avoid duplication.
+`tryAutoBan()` lives in `src/lib/repository/ip-bans.ts` alongside the DB operations it orchestrates (`getViolationCount`, `banIp`, `deleteOldViolations`). Login actions simply call `tryAutoBan(ip)` after recording a violation — the threshold logic is centralized in the repository layer.
 
 ### Periodic cleanup via counter
 
@@ -192,9 +192,9 @@ Running the app without Cloudflare (e.g. direct access to Caddy or Next.js) woul
 | `src/lib/constants.ts` | Auto-ban default values (`AUTO_BAN_THRESHOLD_DEFAULT`, `AUTO_BAN_WINDOW_DEFAULT`) |
 | `src/lib/schema.ts` | `banned_ips` + `rate_limit_violations` DDL |
 | `src/lib/types.ts` | `BannedIp` interface |
-| `src/lib/repository/ip-bans.ts` | All DB operations + `getAutoBanConfig()` |
+| `src/lib/repository/ip-bans.ts` | All DB operations + `getAutoBanConfig()` + `tryAutoBan()` |
 | `src/app/login/page.tsx` | Server Component IP ban check |
-| `src/app/login/actions.ts` | `tryAutoBan()` — auto-ban logic called from rate-limit failure path |
+| `src/app/login/actions.ts` | Login server actions — call `tryAutoBan()` from repository layer |
 | `src/app/admin/security/page.tsx` | Security admin page |
 | `src/app/admin/security/actions.ts` | `saveAutoBanSettings`, `banIpAction`, `unbanIpAction`, `banViolationIpAction`, `clearViolationsAction`, `saveSessionSettings`, `saveSuspiciousSettings` |
 | `src/app/admin/security/ban-list.tsx` | Banned IPs list with unban |

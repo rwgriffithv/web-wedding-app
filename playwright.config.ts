@@ -33,7 +33,7 @@ export default defineConfig({
     // to prevent parallel workers from self-banning localhost.
     // See docs/architecture/conventions.md — "E2E Testing Pitfalls".
     command:
-      "npm run db:seed && npm run build && " +
+      "rm -f data/dev.db && npm run db:seed && npm run build && " +
       "cp -r .next/static .next/standalone/.next/ && " +
       "node .next/standalone/server.js",
     url: "http://localhost:3000",

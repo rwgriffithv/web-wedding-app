@@ -63,7 +63,7 @@ src/app/(main)/help/actions.ts
 
 | Step | Detail |
 |---|---|
-| Auth | Requires party session (`validateSessionInDb()` → cookie + HMAC + DB check → `partyId`) |
+| Auth | Requires party session (`requireSession()` hot path + `validateSessionInDb(session)` → cookie + HMAC + revocation + DB check → `partyId`) |
 | Rate limit | Per-party sliding window (default: 5 req/60s, configurable) |
 | Validation | Question required, max 1000 chars |
 | Database | `INSERT INTO questions` |

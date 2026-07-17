@@ -31,6 +31,7 @@ vi.mock("@/lib/rate-limit", () => ({
 vi.mock("@/lib/repository/ip-bans", () => ({
   isIpBanned: () => mockIsIpBanned(),
   recordRateLimitViolation: vi.fn(),
+  tryAutoBan: vi.fn(),
   getViolationCount: vi.fn(() => 0),
   banIp: vi.fn(),
   deleteOldViolations: vi.fn(),

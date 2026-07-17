@@ -390,11 +390,13 @@ if (!(await validateSessionInDb(session))) return { error: "Session expired" }; 
 
 For **party mutations** (RSVP submit, help questions):
 ```typescript
-const session = await validateSessionInDb();  // crypto + DB: party exists, pwChangedAt, IP ban
-if (!session) return { error: "Not authenticated." };
+const hotSession = await requireSession();  // crypto + in-memory revocation (~0ms)
+if (!hotSession) { await destroySession(); return redirect; }
+const session = await validateSessionInDb(hotSession);  // DB: party exists, pwChangedAt, IP ban
+if (!session) { await destroySession(); return redirect; }
 ```
 
-`requireAdminSessionOrNull()` includes an in-memory revocation check (password changes + IP bans) in addition to the crypto and type check. `validateSessionInDb()` checks DB truth: user/party existence, type match, password unchanged, and IP not banned in `banned_ips` table. Admin actions use both for defense-in-depth; party actions use `validateSessionInDb()` alone.
+`requireAdminSessionOrNull()` includes an in-memory revocation check (password changes + IP bans) in addition to the crypto and type check. `validateSessionInDb()` checks DB truth: user/party existence, type match, password unchanged, and IP not banned in `banned_ips` table. Admin actions use `requireAdminSessionOrNull()` + `validateSessionInDb(session)` for defense-in-depth. Party actions use `requireSession()` + `validateSessionInDb(session)` — the same two-step hot+cold pattern.
 
 **Step 4 — Business logic and database write:**
 
@@ -519,7 +521,7 @@ Auth is enforced at the layout level (`requireSessionOrRedirect()` guard) and in
 | Route | Guard | Redirect |
 |---|---|---|
 | `/admin/*` | `requireSessionOrRedirect({ type: "admin" })` (layout) + `requireAdminSessionOrNull()` (actions) | → `/login` (no session/revoked) or `/home` (wrong type) |
-| `/(main)/*` | `requireSessionOrRedirect()` (layout) + `validateSessionInDb()` (actions) | → `/login` |
+| `/(main)/*` | `requireSessionOrRedirect()` (layout) + `requireSession()` + `validateSessionInDb(session)` (actions) | → `/login` |
 | `/api/media/[...path]` | `requireSession()` → 401 JSON | N/A (JSON response) |
 | `/login` | `requireSession()` → redirect to `/admin` or `/home` | N/A (already logged in) |
 
@@ -564,6 +566,14 @@ Server Components/layouts cannot call `cookies().set()` — doing so throws `"Co
 
 `/login` is a public page that should show the login form when no session exists. If it used `requireSessionOrRedirect()`, a revoked-but-crypto-valid cookie would cause a redirect loop: login sees session → redirects to `/admin` → admin layout sees revoked → redirects to `/login`. Using `requireSession()` (which returns null instead of redirecting) breaks the loop.
 
+### `requireSession()` hot path for party actions
+
+RSVP and Help actions use the same hot+cold auth pattern as admin actions: `requireSession()` (crypto + in-memory revocation at ~0ms) → `validateSessionInDb(session)` (DB truth). This catches IP bans immediately at the in-memory layer (`recentBans` Set) without waiting for the DB query. Party actions had previously skipped the hot path, relying solely on `validateSessionInDb()` — which checks IP bans via DB but misses in-memory-only revocations (password changes via `passwordRevocations` Map).
+
+### `tryAutoBan` lives in the repository layer
+
+`tryAutoBan()` was extracted from `login/actions.ts` into `src/lib/repository/ip-bans.ts`. This places the business logic (threshold check → ban) alongside the DB operations it orchestrates (`getViolationCount`, `banIp`, `deleteOldViolations`). The login action simply calls `tryAutoBan(ip)` after recording a violation — it doesn't need to know the auto-ban threshold logic.
+
 ---
 
 ## Files
@@ -578,10 +588,10 @@ Server Components/layouts cannot call `cookies().set()` — doing so throws `"Co
 | `src/lib/rate-limit.ts` | `getRateLimitConfig()`, `createRateLimiter()` — in-memory rate limiter |
 | `src/lib/use-rate-limit-cooldown.ts` | Client hook — localStorage read/write, pre-submit guard, countdown timer |
 | `src/lib/constants.ts` | Default rate-limit and auto-ban thresholds |
-| `src/lib/repository/ip-bans.ts` | IP ban + violation DB operations, `getAutoBanConfig()` |
+| `src/lib/repository/ip-bans.ts` | IP ban + violation DB operations, `getAutoBanConfig()`, `tryAutoBan()` |
 | `src/app/login/page.tsx` | Login page — `requireSession()` prevents redirect loop with revoked cookies |
 | `src/app/login/login-form.tsx` | Client component — dual-tab form, owns `useRateLimitCooldown` |
-| `src/app/login/actions.ts` | Server Actions — `login()`, `loginByPartyCode()`, `logout()`, auto-ban logic |
+| `src/app/login/actions.ts` | Server Actions — `login()`, `loginByPartyCode()`, `logout()` |
 | `src/app/(main)/rsvp/actions.ts` | RSVP server action — rate limiting per party |
 | `src/app/(main)/rsvp/rsvp-form.tsx` | RSVP client — calls `syncFromResponse(result.cooldownUntil)` |
 | `src/app/(main)/help/actions.ts` | Help server action — rate limiting per party |

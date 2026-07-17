@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { validateSessionInDb, destroySession } from "@/lib/auth";
+import { requireSession, validateSessionInDb, destroySession } from "@/lib/auth";
 import { getConfig } from "@/lib/repository/site-config";
 import { getGuestById } from "@/lib/repository/guests";
 import { getPartyById } from "@/lib/repository/party";
@@ -25,7 +25,12 @@ function getRsvpRateLimitConfig() {
 }
 
 export async function submitRsvp(_prevState: RsvpState | null, formData: FormData): Promise<RsvpState> {
-  const session = await validateSessionInDb();
+  const hotSession = await requireSession();
+  if (!hotSession) {
+    await destroySession();
+    return { success: false, action: "redirect", href: "/login" };
+  }
+  const session = await validateSessionInDb(hotSession);
   if (!session) {
     await destroySession();
     return { success: false, action: "redirect", href: "/login" };

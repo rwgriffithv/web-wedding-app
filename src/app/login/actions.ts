@@ -7,7 +7,7 @@ import { getUserWithPassword, getPartyUserWithPassword, recordLogin } from "@/li
 import { getPartyByCode } from "@/lib/repository/party";
 import { getGuestsByPartyId } from "@/lib/repository/guests";
 import { createRateLimiter, getRateLimitConfig } from "@/lib/rate-limit";
-import { isIpBanned, recordRateLimitViolation, getViolationCount, banIp, deleteOldViolations, getAutoBanConfig } from "@/lib/repository/ip-bans";
+import { isIpBanned, recordRateLimitViolation, tryAutoBan } from "@/lib/repository/ip-bans";
 import { getClientIp } from "@/lib/ip";
 import { getString } from "@/lib/form-data";
 import { RATE_LIMIT_MAX_ATTEMPTS_DEFAULT, RATE_LIMIT_WINDOW_SECONDS_DEFAULT } from "@/lib/constants";
@@ -25,22 +25,6 @@ const rateLimiter = createRateLimiter("login");
 
 function getLoginRateLimitConfig() {
   return getRateLimitConfig("rate_limit_max_attempts", "rate_limit_window_seconds", RATE_LIMIT_MAX_ATTEMPTS_DEFAULT, RATE_LIMIT_WINDOW_SECONDS_DEFAULT);
-}
-
-let violationCleanupCounter = 0;
-
-function tryAutoBan(ip: string): void {
-  const { threshold, windowSeconds: autoBanWindow } = getAutoBanConfig();
-  if (getViolationCount(ip, autoBanWindow) >= threshold && !isIpBanned(ip)) {
-    try {
-      banIp(ip, "auto:rate-limit-threshold");
-    } catch {
-      // Unique constraint: another concurrent request already banned this IP
-    }
-  }
-  if (++violationCleanupCounter % 50 === 0) {
-    deleteOldViolations(autoBanWindow);
-  }
 }
 
 export async function login(formData: FormData): Promise<LoginState> {

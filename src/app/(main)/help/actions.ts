@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { validateSessionInDb, destroySession } from "@/lib/auth";
+import { requireSession, validateSessionInDb, destroySession } from "@/lib/auth";
 import { getString } from "@/lib/form-data";
 import { MAX_QUESTION_LENGTH, RATE_LIMIT_MAX_ATTEMPTS_DEFAULT, RATE_LIMIT_WINDOW_SECONDS_DEFAULT } from "@/lib/constants";
 import { create } from "@/lib/repository/questions";
@@ -16,7 +16,12 @@ function getQuestionRateLimitConfig() {
 }
 
 export async function submitQuestion(prevState: HelpState | null, formData: FormData): Promise<HelpState> {
-  const session = await validateSessionInDb();
+  const hotSession = await requireSession();
+  if (!hotSession) {
+    await destroySession();
+    return { success: false, action: "redirect", href: "/login" };
+  }
+  const session = await validateSessionInDb(hotSession);
   if (!session?.partyId) {
     await destroySession();
     return { success: false, action: "redirect", href: "/login" };

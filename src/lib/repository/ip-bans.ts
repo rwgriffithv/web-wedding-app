@@ -125,3 +125,19 @@ export function clearViolations(ip: string): void {
   const db = getDb();
   db.prepare("DELETE FROM rate_limit_violations WHERE ip_address = ?").run(ip);
 }
+
+let violationCleanupCounter = 0;
+
+export function tryAutoBan(ip: string): void {
+  const { threshold, windowSeconds: autoBanWindow } = getAutoBanConfig();
+  if (getViolationCount(ip, autoBanWindow) >= threshold && !isIpBanned(ip)) {
+    try {
+      banIp(ip, "auto:rate-limit-threshold");
+    } catch {
+      // Unique constraint: another concurrent request already banned this IP
+    }
+  }
+  if (++violationCleanupCounter % 50 === 0) {
+    deleteOldViolations(autoBanWindow);
+  }
+}
