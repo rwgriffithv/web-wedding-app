@@ -20,7 +20,7 @@ export default async function LoginPage() {
       <div className="banned-screen">
         <div className="banned-screen-inner">
           <p className="banned-screen-title">
-            ⛔ Your IP has been banned ⛔
+            ⛔ IP banned ⛔
           </p>
           <p className="banned-screen-subtitle">
             Contact the site administrator if you believe this is an error.

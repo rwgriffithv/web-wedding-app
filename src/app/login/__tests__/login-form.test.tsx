@@ -117,7 +117,7 @@ describe("LoginForm", () => {
   });
 
   it("triggers router.refresh on IP ban error", async () => {
-    mockLoginByPartyCode.mockResolvedValue({ error: "Your IP has been banned.", action: "refresh" });
+    mockLoginByPartyCode.mockResolvedValue({ error: "IP banned", action: "refresh" });
     render(<LoginForm />);
     fireEvent.change(getCodeInput(), { target: { value: "SMITH-1234" } });
     fireEvent.submit(getSubmitButton().closest("form")!);
@@ -127,7 +127,7 @@ describe("LoginForm", () => {
   });
 
   it("triggers router.refresh on IP ban error in credentials mode", async () => {
-    mockLogin.mockResolvedValue({ error: "Your IP has been banned.", action: "refresh" });
+    mockLogin.mockResolvedValue({ error: "IP banned", action: "refresh" });
     render(<LoginForm />);
     fireEvent.click(screen.getByText(/user sign in/i));
     fireEvent.change(getUsernameInput(), { target: { value: "admin" } });

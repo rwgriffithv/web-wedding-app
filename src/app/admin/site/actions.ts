@@ -67,19 +67,23 @@ export async function saveSiteConfig(prevState: SiteConfigState | null, formData
 
     const videoUrl = getString(formData, "home_background_video") ?? "";
     const existingPoster = getConfig("home_background_video_poster");
-    if (videoUrl && videoUrl.startsWith("/api/media/")) {
-      const poster = await ensureVideoPoster(videoUrl);
-      if (poster) {
-        if (existingPoster && existingPoster !== poster) {
+    try {
+      if (videoUrl && videoUrl.startsWith("/api/media/")) {
+        const poster = await ensureVideoPoster(videoUrl);
+        if (poster) {
+          if (existingPoster && existingPoster !== poster) {
+            deleteThumbnail(existingPoster);
+          }
+          setConfig("home_background_video_poster", poster);
+        }
+      } else if (!videoUrl) {
+        if (existingPoster) {
           deleteThumbnail(existingPoster);
         }
-        setConfig("home_background_video_poster", poster);
+        setConfig("home_background_video_poster", "");
       }
-    } else if (!videoUrl) {
-      if (existingPoster) {
-        deleteThumbnail(existingPoster);
-      }
-      setConfig("home_background_video_poster", "");
+    } catch {
+      // Poster generation is best-effort — text configs are already saved
     }
 
     revalidatePath("/admin/site");

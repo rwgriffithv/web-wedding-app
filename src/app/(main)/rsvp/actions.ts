@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { validateSessionInDb } from "@/lib/auth";
+import { validateSessionInDb, destroySession } from "@/lib/auth";
 import { getConfig } from "@/lib/repository/site-config";
 import { getGuestById } from "@/lib/repository/guests";
 import { getPartyById } from "@/lib/repository/party";
@@ -26,7 +26,10 @@ function getRsvpRateLimitConfig() {
 
 export async function submitRsvp(_prevState: RsvpState | null, formData: FormData): Promise<RsvpState> {
   const session = await validateSessionInDb();
-  if (!session) return { success: false, action: "redirect", href: "/login" };
+  if (!session) {
+    await destroySession();
+    return { success: false, action: "redirect", href: "/login" };
+  }
 
   if (session.type === "admin" || session.type === "viewer") {
     return { success: false, error: "RSVP is not available for user logins. Please use your Party Code to RSVP." };

@@ -147,7 +147,7 @@ Auth is enforced at the layout level (`requireSessionOrRedirect()` guard) and in
 | Styling | Plain CSS (custom properties) | Zero-dependency, themeable via `:root`. **No Tailwind CSS.** Utility classes are hand-crafted in `globals.css`. |
 | Proxy | Caddy 2.11 (alpine) | TLS, rate limiting, security headers |
 | Tunnel | cloudflared 2026.6.1 | Outbound-only Cloudflare Tunnel |
-| Testing | Vitest + Playwright | 340 unit tests + 68 E2E specs (57 parallel + 11 serial) |
+| Testing | Vitest + Playwright | Unit + E2E specs (parallel + serial) — see `npm test` |
 | Deployment | Docker Compose | Multi-stage build, isolated networks |
 
 ## Directory Layout
@@ -156,64 +156,74 @@ Auth is enforced at the layout level (`requireSessionOrRedirect()` guard) and in
 src/
 ├── app/                          # Next.js App Router
 │   ├── (main)/                   # Authenticated public pages
-│   │   ├── home/page.tsx         # Countdown timer, date, location
-│   │   ├── lodging/page.tsx      # Hotel recommendations
-│   │   ├── dress-code/page.tsx   # Mood board
-│   │   ├── rsvp/                 # Party-based RSVP
-│   │   │   ├── page.tsx
-│   │   │   ├── rsvp-form.tsx     # Per-member form (client)
-│   │   │   └── actions.ts
+│   │   ├── guide/                # Tabbed info hub (schedule, dress-code, lodging, gifts)
+│   │   ├── help/                 # FAQ + questions (party auth)
+│   │   ├── home/                 # Countdown timer, date, location
 │   │   ├── media/                # Photo/video gallery (tab routing)
-│   │   │   ├── page.tsx
-│   │   │   └── media-gallery.tsx # Grid + lightbox (client)
-│   │   ├── schedule/page.tsx     # Wedding day timeline
-│   │   └── layout.tsx            # Auth guard (requireSessionOrRedirect) + bottom nav
+│   │   ├── rsvp/                 # Party-based RSVP
+│   │   └── layout.tsx            # Auth guard + bottom nav
 │   ├── admin/                    # Admin dashboard
-│   │   ├── users/                # User management
-│   │   ├── guests/               # Guest CRUD + party assignment
-│   │   ├── site/                 # Site config editor
-│   │   ├── lodging/              # Lodging CRUD
 │   │   ├── dress-code/           # Dress code images
-│   │   ├── rsvp/                 # RSVP sortable table
+│   │   ├── gifts/                # Gift registry
+│   │   ├── guests/               # Guest CRUD + party assignment
+│   │   ├── help/                 # FAQ + question management
+│   │   ├── lodging/              # Lodging CRUD
 │   │   ├── media/                # Media gallery CRUD
-│   │   │   ├── page.tsx
-│   │   │   ├── media-form.tsx    # Add form with SearchableSelect for tabs
-│   │   │   ├── media-list.tsx    # Grouped by tab, inline title editing
-│   │   │   └── actions.ts        # addItem, deleteItem, updateItem, createTabInline, renameTab, deleteTab
+│   │   ├── parties/              # Party management
+│   │   ├── rsvp/                 # RSVP sortable table
 │   │   ├── schedule/             # Schedule CRUD
 │   │   ├── security/             # IP banning, auto-ban, rate limit config
-│   │   └── layout.tsx            # Admin guard (requireSessionOrRedirect({ type: "admin" })) + responsive sidebar
+│   │   ├── site/                 # Site config editor
+│   │   ├── users/                # User management
+│   │   └── layout.tsx            # Admin guard + responsive sidebar
 │   ├── login/                    # Login page + actions
 │   ├── api/health/route.ts       # Health check
 │   ├── api/upload/route.ts       # File upload (admin)
-│   ├── api/media/[...path]/      # File serving (session auth via requireSession)
+│   ├── api/media/[...path]/      # File serving (session auth)
 │   ├── api/media/list/route.ts   # Directory listing (admin)
 │   ├── api/login-background/     # Login bg image (public)
 │   └── (page.tsx, layout.tsx, error.tsx, not-found.tsx)
-├── proxy.ts                      # Cookie-clearing proxy — runs before page renders, checks revocation
-├── components/                   # Shared UI (6 client components)
-│   ├── searchable-select.tsx     # WAI-ARIA combobox
-│   ├── countdown-timer.tsx       # T-XYZ / T+XYZ timer
-│   ├── file-upload.tsx           # Drag-and-drop upload
-│   ├── file-browser.tsx          # Text-based file explorer
-│   ├── logout-button.tsx         # Logout form wrapper
-│   ├── cookie-block-warning.tsx  # Client-side cookie blocking detection
+├── proxy.ts                      # Cookie-clearing proxy — checks revocation
+├── components/                   # Shared UI (15 client + 3 server components)
+│   ├── admin-sidebar.tsx         # Admin nav sidebar (client)
+│   ├── banner-text.tsx           # Editable banner (client)
+│   ├── char-count.tsx            # Character counter (client)
+│   ├── cookie-block-warning.tsx  # Cookie blocking detection (client)
+│   ├── copy-button.tsx           # Clipboard copy (client)
+│   ├── countdown-timer.tsx       # T-XYZ / T+XYZ timer (client)
+│   ├── error-display.tsx         # Error boundary UI (client)
+│   ├── file-browser.tsx          # Text-based file explorer (client)
+│   ├── file-upload.tsx           # Drag-and-drop upload (client)
+│   ├── header.tsx                # Site header (server)
+│   ├── logout-button.tsx         # Logout form wrapper (client)
+│   ├── media-input.tsx           # Media URL input (client)
+│   ├── navigation.tsx            # Bottom nav (server)
+│   ├── page-view-tracker.tsx     # Analytics tracker (client)
+│   ├── searchable-select.tsx     # WAI-ARIA combobox (client)
+│   ├── tab-text-form.tsx         # Tabbed text editor (client)
+│   ├── track-page-view.ts        # Server-side page view logger
 │   └── rate-limit-form/          # Reusable rate limit config form
 ├── lib/                          # Server-only utilities
 │   ├── repository/               # Data access (12 entity files)
 │   ├── types.ts                  # All interfaces + SafeUser
-│   ├── auth.ts                   # Session create/destroy, verifyToken, verifyTokenInCookie, requireSessionOrRedirect, requireSession, requireAdminSessionOrNull, validateSessionInDb, password hash/verify
+│   ├── auth.ts                   # Session create/destroy, verifyToken, requireSession, validateSessionInDb, password hash/verify
 │   ├── session-revocation.ts     # In-memory revocation maps (password changes + IP bans)
 │   ├── db.ts                     # Connection + DDL + seed
-│   ├── schema.ts                 # DDL (12 tables)
+│   ├── schema.ts                 # DDL (14 tables)
 │   ├── config.ts                 # Env validation
+│   ├── constants.ts              # Shared constants (cookie keys, rate limit defaults)
 │   ├── form-data.ts              # Safe FormData extraction + validateMediaUrl
 │   ├── ip.ts                     # getClientIp() — IP extraction from proxy headers
 │   ├── media.ts                  # Media directory config
-│   └── rate-limit.ts             # In-memory rate limiter + getRateLimitConfig()
+│   ├── media-detect.ts           # MIME type detection
+│   ├── thumbnail.ts              # Video poster generation
+│   ├── rate-limit.ts             # In-memory rate limiter + getRateLimitConfig()
+│   ├── use-rate-limit-cooldown.ts # Client-side cooldown hook
+│   └── utils.ts                  # General utilities
 ├── test/                         # Test utilities
 │   ├── test-utils.ts             # Shared test helpers
-│   └── db-test-utils.ts          # createTestDb() + truncateAll()
+│   ├── db-test-utils.ts          # createTestDb() + truncateAll()
+│   └── setup.ts                  # Test setup
 └── app/globals.css               # Styles + utility classes
 ```
 

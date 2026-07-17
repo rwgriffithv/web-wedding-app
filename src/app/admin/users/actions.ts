@@ -108,7 +108,7 @@ export async function removeUser(prevState: UserState | null, formData: FormData
     return { success: false, error: "Cannot delete the primary admin account." };
   }
 
-  if (session.userId !== null && session.userId === id) {
+  if (session.userId != null && session.userId === id) {
     return { success: false, error: "Cannot delete your own account." };
   }
 

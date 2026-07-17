@@ -110,11 +110,16 @@ Upload a file. Requires admin session.
 { "error": "File exceeds 50 MB limit." }
 ```
 
-### `GET /api/media/[filename]`
+### `GET /api/media/[...path]`
 
-Serve a file. No authentication required (files are public).
+Serve a file. Requires a valid session (`requireSession()`).
 
 **Response (200):** File content with `Content-Type`, `Cache-Control: public, max-age=31536000, immutable`.
+
+**Response (401):**
+```json
+{ "error": "Unauthorized" }
+```
 
 **Response (404):**
 ```json
@@ -127,7 +132,7 @@ Serve a file. No authentication required (files are public).
 |---|---|
 | `src/lib/media.ts` | Media directory configuration, lazy `ensureMediaDir()` helper |
 | `src/app/api/upload/route.ts` | Upload endpoint (admin-only) |
-| `src/app/api/media/[filename]/route.ts` | File serving endpoint |
+| `src/app/api/media/[...path]/route.ts` | File serving endpoint (session auth required) |
 | `src/components/file-upload.tsx` | Reusable upload button component |
 | `src/app/admin/media/media-form.tsx` | Media admin form with file upload |
 | `src/app/admin/dress-code/image-form.tsx` | Dress code form with file upload |

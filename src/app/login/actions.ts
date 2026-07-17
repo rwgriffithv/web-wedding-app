@@ -53,7 +53,7 @@ export async function login(formData: FormData): Promise<LoginState> {
   const ip = await getClientIp();
 
   if (isIpBanned(ip)) {
-    return { error: "Your IP has been banned.", action: "refresh" };
+    return { error: "IP banned", action: "refresh" };
   }
 
   const rlConfig = getLoginRateLimitConfig();
@@ -61,7 +61,7 @@ export async function login(formData: FormData): Promise<LoginState> {
     recordRateLimitViolation(ip);
     tryAutoBan(ip);
     if (isIpBanned(ip)) {
-      return { error: "Your IP has been banned.", action: "refresh" };
+      return { error: "IP banned", action: "refresh" };
     }
     return { error: "Too many attempts. Please wait before trying again.", action: "cooldown", cooldownUntil: Date.now() + rlConfig.windowMs };
   }
@@ -111,7 +111,7 @@ export async function loginByPartyCode(formData: FormData): Promise<LoginState> 
   const ip = await getClientIp();
 
   if (isIpBanned(ip)) {
-    return { error: "Your IP has been banned.", action: "refresh" };
+    return { error: "IP banned", action: "refresh" };
   }
 
   const rlConfig = getLoginRateLimitConfig();
@@ -119,7 +119,7 @@ export async function loginByPartyCode(formData: FormData): Promise<LoginState> 
     recordRateLimitViolation(ip);
     tryAutoBan(ip);
     if (isIpBanned(ip)) {
-      return { error: "Your IP has been banned.", action: "refresh" };
+      return { error: "IP banned", action: "refresh" };
     }
     return { error: "Too many attempts. Please wait before trying again.", action: "cooldown", cooldownUntil: Date.now() + rlConfig.windowMs };
   }

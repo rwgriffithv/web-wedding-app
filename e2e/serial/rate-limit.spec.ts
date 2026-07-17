@@ -94,7 +94,7 @@ test.describe("rate limiting", () => {
 
       // --- Window 3: 2 allowed + 1 blocked = 3 violations → AUTO-BAN ---
       // The 3rd attempt triggers the auto-ban. The server detects the IP is now banned
-      // and returns "banned" instead of "Too many attempts", so the client calls
+      // and returns "IP banned" instead of "Too many attempts", so the client calls
       // router.refresh() to immediately show the ban screen without requiring a manual refresh.
       await page.goto("/login");
       await page.getByRole("button", { name: "User sign in" }).click();
@@ -108,8 +108,8 @@ test.describe("rate limiting", () => {
       await page.fill("input[name=password]", "wrong");
       await page.locator("button[type=submit]").click();
 
-      // Auto-ban triggers → server returns "banned" error → client refreshes → ban screen shown
-      await expect(page.getByText("Your IP has been banned")).toBeVisible();
+      // Auto-ban triggers → server returns "IP banned" error → client refreshes → ban screen shown
+      await expect(page.getByText(/banned/i)).toBeVisible();
 
       // After 9 bad logins: 3 violations → BANNED
       expect(getViolationCountFromDb(clientIp)).toBe(3);
@@ -117,7 +117,7 @@ test.describe("rate limiting", () => {
 
       // Verify: ban persists across page navigation
       await page.goto("/login");
-      await expect(page.getByText("Your IP has been banned")).toBeVisible();
+      await expect(page.getByText(/banned/i)).toBeVisible();
     } finally {
       // Always clean up: unban ALL IPs, remove ALL violations, restore seed config.
       // This runs even on timeout/failure to prevent contaminating subsequent tests.

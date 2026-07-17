@@ -31,7 +31,7 @@ Rate limiter blocks request
   │    └─ every 50 lockouts: deleteOldViolations(autoBanWindow)
   │
   └─ Re-check: isIpBanned(ip)?
-       └─ YES (just banned) → return { error: "Your IP has been banned.", action: "refresh" }
+       └─ YES (just banned) → return { error: "IP banned", action: "refresh" }
 ```
 
 The `action: "refresh"` response tells the client to re-fetch the page from the server. This is necessary because the page was initially rendered with the user's valid session, but now their IP is banned. A refresh causes the server to re-check the IP and render the banned screen.
@@ -126,6 +126,24 @@ Security row shows:
 ### Login Page (`/login`)
 
 If the client IP is banned, the login page renders a minimal banned screen instead of the login form. No images, background, or heavy assets are loaded. This is a Server Component check in `login/page.tsx` — it runs before any assets load, so banned clients never download the landing page background.
+
+---
+
+## Session Revocation on Ban
+
+When an IP is banned, `revokeSessionsByIpBan(ip)` adds the IP to an in-memory `Set` in `session-revocation.ts`. The proxy (`proxy.ts`) checks this set on every matched request — if the request's IP is in the set, the session cookie is cleared and the user is redirected to `/login`. Server actions also check via `requireAdminSessionOrNull()` (admin) or `validateSessionInDb()` (party) for defense-in-depth.
+
+### Client-side prefetch cache limitation
+
+Next.js App Router eagerly prefetches `<Link>` targets when they enter the viewport. Once prefetched, the RSC payload is cached on the client. A banned user clicking a prefetched `<Link>` is served from this client-side cache — no server request is made, the proxy never runs, and the ban screen is not shown. This affects all nav-bar links (always visible, always prefetched) and any other links that entered the viewport before the ban.
+
+This is **not** a security vulnerability: the banned user only sees stale pre-ban data already rendered in their browser. The server is fully protected — it will not serve any new data, form submissions are rejected, and any full page navigation (reload, URL-bar, bookmark) immediately hits the proxy and shows the ban screen.
+
+The serial E2E tests in `session-revocation.spec.ts` cover both scenarios:
+- **Cached-Link navigation** (tests 4–6): banned user clicks a nav `<Link>` (served from cache), then submits a form or refreshes (hits server → proxy catches ban).
+- **Full server navigation** (test 7): banned user navigates via `page.goto()` (simulating a reload/bookmark), which always hits the server → proxy redirects to ban screen.
+
+See [authentication.md](authentication.md#known-limitations) for the full session revocation architecture.
 
 ---
 

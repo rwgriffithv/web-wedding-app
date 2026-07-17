@@ -1,10 +1,10 @@
 # Guide Page
 
-- **Scope:** Tabbed information hub combining schedule, dress code, and lodging
+- **Scope:** Tabbed information hub combining schedule, dress code, lodging, and gifts
 
 ## Overview
 
-The guide page at `/guide` consolidates three separate content domains into a single tabbed page. It is the second-most-important guest-facing page after home.
+The guide page at `/guide` consolidates four separate content domains into a single tabbed page. It is the second-most-important guest-facing page after home.
 
 ## Tab Routing
 
@@ -14,6 +14,7 @@ Tabs use the same `?tab=` URL parameter pattern as the media page:
 /guide              →  Schedule tab (default)
 /guide?tab=dress-code  →  Dress Code tab
 /guide?tab=lodging     →  Lodging tab
+/guide?tab=gifts       →  Gifts tab
 ```
 
 Tabs are hardcoded in the `TABS` constant (not database-driven like media):
@@ -23,6 +24,7 @@ const TABS = [
   { id: "schedule", label: "Schedule" },
   { id: "dress-code", label: "Dress Code" },
   { id: "lodging", label: "Lodging" },
+  { id: "gifts", label: "Gifts" },
 ] as const;
 ```
 

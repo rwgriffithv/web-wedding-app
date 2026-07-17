@@ -29,7 +29,7 @@ export function getDb(): Database.Database {
 - **Lazy initialization** — Created on first access
 - **WAL mode** — Concurrent reads during writes
 - **Foreign keys** — Enforced at database level
-- **Auto-seed** — `seedDefaults()` inserts admin account + demo party on first run
+- **Auto-seed** — `seedDefaults()` inserts admin account on first run (demo data via `scripts/db-seed.ts`)
 
 ## Database Path
 
@@ -39,7 +39,7 @@ DATABASE_URL=file:./data/dev.db               # Development (optional)
 Falls back to:          data/dev.db           # No env var set
 ```
 
-## Schema (12 Tables)
+## Schema (14 Tables)
 
 ### `users`
 
@@ -54,6 +54,10 @@ CREATE TABLE IF NOT EXISTS users (
   type TEXT NOT NULL CHECK(type IN ('admin', 'viewer', 'party')),
   party_id INTEGER,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  last_login_at TEXT,
+  total_page_views INTEGER NOT NULL DEFAULT 0,
+  password_changed_at TEXT,
+  last_page_view_at TEXT,
   FOREIGN KEY (party_id) REFERENCES parties(id) ON DELETE SET NULL
 );
 ```
@@ -65,6 +69,10 @@ CREATE TABLE IF NOT EXISTS users (
 | `display_name` | Shown in admin UI |
 | `type` | `admin` (from .env), `viewer` (view-only), `party` (RSVP access) |
 | `party_id` | Links party users to their party |
+| `last_login_at` | Timestamp of last successful login |
+| `total_page_views` | Lifetime page view counter |
+| `password_changed_at` | Used for session revocation on password change |
+| `last_page_view_at` | Timestamp of last page view |
 
 ### `parties`
 
@@ -75,6 +83,7 @@ CREATE TABLE IF NOT EXISTS parties (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   code TEXT NOT NULL UNIQUE,
+  invited INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 ```
@@ -89,6 +98,7 @@ CREATE TABLE IF NOT EXISTS guests (
   display_name TEXT NOT NULL,
   party_id INTEGER,
   can_bring_plus_one INTEGER NOT NULL DEFAULT 0,
+  unexpected INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (party_id) REFERENCES parties(id) ON DELETE SET NULL
 );
@@ -116,6 +126,7 @@ CREATE TABLE IF NOT EXISTS lodging_options (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,
   image_url TEXT NOT NULL,
+  thumbnail_url TEXT,
   url TEXT NOT NULL,
   sort_order INTEGER NOT NULL DEFAULT 0
 );
@@ -129,6 +140,7 @@ Mood board images for the dress code page.
 CREATE TABLE IF NOT EXISTS dress_code_images (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   image_url TEXT NOT NULL,
+  thumbnail_url TEXT,
   sort_order INTEGER NOT NULL DEFAULT 0
 );
 ```

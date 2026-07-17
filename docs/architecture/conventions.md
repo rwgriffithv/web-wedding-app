@@ -316,7 +316,7 @@ Playwright runs tests in parallel across multiple browser workers (default: CPU 
 2. Multiple workers submit login forms within the same 60-second window
 3. Violations accumulate per-IP (not per-user) in `rate_limit_violations`
 4. When violations hit `auto_ban_login_threshold`, `::1`/`127.0.0.1` gets added to `banned_ips`
-5. The login page checks `isIpBanned(ip)` server-side and renders a "banned" screen instead of the login form
+5. The login page checks `isIpBanned(ip)` server-side and renders a "IP BANNED" screen instead of the login form
 6. All subsequent tests timeout waiting for form elements that never render
 
 **How to prevent it:**

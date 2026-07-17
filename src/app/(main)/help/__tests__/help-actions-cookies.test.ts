@@ -11,6 +11,7 @@ vi.mock("next/cache", () => ({
 
 vi.mock("@/lib/auth", () => ({
   validateSessionInDb: vi.fn(() => Promise.resolve({ partyId: 1, type: "party" })),
+  destroySession: vi.fn(),
 }));
 
 vi.mock("@/lib/repository/site-config", () => ({
@@ -40,7 +41,7 @@ describe("submitQuestion — session validation", () => {
 
   it("redirects to /login when session has no partyId", async () => {
     const { validateSessionInDb } = await import("@/lib/auth");
-    vi.mocked(validateSessionInDb).mockResolvedValueOnce({ partyId: null, type: "party" });
+    vi.mocked(validateSessionInDb).mockResolvedValueOnce({ partyId: undefined, type: "party" });
 
     const result = await submitQuestion(null, new FormData());
 

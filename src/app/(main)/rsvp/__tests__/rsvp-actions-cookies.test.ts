@@ -11,6 +11,7 @@ vi.mock("next/cache", () => ({
 
 vi.mock("@/lib/auth", () => ({
   validateSessionInDb: vi.fn(() => Promise.resolve({ partyId: 1, type: "party" })),
+  destroySession: vi.fn(),
 }));
 
 vi.mock("@/lib/repository/site-config", () => ({
@@ -27,7 +28,7 @@ vi.mock("@/lib/repository/party", () => ({
 }));
 
 vi.mock("@/lib/repository/guests", () => ({
-  getGuestById: vi.fn(() => ({ id: 1, party_id: 1, display_name: "Jane" })),
+  getGuestById: vi.fn(() => ({ id: 1, party_id: 1, display_name: "Jane", can_bring_plus_one: 0, unexpected: 0, created_at: "2025-01-01" })),
 }));
 
 vi.mock("@/lib/repository/rsvp", () => ({
@@ -48,7 +49,7 @@ describe("submitRsvp — session validation", () => {
 
   it("returns error when session is admin type", async () => {
     const { validateSessionInDb } = await import("@/lib/auth");
-    vi.mocked(validateSessionInDb).mockResolvedValueOnce({ partyId: null, type: "admin" });
+    vi.mocked(validateSessionInDb).mockResolvedValueOnce({ partyId: undefined, type: "admin" });
 
     const result = await submitRsvp(null, new FormData());
 
@@ -58,7 +59,7 @@ describe("submitRsvp — session validation", () => {
 
   it("returns error when session is viewer type", async () => {
     const { validateSessionInDb } = await import("@/lib/auth");
-    vi.mocked(validateSessionInDb).mockResolvedValueOnce({ partyId: null, type: "viewer" });
+    vi.mocked(validateSessionInDb).mockResolvedValueOnce({ partyId: undefined, type: "viewer" });
 
     const result = await submitRsvp(null, new FormData());
 
@@ -114,7 +115,7 @@ describe("submitRsvp — form validation", () => {
 describe("submitRsvp — party membership", () => {
   it("returns error when guest belongs to another party", async () => {
     const { getGuestById } = await import("@/lib/repository/guests");
-    vi.mocked(getGuestById).mockReturnValueOnce({ id: 1, party_id: 99, display_name: "Other" });
+    vi.mocked(getGuestById).mockReturnValueOnce({ id: 1, party_id: 99, display_name: "Other", can_bring_plus_one: 0, unexpected: 0, created_at: "2025-01-01" });
     mockCheck.mockReturnValue(true);
 
     const formData = new FormData();

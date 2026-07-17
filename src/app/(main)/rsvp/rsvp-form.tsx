@@ -7,7 +7,7 @@ import type { RsvpResponse } from "@/lib/types";
 import { useSharedCooldown } from "./rate-limit-context";
 import { CharCount } from "@/components/char-count";
 
-const MAX_PLUS_ONE_LENGTH = 128;
+const MAX_PLUS_ONE_LENGTH = 32;
 
 interface RsvpFormProps {
   memberId: number;

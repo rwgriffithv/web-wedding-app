@@ -74,7 +74,7 @@ async function validateSessionFields(session: Session): Promise<Session | null> 
     const party = getPartyById(session.partyId);
     if (!party) return null;
     const partyUser = getPartyUserWithPassword(session.partyId);
-    if (partyUser && (session.pwChangedAt ?? null) !== partyUser.password_changed_at) return null;
+    if (!partyUser || (session.pwChangedAt ?? null) !== partyUser.password_changed_at) return null;
     return session;
   }
   return null;

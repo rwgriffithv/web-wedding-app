@@ -380,21 +380,23 @@ It does NOT go through Caddy — it hits `localhost:3000` directly, isolating th
 **Implementation** (`src/app/api/health/route.ts`):
 
 ```ts
-export async function GET(): Promise<NextResponse<HealthCheckResponse>> {
-  const checks: Record<string, CheckResult> = {};
-  checks.database = checkDatabase();  // db().prepare('SELECT 1').get()
-  checks.config = checkConfig();      // getConfig() — tests SQLite reads
-  checks.config = { status: 'healthy', ... };
-  return NextResponse.json({ status: 'healthy', version, checks }, { status: 200 });
+export async function GET() {
+  try {
+    const db = getDb();
+    db.prepare("SELECT 1").get();
+    return NextResponse.json({ status: "ok", database: "connected" });
+  } catch {
+    return NextResponse.json({ status: "error", database: "disconnected" }, { status: 503 });
+  }
 }
 ```
 
 **Design decisions:**
 - Route requires no authentication — only exposes service health
-- Database health uses direct `better-sqlite3` query (no ORM overhead)
+- Database health uses direct `better-sqlite3` query (`SELECT 1`)
 - No external services — only verifies internal dependencies
-- Returns structured JSON with per-component status
-- HTTP status code matches overall health (200 = healthy, 503 = unhealthy)
+- Returns `{ status, database }` JSON
+- HTTP status code matches overall health (200 = ok, 503 = error)
 
 ---
 

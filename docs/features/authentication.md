@@ -173,9 +173,11 @@ isSessionRevoked(session, ip) → boolean
 
 ### Known Limitations
 
+**Client-side router cache (prefetch bypass):** Next.js App Router eagerly prefetches `<Link>` targets when they enter the viewport. Once prefetched, the RSC payload is cached on the client. When a banned user clicks a prefetched `<Link>`, the client-side router serves the cached payload without making a server request — the proxy never runs and the ban screen is not shown. This affects all nav-bar links (always visible, always prefetched) and any other links that entered the viewport before the ban. This is not a security vulnerability: the banned user only sees stale pre-ban data already rendered in their browser. The server is fully protected — it will not serve any new data, API calls are blocked, form submissions are rejected, and any full page navigation (reload, URL-bar, bookmark, `page.goto()`) immediately shows the ban screen. The serial E2E test suite (`session-revocation.spec.ts`) covers both cached-Link navigation (tests 4–6) and full-server-navigation (test 7) to verify this behavior.
+
 **Multi-worker deployments:** The in-memory maps are per-process. If the server runs multiple workers (e.g. cluster mode), a ban in worker 1 won't be seen by worker 2. Current deployment is single-process — not an issue.
 
-**Race between proxy and server actions:** An admin whose IP was just banned can still perform one server action before their next page navigation kicks them. The server action's `requireAdminSession()` now catches the ban (via in-memory check), so this window is closed.
+**Race between proxy and server actions:** An admin whose IP was just banned can still perform one server action before their next page navigation kicks them. The server action's `requireAdminSessionOrNull()` now catches the ban (via in-memory check), so this window is closed.
 
 ---
 
@@ -206,7 +208,7 @@ Client submits form
   Server action receives request
   │
   ├─ Check IP ban: isIpBanned(ip)?
-  │    └─ YES → return { error: "Your IP has been banned.", action: "refresh" }
+  │    └─ YES → return { error: "ip banned", action: "refresh" }
   │
   ├─ Check rate limiter: rateLimiter.check(key, config)
   │    ├─ PASS (under limit) → proceed with action
@@ -217,7 +219,7 @@ Client submits form
   │         │         └─ banIp(ip, "auto:rate-limit-threshold")  ← SQLite: banned_ips
   │         │
   │         ├─ Re-check: isIpBanned(ip)?
-  │         │    └─ YES (just banned) → return { error: "Your IP has been banned.", action: "refresh" }
+  │         │    └─ YES (just banned) → return { error: "ip banned", action: "refresh" }
   │         │
   │         └─ return { error: "Too many attempts.", action: "cooldown", cooldownUntil: ... }
   │
@@ -349,7 +351,7 @@ Every server action enforces the same protection regardless of how the request w
 ```typescript
 const ip = await getClientIp();
 if (isIpBanned(ip)) {
-  return { error: "Your IP has been banned.", action: "refresh" };
+  return { error: "ip banned", action: "refresh" };
 }
 ```
 
@@ -363,7 +365,7 @@ if (!rateLimiter.check(key, rlConfig)) {
   tryAutoBan(ip);
   // re-check if just banned
   if (isIpBanned(ip)) {
-    return { error: "Your IP has been banned.", action: "refresh" };
+    return { error: "IP banned", action: "refresh" };
   }
   return { error: "Too many attempts.", action: "cooldown", cooldownUntil: ... };
 }
@@ -452,18 +454,18 @@ User visits / or /login
        │
        User switches to "Username & Password" tab
        │
-       Client: checkRateLimit() reads rl_until cookie
-         └─ Active cooldown? → block submit, show countdown
-         └─ No cooldown? → allow submit
-       │
-       User submits username + password
+        Client: checkRateLimit() reads rl_until localStorage entry
+          └─ Active cooldown? → block submit, show countdown
+          └─ No cooldown? → allow submit
+        │
+        User submits username + password
        │
        Server Action: login()
          ├─ isIpBanned(ip)? → return banned error
          ├─ rateLimiter.check()? → proceed or return cooldown error
-         ├─ Query: guest by username
-         ├─ Verify: scrypt password hash
-         ├─ Check: guest.type === "admin"
+          ├─ Query: user by username
+          ├─ Verify: scrypt password hash
+          ├─ Check: user.type === "admin"
          └─ Set session cookie: session={userId, type:"admin"}
               └─ Return { redirectTo: "/admin" } → client navigates
 ```
@@ -479,11 +481,11 @@ User visits / or /login
   └─ proxy.ts: no cookie or revoked → pass through (or redirect /login)
      login/page.tsx: requireSession() → null → shows LoginForm
        │
-       Client: checkRateLimit() reads rl_until cookie
-         └─ Active cooldown? → block submit, show countdown
-         └─ No cooldown? → allow submit
-       │
-       User enters party code (e.g. DEMO-1234)
+        Client: checkRateLimit() reads rl_until localStorage entry
+          └─ Active cooldown? → block submit, show countdown
+          └─ No cooldown? → allow submit
+        │
+        User enters party code (e.g. DEMO-1234)
        │
        Server Action: loginByPartyCode()
          ├─ isIpBanned(ip)? → return banned error
@@ -496,7 +498,7 @@ User visits / or /login
 
 ### Guest Login
 
-Same flow as admin login, but with `type: "guest"` session and redirect to `/home`.
+Same flow as admin login, but with `type: "viewer"` session and redirect to `/home`.
 
 ---
 
