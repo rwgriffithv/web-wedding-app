@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdminSessionOrNull, validateSessionInDb } from "@/lib/auth";
+import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { getString, getInt, validateMediaUrl } from "@/lib/form-data";
 import { create, deleteItem as deleteItemRepo, update, getAll, getBySection, swapItemSortOrder, createTab, updateTab, getAllTabs, deleteTab as deleteTabRepo, swapTabSortOrder } from "@/lib/repository/media";
 import { ensureThumbnail } from "@/lib/thumbnail";
@@ -14,7 +14,7 @@ function toSlug(label: string): string {
 }
 
 export async function createTabInline(prevState: MediaState | null, formData: FormData): Promise<MediaState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -36,7 +36,7 @@ export async function createTabInline(prevState: MediaState | null, formData: Fo
 }
 
 export async function renameTab(prevState: MediaState | null, formData: FormData): Promise<MediaState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -56,7 +56,7 @@ export async function renameTab(prevState: MediaState | null, formData: FormData
 }
 
 export async function deleteTab(prevState: MediaState | null, formData: FormData): Promise<MediaState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -75,7 +75,7 @@ export async function deleteTab(prevState: MediaState | null, formData: FormData
 }
 
 export async function addItem(prevState: MediaState | null, formData: FormData): Promise<MediaState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -111,7 +111,7 @@ export async function addItem(prevState: MediaState | null, formData: FormData):
 }
 
 export async function deleteItem(prevState: MediaState | null, formData: FormData): Promise<MediaState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -130,7 +130,7 @@ export async function deleteItem(prevState: MediaState | null, formData: FormDat
 }
 
 export async function updateItem(prevState: MediaState | null, formData: FormData): Promise<MediaState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -156,7 +156,7 @@ export async function updateItem(prevState: MediaState | null, formData: FormDat
 }
 
 export async function moveItem(prevState: MediaState | null, formData: FormData): Promise<MediaState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -194,7 +194,7 @@ export async function moveItem(prevState: MediaState | null, formData: FormData)
 }
 
 export async function moveTab(prevState: MediaState | null, formData: FormData): Promise<MediaState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 

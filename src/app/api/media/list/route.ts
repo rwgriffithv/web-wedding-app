@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { requireAdminSessionOrNull, validateSessionInDb } from "@/lib/auth";
+import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { MEDIA_DIR, ALLOWED_EXTENSIONS, isWithinMediaDir } from "@/lib/media";
 import fs from "node:fs";
 import path from "node:path";
 
 export async function GET(request: Request) {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

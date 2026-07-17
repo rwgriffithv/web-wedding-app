@@ -131,7 +131,7 @@ If the client IP is banned, the login page renders a minimal banned screen inste
 
 ## Session Revocation on Ban
 
-When an IP is banned, `revokeSessionsByIpBan(ip)` adds the IP to an in-memory `Set` in `session-revocation.ts`. The proxy (`proxy.ts`) checks this set on every matched request — if the request's IP is in the set, the session cookie is cleared and the user is redirected to `/login`. Server actions also check via `requireAdminSessionOrNull()` (admin) or `requireSession()` + `validateSessionInDb(session)` (party) for defense-in-depth.
+When an IP is banned, `revokeSessionsByIpBan(ip)` adds the IP to an in-memory `Set` in `session-revocation.ts`. The proxy (`proxy.ts`) checks this set on every matched request — if the request's IP is in the set, the session cookie is cleared and the user is redirected to `/login`. Server actions also check via `requireSession("admin")` (admin) or `requireSession()` + `validateSessionInDb(session)` (party) for defense-in-depth.
 
 ### Client-side prefetch cache limitation
 

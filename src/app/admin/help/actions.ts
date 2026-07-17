@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdminSessionOrNull, validateSessionInDb } from "@/lib/auth";
+import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { getString } from "@/lib/form-data";
 import { MAX_QUESTION_LENGTH, MAX_ANSWER_LENGTH } from "@/lib/constants";
 import * as faqRepo from "@/lib/repository/faq";
@@ -26,7 +26,7 @@ function validateFaqFields(formData: FormData): { ok: true; question: string; an
 }
 
 export async function addFaq(prevState: HelpState | null, formData: FormData): Promise<HelpState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -45,7 +45,7 @@ export async function addFaq(prevState: HelpState | null, formData: FormData): P
 }
 
 export async function updateFaq(prevState: HelpState | null, formData: FormData): Promise<HelpState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -69,7 +69,7 @@ export async function updateFaq(prevState: HelpState | null, formData: FormData)
 }
 
 export async function deleteFaq(prevState: HelpState | null, formData: FormData): Promise<HelpState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -90,7 +90,7 @@ export async function deleteFaq(prevState: HelpState | null, formData: FormData)
 }
 
 export async function moveFaq(prevState: HelpState | null, formData: FormData): Promise<HelpState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -126,7 +126,7 @@ export async function moveFaq(prevState: HelpState | null, formData: FormData): 
 }
 
 export async function answerQuestion(prevState: HelpState | null, formData: FormData): Promise<HelpState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 

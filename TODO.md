@@ -161,7 +161,7 @@ Please help!
   * status: done
 
 * The auth work we did recently was fantastic! Something we overlooked though was the redundancy of requireAdminSessionOrNull(). That function should just be requireSession({type = "admin"}) or something like requireSession("admin"). The requireSession function should have an optional argument for a session/user type that it checks if passed. This will clean up a lot of code smell. Be very careful to update unit and e2e tests as needed, code comments and actual documentation thoroughly.
-  * status: not done
+  * status: done
 
 * The Users list in the admin dashboard Users page needs to be searchable by User name and type. Please implement this. The System Accounts list on that page should also be searchable but just by user. The user activity table should also be searchable by party name.
   * status: not done

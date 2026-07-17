@@ -11,7 +11,7 @@ interface AdminLayoutProps {
 }
 
 export default async function AdminLayout({ children }: AdminLayoutProps) {
-  await requireSessionOrRedirect({ type: "admin" });
+  await requireSessionOrRedirect("admin");
 
   return (
     <div className="admin-layout">

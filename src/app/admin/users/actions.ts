@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdminSessionOrNull, validateSessionInDb } from "@/lib/auth";
+import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { getEnvConfig } from "@/lib/config";
 import { getString, getInt } from "@/lib/form-data";
 import { createUser as createUserRepo, updateUser as updateUserRepo, deleteUser as deleteUserRepo, getUserById } from "@/lib/repository/users";
@@ -12,7 +12,7 @@ interface UserState { success?: boolean; error?: string }
 const ALLOWED_TYPES = ["admin", "viewer"] as const;
 
 export async function addUser(prevState: UserState | null, formData: FormData): Promise<UserState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -48,7 +48,7 @@ export async function addUser(prevState: UserState | null, formData: FormData): 
 }
 
 export async function updateUser(prevState: UserState | null, formData: FormData): Promise<UserState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -95,7 +95,7 @@ export async function updateUser(prevState: UserState | null, formData: FormData
 }
 
 export async function removeUser(prevState: UserState | null, formData: FormData): Promise<UserState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 

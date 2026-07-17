@@ -1,14 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdminSessionOrNull, validateSessionInDb } from "@/lib/auth";
+import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { getString, getInt } from "@/lib/form-data";
 import { updateParty as updatePartyRepo, deleteParty, getPartyById } from "@/lib/repository/party";
 
 interface PartyState { success?: boolean; error?: string }
 
 export async function updateParty(prevState: PartyState | null, formData: FormData): Promise<PartyState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -43,7 +43,7 @@ export async function updateParty(prevState: PartyState | null, formData: FormDa
 }
 
 export async function removeParty(prevState: PartyState | null, formData: FormData): Promise<PartyState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 

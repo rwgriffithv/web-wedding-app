@@ -4,13 +4,13 @@
 
 ## Overview
 
-The admin dashboard is a set of protected routes under `/admin`. Access is controlled at the layout level — all routes within `/admin/*` require an admin session (`requireSessionOrRedirect({ type: "admin" })` redirects to `/login` if not authenticated).
+The admin dashboard is a set of protected routes under `/admin`. Access is controlled at the layout level — all routes within `/admin/*` require an admin session (`requireSessionOrRedirect("admin")` redirects to `/login` if not authenticated).
 
 ## Layout
 
 The admin layout (`src/app/admin/layout.tsx`) provides:
 
-- **Guard** — Calls `requireSessionOrRedirect({ type: "admin" })`; redirects to `/login` if not authenticated
+- **Guard** — Calls `requireSessionOrRedirect("admin")`; redirects to `/login` if not authenticated
 - **Sidebar** — Navigation panel with links to all management sections
 - **Back to Site** — Link to return to the public site
 

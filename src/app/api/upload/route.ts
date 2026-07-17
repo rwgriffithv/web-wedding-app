@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdminSessionOrNull, validateSessionInDb } from "@/lib/auth";
+import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { MEDIA_DIR, ensureMediaDir, ALLOWED_EXTENSIONS, IMAGE_EXTENSIONS, VIDEO_EXTENSIONS } from "@/lib/media";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
@@ -8,7 +8,7 @@ import path from "node:path";
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
 export async function POST(request: Request) {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

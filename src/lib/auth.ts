@@ -89,18 +89,6 @@ export async function verifyTokenInCookie(): Promise<Session | null> {
 }
 
 /**
- * Hot path — parse cookie, verify admin type, check in-memory session revocation.
- * Returns null on failure (server actions handle error responses).
- */
-export async function requireAdminSessionOrNull(): Promise<Session | null> {
-  const session = await verifyTokenInCookie();
-  if (!session || session.type !== "admin") return null;
-  const ip = await getClientIp();
-  if (isSessionRevoked(session, ip)) return null;
-  return session;
-}
-
-/**
  * Cold path — crypto + DB fields + IP ban check.
  * Used by all mutation server actions (admin and party).
  * Checks user/party existence, type match, password unchanged, and IP not banned — all against DB truth.
@@ -115,12 +103,14 @@ export async function validateSessionInDb(session?: Session | null): Promise<Ses
 
 /**
  * Hot path — parse cookie, check in-memory session revocation. Returns null if invalid or revoked.
- * For API routes and server actions that accept any authenticated user.
+ * Optionally enforces a session type constraint.
+ * For API routes, server actions, and page layouts that accept any authenticated user.
  * Does NOT clear cookies or redirect — the caller handles error responses.
  */
-export async function requireSession(): Promise<Session | null> {
+export async function requireSession(type?: Session["type"]): Promise<Session | null> {
   const session = await verifyTokenInCookie();
   if (!session) return null;
+  if (type && session.type !== type) return null;
   const ip = await getClientIp();
   if (isSessionRevoked(session, ip)) return null;
   return session;
@@ -135,12 +125,12 @@ export async function requireSession(): Promise<Session | null> {
  * - Wrong type → redirect("/home")
  * - Valid → return session
  */
-export async function requireSessionOrRedirect(options?: { type?: Session["type"] }): Promise<Session> {
+export async function requireSessionOrRedirect(type?: Session["type"]): Promise<Session> {
   const session = await requireSession();
   if (!session) {
     redirect("/login");
   }
-  if (options?.type && session.type !== options.type) {
+  if (type && session.type !== type) {
     redirect("/home");
   }
   return session;

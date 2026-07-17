@@ -23,7 +23,7 @@ All auth functions in `src/lib/auth.ts` follow a strict prefix convention. The p
 |---|---|---|---|---|
 | `verify` | Cryptographic | None (pure/sync when possible) | Value or `null` | `verifyToken(token)`, `verifyTokenInCookie()`, `verifyPassword(pw, hash)` |
 | `validate` | Business logic (DB) | DB read | Value or `null` | `validateSessionInDb(session?)` |
-| `require` | Gatekeeper | Redirects or throws on failure | Value (never `null`) | `requireSessionOrRedirect()`, `requireAdminSessionOrNull()`, `requireSession()` |
+| `require` | Gatekeeper | Redirects or throws on failure | Value (never `null`) | `requireSessionOrRedirect()`, `requireSession("admin")`, `requireSession()` |
 
 **`verify`** = "Is this token/password cryptographically authentic?" HMAC signature check, expiry check, scrypt comparison. No external state. Pure math.
 
@@ -41,7 +41,7 @@ requireSessionOrRedirect() → requireSession()        →  [crypto + revocation
 validateSessionInDb()      → validateSessionFields() →  [DB: user/party + pwChangedAt + IP ban]
 ```
 
-Each layer adds more checks. The proxy (`proxy.ts`) calls `verifyToken()` + `isSessionRevoked()` directly. Layouts call `requireSessionOrRedirect()`. Server actions call `requireAdminSessionOrNull()` or `validateSessionInDb()` depending on the operation's trust requirements.
+Each layer adds more checks. The proxy (`proxy.ts`) calls `verifyToken()` + `isSessionRevoked()` directly. Layouts call `requireSessionOrRedirect()`. Server actions call `requireSession("admin")` or `validateSessionInDb()` depending on the operation's trust requirements.
 
 ---
 
@@ -155,7 +155,7 @@ isSessionRevoked(session, ip) → boolean
 |---|---|---|---|
 | **Proxy** (`proxy.ts`) | `verifyToken()` + `isSessionRevoked()` | Crypto + revocation | Yes (sets `maxAge: 0`) |
 | **Layouts** (`requireSessionOrRedirect()`) | `verifyTokenInCookie()` | Crypto only (proxy handles revocation) | No (redirect only) |
-| **Server Actions** (`requireAdminSessionOrNull()`) | `isSessionRevoked()` inline | Crypto + revocation + admin type | No (returns null) |
+| **Server Actions** (`requireSession("admin")`) | `isSessionRevoked()` inline | Crypto + revocation + admin type | No (returns null) |
 | **API Routes** (`requireSession()`) | `isSessionRevoked()` inline | Crypto + revocation | No (returns null) |
 
 **Why the proxy is necessary:** Server Components/layouts cannot call `cookies().set()`. When a session is revoked, the proxy clears the cookie in the HTTP response before the page renders. Without the proxy, a revoked session would cause a redirect loop: the layout would redirect to `/login`, which would see the (still-present) cookie and redirect back.
@@ -177,7 +177,7 @@ isSessionRevoked(session, ip) → boolean
 
 **Multi-worker deployments:** The in-memory maps are per-process. If the server runs multiple workers (e.g. cluster mode), a ban in worker 1 won't be seen by worker 2. Current deployment is single-process — not an issue.
 
-**Race between proxy and server actions:** An admin whose IP was just banned can still perform one server action before their next page navigation kicks them. The server action's `requireAdminSessionOrNull()` now catches the ban (via in-memory check), so this window is closed.
+**Race between proxy and server actions:** An admin whose IP was just banned can still perform one server action before their next page navigation kicks them. The server action's `requireSession("admin")` now catches the ban (via in-memory check), so this window is closed.
 
 ---
 
@@ -383,7 +383,7 @@ if (!session) return { error: "Not authenticated." };
 
 For **admin mutations** (CRUD, config save, ban/unban):
 ```typescript
-const session = await requireAdminSessionOrNull();  // crypto + admin type + revocation check
+const session = await requireSession("admin");  // crypto + admin type + revocation check
 if (!session) return { error: "Unauthorized" };
 if (!(await validateSessionInDb(session))) return { error: "Session expired" };  // DB: user exists, type match, pwChangedAt, IP ban
 ```
@@ -396,7 +396,7 @@ const session = await validateSessionInDb(hotSession);  // DB: party exists, pwC
 if (!session) { await destroySession(); return redirect; }
 ```
 
-`requireAdminSessionOrNull()` includes an in-memory revocation check (password changes + IP bans) in addition to the crypto and type check. `validateSessionInDb()` checks DB truth: user/party existence, type match, password unchanged, and IP not banned in `banned_ips` table. Admin actions use `requireAdminSessionOrNull()` + `validateSessionInDb(session)` for defense-in-depth. Party actions use `requireSession()` + `validateSessionInDb(session)` — the same two-step hot+cold pattern.
+`requireSession("admin")` includes an in-memory revocation check (password changes + IP bans) in addition to the crypto and type check. `validateSessionInDb()` checks DB truth: user/party existence, type match, password unchanged, and IP not banned in `banned_ips` table. Admin actions use `requireSession("admin")` + `validateSessionInDb(session)` for defense-in-depth. Party actions use `requireSession()` + `validateSessionInDb(session)` — the same two-step hot+cold pattern.
 
 **Step 4 — Business logic and database write:**
 
@@ -425,7 +425,7 @@ All SQL queries use parameterized statements. No string interpolation in queries
 | IP spoofing via headers | `cf-connecting-ip` is set by Cloudflare (cannot be spoofed); `x-forwarded-for` / `x-real-ip` trusted only from Caddy/Cloudflare (trusted proxy) |
 | Banned IP access | `isIpBanned()` checked at top of every action; immediate rejection |
 | Database flooding | In-memory rate limiter rejects before any DB query (except IP ban check) |
-| Using revoked session token | `requireAdminSessionOrNull()` checks revocation maps; proxy + `requireSession()` check revocation |
+| Using revoked session token | `requireSession("admin")` checks revocation maps; proxy + `requireSession()` check revocation |
 
 **Database protection:**
 
@@ -520,7 +520,7 @@ Auth is enforced at the layout level (`requireSessionOrRedirect()` guard) and in
 
 | Route | Guard | Redirect |
 |---|---|---|
-| `/admin/*` | `requireSessionOrRedirect({ type: "admin" })` (layout) + `requireAdminSessionOrNull()` (actions) | → `/login` (no session/revoked) or `/home` (wrong type) |
+| `/admin/*` | `requireSessionOrRedirect("admin")` (layout) + `requireSession("admin")` (actions) | → `/login` (no session/revoked) or `/home` (wrong type) |
 | `/(main)/*` | `requireSessionOrRedirect()` (layout) + `requireSession()` + `validateSessionInDb(session)` (actions) | → `/login` |
 | `/api/media/[...path]` | `requireSession()` → 401 JSON | N/A (JSON response) |
 | `/login` | `requireSession()` → redirect to `/admin` or `/home` | N/A (already logged in) |
@@ -581,7 +581,7 @@ RSVP and Help actions use the same hot+cold auth pattern as admin actions: `requ
 | File | Role |
 |---|---|
 | `src/proxy.ts` | Cookie-clearing proxy — runs before page renders, checks revocation, clears cookie for invalid/revoked sessions |
-| `src/lib/auth.ts` | Session create/parse/destroy, `requireAdminSessionOrNull()`, `requireSession()` (API), `requireSessionOrRedirect()` (layout), `validateSessionInDb()`, `verifyToken()`, `verifyTokenInCookie()`, password hash/verify |
+| `src/lib/auth.ts` | Session create/parse/destroy, `requireSession("admin")`, `requireSession()` (API), `requireSessionOrRedirect()` (layout), `validateSessionInDb()`, `verifyToken()`, `verifyTokenInCookie()`, password hash/verify |
 | `src/lib/session-revocation.ts` | In-memory revocation maps + `isSessionRevoked(session, ip)` pure boolean check |
 | `src/lib/ip.ts` | `getClientIp()` — IP extraction from proxy headers |
 | `src/lib/config.ts` | Environment variable validation (`ADMIN_USERNAME`, `ADMIN_PASSWORD`, `SESSION_SECRET`) |

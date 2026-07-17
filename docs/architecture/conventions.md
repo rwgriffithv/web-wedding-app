@@ -98,7 +98,7 @@ Common patterns:
 
 ```typescript
 // Auth check
-const session = await requireAdminSessionOrNull();
+const session = await requireSession("admin");
 if (!session) return { success: false, error: "Unauthorized" };
 
 // Validation

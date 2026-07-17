@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdminSessionOrNull, validateSessionInDb } from "@/lib/auth";
+import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { getString, getInt } from "@/lib/form-data";
 import { setConfig } from "@/lib/repository/site-config";
 import { banIp, unbanIp, isIpBanned, clearViolations, getBannedIpById } from "@/lib/repository/ip-bans";
@@ -18,7 +18,7 @@ function isValidIp(ip: string): boolean {
 }
 
 export async function saveAutoBanSettings(prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -62,7 +62,7 @@ async function banIpCommon(ip: string, reason: string): Promise<SecurityState> {
 }
 
 export async function banIpAction(_prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -84,7 +84,7 @@ export async function banIpAction(_prevState: SecurityState | null, formData: Fo
 }
 
 export async function unbanIpAction(_prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -104,7 +104,7 @@ export async function unbanIpAction(_prevState: SecurityState | null, formData: 
 }
 
 export async function banViolationIpAction(_prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -124,7 +124,7 @@ export async function banViolationIpAction(_prevState: SecurityState | null, for
 }
 
 export async function saveSessionSettings(prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -153,7 +153,7 @@ export async function saveSessionSettings(prevState: SecurityState | null, formD
 }
 
 export async function saveSuspiciousSettings(prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -176,7 +176,7 @@ export async function saveSuspiciousSettings(prevState: SecurityState | null, fo
 }
 
 export async function clearViolationsAction(_prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 

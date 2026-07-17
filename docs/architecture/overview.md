@@ -70,20 +70,20 @@ Server-first Next.js 16 App Router application with SQLite, deployed via Docker 
 | `/(main)/rsvp` | Dynamic | `requireSessionOrRedirect()` | Party-based RSVP with per-member forms |
 | `/(main)/media` | Dynamic | `requireSessionOrRedirect()` | Photo/video gallery with tab routing |
 | `/(main)/schedule` | Dynamic | `requireSessionOrRedirect()` | Wedding day timeline |
-| `/admin` | Dynamic | `requireSessionOrRedirect({ type: "admin" })` | Dashboard with stats and RSVP table |
-| `/admin/users` | Dynamic | `requireSessionOrRedirect({ type: "admin" })` | User management (admin, viewer, party) |
-| `/admin/guests` | Dynamic | `requireSessionOrRedirect({ type: "admin" })` | Guest CRUD with party assignment |
-| `/admin/site` | Dynamic | `requireSessionOrRedirect({ type: "admin" })` | Site configuration editor |
-| `/admin/lodging` | Dynamic | `requireSessionOrRedirect({ type: "admin" })` | Lodging recommendations CRUD |
-| `/admin/dress-code` | Dynamic | `requireSessionOrRedirect({ type: "admin" })` | Dress code image management |
-| `/admin/rsvp` | Dynamic | `requireSessionOrRedirect({ type: "admin" })` | RSVP response viewer (sortable table) |
-| `/admin/media` | Dynamic | `requireSessionOrRedirect({ type: "admin" })` | Media gallery CRUD |
-| `/admin/schedule` | Dynamic | `requireSessionOrRedirect({ type: "admin" })` | Wedding day schedule CRUD |
-| `/admin/security` | Dynamic | `requireSessionOrRedirect({ type: "admin" })` | IP banning, auto-ban settings, rate limit config |
+| `/admin` | Dynamic | `requireSessionOrRedirect("admin")` | Dashboard with stats and RSVP table |
+| `/admin/users` | Dynamic | `requireSessionOrRedirect("admin")` | User management (admin, viewer, party) |
+| `/admin/guests` | Dynamic | `requireSessionOrRedirect("admin")` | Guest CRUD with party assignment |
+| `/admin/site` | Dynamic | `requireSessionOrRedirect("admin")` | Site configuration editor |
+| `/admin/lodging` | Dynamic | `requireSessionOrRedirect("admin")` | Lodging recommendations CRUD |
+| `/admin/dress-code` | Dynamic | `requireSessionOrRedirect("admin")` | Dress code image management |
+| `/admin/rsvp` | Dynamic | `requireSessionOrRedirect("admin")` | RSVP response viewer (sortable table) |
+| `/admin/media` | Dynamic | `requireSessionOrRedirect("admin")` | Media gallery CRUD |
+| `/admin/schedule` | Dynamic | `requireSessionOrRedirect("admin")` | Wedding day schedule CRUD |
+| `/admin/security` | Dynamic | `requireSessionOrRedirect("admin")` | IP banning, auto-ban settings, rate limit config |
 | `/api/health` | Static | None | Health check endpoint |
-| `/api/upload` | Dynamic | `requireAdminSessionOrNull()` | File upload (multipart) |
+| `/api/upload` | Dynamic | `requireSession("admin")` | File upload (multipart) |
 | `/api/media/[...path]` | Dynamic | `requireSession()` | File serving (any logged-in user) |
-| `/api/media/list` | Dynamic | `requireAdminSessionOrNull()` | Directory listing for file browser |
+| `/api/media/list` | Dynamic | `requireSession("admin")` | Directory listing for file browser |
 | `/api/login-background` | Static | None | Login background image (public) |
 
 All routes are also checked by `proxy.ts` before rendering — expired, tampered, or revoked session cookies are cleared automatically.
@@ -106,7 +106,7 @@ All auth functions follow a strict prefix convention that communicates the valid
 |---|---|---|
 | `verify` | Crypto/integrity check (pure, no DB) | `verifyToken()`, `verifyTokenInCookie()`, `verifyPassword()` |
 | `validate` | Business rule check (reads DB) | `validateSessionInDb()` |
-| `require` | Gatekeeper (redirects or returns null) | `requireSessionOrRedirect()`, `requireAdminSessionOrNull()` |
+| `require` | Gatekeeper (redirects or returns null) | `requireSessionOrRedirect()`, `requireSession("admin")` |
 
 Each layer adds checks: `verify` → crypto only, `validate` → DB truth, `require` → rejects on failure. See [authentication.md](../features/authentication.md#auth-function-naming-convention) for the full convention and call chain.
 
@@ -120,7 +120,7 @@ Two categories of cookies serve different purposes:
 
 ### Session Revocation
 
-When an admin changes a user's password or bans an IP, active sessions are immediately invalidated via in-memory caches. The proxy (`proxy.ts`) checks these caches on every page request via `verifyToken()` + `isSessionRevoked()` and clears the cookie for revoked sessions. Server actions check them via `requireAdminSessionOrNull()`. This eliminates the window where a user could continue using a stale session after a password change or IP ban. See [authentication.md](../features/authentication.md#session-revocation) for the full revocation architecture.
+When an admin changes a user's password or bans an IP, active sessions are immediately invalidated via in-memory caches. The proxy (`proxy.ts`) checks these caches on every page request via `verifyToken()` + `isSessionRevoked()` and clears the cookie for revoked sessions. Server actions check them via `requireSession("admin")`. This eliminates the window where a user could continue using a stale session after a password change or IP ban. See [authentication.md](../features/authentication.md#session-revocation) for the full revocation architecture.
 
 ### Protection Layers
 
@@ -134,7 +134,7 @@ Requests pass through multiple protection layers:
 
 The server enforces the same protection for UI clients (browsers) and non-UI clients (curl, scripts, bots). Rate-limit cookies are a UX convenience for browsers; the server's rate limiter is the actual enforcement.
 
-Auth is enforced at the layout level (`requireSessionOrRedirect()` guard) and in every Server Action (`requireAdminSessionOrNull()` / `validateSessionInDb()`). `SafeUser` type (`Omit<User, "password">`) is returned by all repository functions except `getUserWithPassword` and `getPartyUserWithPassword`. See [authentication.md](../features/authentication.md) for the full cookie architecture, session revocation, client vs server responsibilities, and protection details.
+Auth is enforced at the layout level (`requireSessionOrRedirect()` guard) and in every Server Action (`requireSession("admin")` / `validateSessionInDb()`). `SafeUser` type (`Omit<User, "password">`) is returned by all repository functions except `getUserWithPassword` and `getPartyUserWithPassword`. See [authentication.md](../features/authentication.md) for the full cookie architecture, session revocation, client vs server responsibilities, and protection details.
 
 ## Technology Stack
 
@@ -236,7 +236,7 @@ src/
 | Database | SQLite | Zero-config, file-based, no server process needed |
 | Auth | HMAC-signed JSON cookie + four-tier validation | Simple, secure (signed). Proxy: crypto + revocation + cookie clear. Fast path: crypto-only for page loads (0 DB queries). Revocation: in-memory maps for immediate invalidation. Mutation path: validates `pwChangedAt` against DB on writes only. |
 | Session revocation | In-memory maps + proxy | Immediate invalidation on password change or IP ban. Proxy clears cookie before page renders. Maps reset on server restart — intentional (expired sessions already handled by `exp` field). |
-| Access control | Layout-level guards + server actions | Every admin page and action validates session server-side via `requireSessionOrRedirect()` / `requireAdminSessionOrNull()` |
+| Access control | Layout-level guards + server actions | Every admin page and action validates session server-side via `requireSessionOrRedirect()` / `requireSession("admin")` |
 | RSVP | Party model | Families RSVP once with a code (not per-person passwords) |
 | Styling | Plain CSS | Zero dependencies, themeable via custom properties. **No Tailwind CSS** — utility classes are hand-crafted in `globals.css`. |
 | Deployment | Docker Compose | Isolated networks, multi-stage builds, health checks |

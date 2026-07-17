@@ -83,7 +83,7 @@ src/app/admin/help/actions.ts
 | `moveFaq` | `faq_id`, `direction` ("up"/"down") | Swaps `sort_order` with neighbor |
 | `answerQuestion` | `question_id`, `answer` | Only answers unanswered questions |
 
-All admin actions are guarded by `requireAdminSessionOrNull()` and revalidate both `/admin/help` and `/help`.
+All admin actions are guarded by `requireSession("admin")` and revalidate both `/admin/help` and `/help`.
 
 ## Admin Dashboard
 

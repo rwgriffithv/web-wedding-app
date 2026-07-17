@@ -67,7 +67,7 @@ All uploaded files are served via the API route `GET /api/media/<filename>`. Thi
 
 ## Authentication
 
-Admin-only. Uses `requireAdminSessionOrNull()` check in server actions.
+Admin-only. Uses `requireSession("admin")` check in server actions.
 
 ## Backup
 

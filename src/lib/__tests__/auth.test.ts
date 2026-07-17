@@ -265,10 +265,11 @@ describe("getSessionMaxSeconds", () => {
   });
 });
 
-describe("requireAdminSessionOrNull (revocation)", () => {
+describe("requireSession with type constraint", () => {
   beforeEach(() => {
     clearPasswordRevocation(2);
     unrevokeSessionsByIpBan("10.0.0.9");
+    mockHeaders.mockReturnValue({ get: () => undefined });
   });
 
   it("returns null when IP is banned", async () => {
@@ -279,20 +280,48 @@ describe("requireAdminSessionOrNull (revocation)", () => {
     const mod = await import("next/headers");
     vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
 
-    const { requireAdminSessionOrNull } = await import("../auth");
-    expect(await requireAdminSessionOrNull()).toBeNull();
+    const { requireSession } = await import("../auth");
+    expect(await requireSession("admin")).toBeNull();
   });
 
   it("returns null when password changed after session", async () => {
     revokeSessionsByPasswordChange(2);
-    mockHeaders.mockReturnValue({ get: () => undefined });
 
     const token = createSession({ userId: 2, type: "admin" });
     const mod = await import("next/headers");
     vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
 
-    const { requireAdminSessionOrNull } = await import("../auth");
-    expect(await requireAdminSessionOrNull()).toBeNull();
+    const { requireSession } = await import("../auth");
+    expect(await requireSession("admin")).toBeNull();
+  });
+
+  it("returns admin session when type matches", async () => {
+    const token = createSession({ userId: 2, type: "admin" });
+    const mod = await import("next/headers");
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
+
+    const { requireSession } = await import("../auth");
+    const session = await requireSession("admin");
+    expect(session).not.toBeNull();
+    expect(session?.type).toBe("admin");
+  });
+
+  it("returns null when type does not match (party session, admin required)", async () => {
+    const token = createSession({ partyId: 1, type: "party" });
+    const mod = await import("next/headers");
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
+
+    const { requireSession } = await import("../auth");
+    expect(await requireSession("admin")).toBeNull();
+  });
+
+  it("returns null when type does not match (admin session, party required)", async () => {
+    const token = createSession({ userId: 2, type: "admin" });
+    const mod = await import("next/headers");
+    vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
+
+    const { requireSession } = await import("../auth");
+    expect(await requireSession("party")).toBeNull();
   });
 });
 
@@ -427,7 +456,7 @@ describe("requireSessionOrRedirect", () => {
     vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
 
     const { requireSessionOrRedirect } = await import("../auth");
-    await expect(requireSessionOrRedirect({ type: "party" })).rejects.toThrow("NEXT_REDIRECT");
+    await expect(requireSessionOrRedirect("party")).rejects.toThrow("NEXT_REDIRECT");
     expect(mockRedirect).toHaveBeenCalledWith("/home");
   });
 
@@ -437,7 +466,7 @@ describe("requireSessionOrRedirect", () => {
     vi.mocked(mod.cookies).mockReturnValue({ get: () => ({ value: token }), set: vi.fn() } as never);
 
     const { requireSessionOrRedirect } = await import("../auth");
-    const session = await requireSessionOrRedirect({ type: "admin" });
+    const session = await requireSessionOrRedirect("admin");
     expect(session).not.toBeNull();
     expect(session.type).toBe("admin");
     expect(session.userId).toBe(2);

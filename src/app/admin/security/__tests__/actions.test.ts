@@ -12,7 +12,7 @@ const mockRevalidatePath = vi.fn();
 const mockRevokeSessionsByIpBan = vi.fn();
 const mockUnrevokeSessionsByIpBan = vi.fn();
 
-vi.mock("@/lib/auth", () => ({ requireAdminSessionOrNull: () => mockIsAdmin(), validateSessionInDb: () => mockValidateSessionForMutation() }));
+vi.mock("@/lib/auth", () => ({ requireSession: (...args: unknown[]) => mockIsAdmin(...args), validateSessionInDb: () => mockValidateSessionForMutation() }));
 vi.mock("@/lib/repository/ip-bans", () => ({
   banIp: (...args: unknown[]) => mockBanIp(...args),
   unbanIp: (...args: unknown[]) => mockUnbanIp(...args),

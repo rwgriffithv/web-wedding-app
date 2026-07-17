@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdminSessionOrNull, validateSessionInDb } from "@/lib/auth";
+import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { getString, getInt } from "@/lib/form-data";
 import { getDb } from "@/lib/db";
 import { updateGuest as updateGuestRepo, createGuest, deleteGuest, getGuestById } from "@/lib/repository/guests";
@@ -10,7 +10,7 @@ import { createParty, deleteEmptyParty } from "@/lib/repository/party";
 export interface GuestState { success?: boolean; error?: string; partyId?: number }
 
 export async function createPartyInline(prevState: GuestState | null, formData: FormData): Promise<GuestState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -28,7 +28,7 @@ export async function createPartyInline(prevState: GuestState | null, formData: 
 }
 
 export async function updateGuest(prevState: GuestState | null, formData: FormData): Promise<GuestState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -76,7 +76,7 @@ export async function updateGuest(prevState: GuestState | null, formData: FormDa
 }
 
 export async function addGuest(prevState: GuestState | null, formData: FormData): Promise<GuestState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -106,7 +106,7 @@ export async function addGuest(prevState: GuestState | null, formData: FormData)
 }
 
 export async function removeGuest(prevState: GuestState | null, formData: FormData): Promise<GuestState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 

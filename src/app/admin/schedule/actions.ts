@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdminSessionOrNull, validateSessionInDb } from "@/lib/auth";
+import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { getString, getInt } from "@/lib/form-data";
 import { create, update, deleteItem as deleteItemRepo, getAll, swapSortOrder } from "@/lib/repository/schedule";
 import { setConfig } from "@/lib/repository/site-config";
@@ -11,7 +11,7 @@ interface ScheduleState { success?: boolean; error?: string }
 const TIME_PATTERN = /^(?:(?:1[0-2]|0?[1-9]):[0-5]\d\s?(?:AM|PM|am|pm)|(?:[01]?\d|2[0-3]):[0-5]\d)$/;
 
 export async function addItem(prevState: ScheduleState | null, formData: FormData): Promise<ScheduleState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -39,7 +39,7 @@ export async function addItem(prevState: ScheduleState | null, formData: FormDat
 }
 
 export async function updateItem(prevState: ScheduleState | null, formData: FormData): Promise<ScheduleState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -70,7 +70,7 @@ export async function updateItem(prevState: ScheduleState | null, formData: Form
 }
 
 export async function moveItem(prevState: ScheduleState | null, formData: FormData): Promise<ScheduleState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -105,7 +105,7 @@ export async function moveItem(prevState: ScheduleState | null, formData: FormDa
 }
 
 export async function deleteItem(prevState: ScheduleState | null, formData: FormData): Promise<ScheduleState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
@@ -125,7 +125,7 @@ export async function deleteItem(prevState: ScheduleState | null, formData: Form
 }
 
 export async function saveScheduleText(prevState: ScheduleState | null, formData: FormData): Promise<ScheduleState> {
-  const session = await requireAdminSessionOrNull();
+  const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
