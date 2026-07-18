@@ -109,7 +109,7 @@ describe("SecuritySettingsForm", () => {
   it("page view debounce input has correct constraints", () => {
     render(<SecuritySettingsForm {...defaultProps} />);
     const input = screen.getByLabelText("Page View Debounce (minutes)");
-    expect(input).toHaveAttribute("min", "1");
+    expect(input).toHaveAttribute("min", "0");
     expect(input).toHaveAttribute("max", "1440");
     expect(input).toHaveAttribute("type", "number");
   });

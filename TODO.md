@@ -173,7 +173,7 @@ Please help!
   * status: done
 
 * I want to make sure the page view tracking logic is not poorly designed. We recently added many commits for improving the architecture to use a client, proxy, server-hot and server-cold hierarchy of operations to reduce load on the server and protect against malicious actors. This was applied to authentication and rate-limiing party form submissions. Please evaluate using a similar kind of hot-cold approach for tracking page views. I know we have debouncing to help with this, I just want to make sure the debounce check is done by the client or proxy or at worst server-hot memory. Please give an evaluation for me.
-  * status: not done
+  * status: done
 
 * Please investigate if the landing page (login page) loading of the background image (public API, no session needed) is slow. It feels like the image loading is slow. Additionally, when a user is on the landing or banned page, can you make sure that the rest of the website is not aggressively cached? Caching should ONLY happen wonce a user session is authenticated to prevent sending data to malicious actors and unathenticated users who could then intercept and inspect it.
   * status: not done

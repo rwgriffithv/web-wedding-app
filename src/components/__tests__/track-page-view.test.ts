@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockIncrementPageViews = vi.fn();
 
@@ -6,10 +6,10 @@ vi.mock("@/lib/repository/users", () => ({
   incrementPageViews: (...args: unknown[]) => mockIncrementPageViews(...args),
 }));
 
-const mockGetConfig = vi.fn();
+const mockGetPageViewDebounceMinutes = vi.fn();
 
 vi.mock("@/lib/repository/site-config", () => ({
-  getConfig: (...args: unknown[]) => mockGetConfig(...args),
+  getPageViewDebounceMinutes: () => mockGetPageViewDebounceMinutes(),
 }));
 
 const mockVerifyTokenInCookie = vi.fn();
@@ -21,78 +21,60 @@ vi.mock("@/lib/auth", () => ({
 describe("trackPageView", () => {
   beforeEach(() => {
     mockIncrementPageViews.mockReset();
-    mockGetConfig.mockReset();
+    mockGetPageViewDebounceMinutes.mockReset();
     mockVerifyTokenInCookie.mockReset();
+    mockGetPageViewDebounceMinutes.mockReturnValue(15);
   });
 
   it("does nothing when session is null", async () => {
     mockVerifyTokenInCookie.mockResolvedValue(null);
     const { trackPageView } = await import("@/components/track-page-view");
-    await trackPageView();
+    const result = await trackPageView();
     expect(mockIncrementPageViews).not.toHaveBeenCalled();
+    expect(result).toEqual({ debounceMinutes: 15 });
   });
 
   it("does nothing when session has no userId", async () => {
     mockVerifyTokenInCookie.mockResolvedValue({ type: "party" });
     const { trackPageView } = await import("@/components/track-page-view");
-    await trackPageView();
+    const result = await trackPageView();
     expect(mockIncrementPageViews).not.toHaveBeenCalled();
+    expect(result).toEqual({ debounceMinutes: 15 });
   });
 
-  it("calls incrementPageViews with userId and default debounce (15)", async () => {
+  it("calls incrementPageViews with userId and debounce minutes", async () => {
     mockVerifyTokenInCookie.mockResolvedValue({ userId: 42, type: "party" });
-    mockGetConfig.mockReturnValue("");
+    mockGetPageViewDebounceMinutes.mockReturnValue(15);
     const { trackPageView } = await import("@/components/track-page-view");
-    await trackPageView();
+    const result = await trackPageView();
     expect(mockIncrementPageViews).toHaveBeenCalledWith(42, 15);
+    expect(result).toEqual({ debounceMinutes: 15 });
   });
 
   it("uses configured debounce minutes from site config", async () => {
     mockVerifyTokenInCookie.mockResolvedValue({ userId: 42, type: "party" });
-    mockGetConfig.mockReturnValue("30");
+    mockGetPageViewDebounceMinutes.mockReturnValue(30);
     const { trackPageView } = await import("@/components/track-page-view");
-    await trackPageView();
+    const result = await trackPageView();
     expect(mockIncrementPageViews).toHaveBeenCalledWith(42, 30);
+    expect(result).toEqual({ debounceMinutes: 30 });
   });
 
   it("caps debounce at 1440 minutes (24h)", async () => {
     mockVerifyTokenInCookie.mockResolvedValue({ userId: 42, type: "party" });
-    mockGetConfig.mockReturnValue("9999");
+    mockGetPageViewDebounceMinutes.mockReturnValue(1440);
     const { trackPageView } = await import("@/components/track-page-view");
-    await trackPageView();
+    const result = await trackPageView();
     expect(mockIncrementPageViews).toHaveBeenCalledWith(42, 1440);
+    expect(result).toEqual({ debounceMinutes: 1440 });
   });
 
-  it("falls back to 15 when config is invalid (NaN)", async () => {
+  it("returns debounceMinutes even when incrementPageViews returns a value", async () => {
     mockVerifyTokenInCookie.mockResolvedValue({ userId: 42, type: "party" });
-    mockGetConfig.mockReturnValue("not-a-number");
-    const { trackPageView } = await import("@/components/track-page-view");
-    await trackPageView();
-    expect(mockIncrementPageViews).toHaveBeenCalledWith(42, 15);
-  });
-
-  it("falls back to 15 when config is zero", async () => {
-    mockVerifyTokenInCookie.mockResolvedValue({ userId: 42, type: "party" });
-    mockGetConfig.mockReturnValue("0");
-    const { trackPageView } = await import("@/components/track-page-view");
-    await trackPageView();
-    expect(mockIncrementPageViews).toHaveBeenCalledWith(42, 15);
-  });
-
-  it("falls back to 15 when config is negative", async () => {
-    mockVerifyTokenInCookie.mockResolvedValue({ userId: 42, type: "party" });
-    mockGetConfig.mockReturnValue("-5");
-    const { trackPageView } = await import("@/components/track-page-view");
-    await trackPageView();
-    expect(mockIncrementPageViews).toHaveBeenCalledWith(42, 15);
-  });
-
-  it("passes through the return value from incrementPageViews", async () => {
-    mockVerifyTokenInCookie.mockResolvedValue({ userId: 42, type: "party" });
-    mockGetConfig.mockReturnValue("");
+    mockGetPageViewDebounceMinutes.mockReturnValue(15);
     mockIncrementPageViews.mockReturnValue(true);
     const { trackPageView } = await import("@/components/track-page-view");
-    // Should not throw even though incrementPageViews returns a value
-    await expect(trackPageView()).resolves.toBeUndefined();
+    const result = await trackPageView();
+    expect(result).toEqual({ debounceMinutes: 15 });
   });
 });

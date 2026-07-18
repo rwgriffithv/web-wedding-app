@@ -105,7 +105,7 @@ export async function saveSecuritySettings(prevState: SecurityState | null, form
       { key: "rate_limit_max_attempts", label: "Rate Limit Max Attempts", min: 1, max: 1000 },
       { key: "rate_limit_window_seconds", label: "Rate Limit Window", min: 1, max: 1000 },
       { key: "session_max_hours", label: "Session Expiry", min: 1, max: 24 },
-      { key: "page_view_debounce_minutes", label: "Page View Debounce", min: 1, max: 1440 },
+      { key: "page_view_debounce_minutes", label: "Page View Debounce", min: 0, max: 1440 },
       { key: "suspicious_ip_threshold", label: "Suspicious IP Threshold", min: 1, max: 100 },
     ] as const;
 

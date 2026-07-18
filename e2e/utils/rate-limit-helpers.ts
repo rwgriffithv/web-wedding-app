@@ -1,15 +1,8 @@
-import Database from "better-sqlite3";
-import path from "path";
+import { openDb } from "./db-helpers";
 
-const dbPath = process.env.DATABASE_URL?.replace(/^file:/, "") || path.join(process.cwd(), "data", "dev.db");
+export { openDb } from "./db-helpers";
 
 let testIpsToClean: string[] = [];
-
-export function openDb() {
-  const db = new Database(dbPath);
-  db.pragma("journal_mode = WAL");
-  return db;
-}
 
 export function seedViolations(ip: string, count: number) {
   const db = openDb();

@@ -105,7 +105,7 @@ export function SecuritySettingsForm({
               id="page_view_debounce_minutes"
               name="page_view_debounce_minutes"
               type="number"
-              min="1"
+              min="0"
               max="1440"
               defaultValue={pageViewDebounceMinutes}
             />

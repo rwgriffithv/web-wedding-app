@@ -339,3 +339,63 @@ npm run db:seed
 - `src/app/login/page.tsx` — IP ban check (renders banned screen)
 - `src/app/login/actions.ts` — rate-limit check and auto-ban logic
 - `src/lib/ip.ts` — `getClientIp()` returns `127.0.0.1` in dev (no proxy headers)
+
+---
+
+### Parallel Tests: Side-Effect Isolation
+
+Parallel tests (`e2e/parallel/`) run concurrently across multiple browser workers against a **single shared server process**. Every worker shares the same database, in-memory state, and server runtime. A test that mutates shared state can break any other test running at the same time.
+
+**Rules:**
+
+1. **Never mutate shared DB state.** Do not `setConfig()`, ban IPs, create users, or modify `site_config` rows. These changes are visible to all workers instantly and may break concurrent tests.
+2. **Never depend on in-memory state.** The rate limiter, cached config, and other server-side caches are shared. A test that triggers rate limiting (e.g. multiple failed logins) can exhaust the threshold for other workers.
+3. **Never depend on a specific page view count or other cumulative counter.** Other workers may increment counters concurrently, so `before`/`after` comparisons will be unreliable.
+4. **Each test must be self-contained.** A passing test must not change behavior of a subsequent test. If a test requires modified config or DB state, it belongs in `e2e/serial/`.
+
+**Good parallel test patterns:**
+- Read-only assertions against existing seed data
+- UI interactions that don't mutate server state (navigation, form display, tab switching)
+- Tests that use unique per-test identifiers (e.g. `Date.now()`) to avoid collisions
+
+**If you need to modify shared state:**
+Move the test to `e2e/serial/` and follow the serial test conventions below.
+
+---
+
+### Serial Tests: Initialization and Cleanup
+
+Serial tests (`e2e/serial/`) run sequentially in a single worker against the same shared server process. Unlike parallel tests, they **can** mutate shared state — but they must do so responsibly because state persists across tests within the run.
+
+**Shared state that persists between serial tests:**
+
+| Layer | What persists | How it's affected |
+|---|---|---|
+| **Database** | `site_config` rows, `banned_ips`, `rate_limit_violations`, users, RSVPs | `setConfig()`, login failures, CRUD operations |
+| **In-memory** | Rate limiter entries (per-IP counters with TTL), cached config | Login attempts, server actions |
+| **Browser** | Cookies, localStorage (`pv_until`, `rl_until`, `cookie_health_until`) | Login, PageViewTracker, rate-limit cooldown |
+
+**Rules:**
+
+1. **Initialize the state you need.** Do not assume a clean database, empty in-memory caches, or fresh browser state. Each test must set up whatever it needs at the start:
+   - DB state: `setConfig()`, `setPageViewDebounce()`, etc.
+   - Browser state: `page.context().clearCookies()`, navigate to a page before accessing `localStorage`
+   - In-memory state: `waitForTimeout()` to let stale rate limiter entries expire
+
+2. **Clean up in `try/finally`.** Every test that mutates state must restore it in a `finally` block so cleanup runs even on timeout or assertion failure. Follow the established patterns:
+   - Config changes: restore seed values via `setConfig()` in `finally`
+   - Bans/violations: `nukeAllBansAndViolations()` + `cleanupIp()` in `finally`
+   - Browser state: `page.context().clearCookies()` in `finally`
+   - IP bans via admin UI: `unbanIpViaAdmin()` in `finally` (see `session-revocation.spec.ts`)
+
+3. **Use `test.describe.configure({ mode: "serial" })`** when tests within a file depend on execution order.
+
+4. **Wait for stale in-memory state.** If a preceding test created rate limiter entries with a long TTL (e.g. seed config's 60-second window), the next test must either wait for them to expire or use `nukeAllBansAndViolations()` to clear the DB. In-memory entries cannot be cleared directly — only time-based expiry works.
+
+**Reference implementations:**
+
+| Test file | Initialization | Cleanup |
+|---|---|---|
+| `rate-limit.spec.ts` | `setConfig()` to low thresholds, `waitForTimeout(2000)` for stale entries | `nukeAllBansAndViolations()` + `setConfig()` restore in `finally`, `flushTestIps()` in `afterEach` |
+| `session-revocation.spec.ts` | `loginAsAdmin()`, create users via admin UI | `unbanIpViaAdmin()` via admin UI + `cleanupIp()` via DB in `finally`, `ctx2.close()` |
+| `tracking-page-views.spec.ts` | `setPageViewDebounce()`, `clearCookies()` | `setPageViewDebounce(15)` restore in `finally` |
