@@ -14,7 +14,17 @@ export async function ensureThumbnail(
   mediaUrl: string,
   existingThumbnailUrl?: string | null,
 ): Promise<string | null> {
-  if (existingThumbnailUrl) return existingThumbnailUrl;
+  if (existingThumbnailUrl) {
+    // Verify cached thumbnail still exists on disk; regenerate if deleted
+    const cachedPath = extractLocalPath(existingThumbnailUrl);
+    if (cachedPath) {
+      const resolved = path.resolve(MEDIA_DIR, cachedPath);
+      if (isWithinMediaDir(resolved) && fs.existsSync(resolved)) {
+        return existingThumbnailUrl;
+      }
+    }
+    // Cached file missing or not local — fall through to regenerate
+  }
 
   const localPath = extractLocalPath(mediaUrl);
   if (!localPath) return null;

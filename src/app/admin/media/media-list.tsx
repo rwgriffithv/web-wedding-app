@@ -139,7 +139,7 @@ function MediaTabGroup({ tab, slug, items, tabIndex, tabTotal }: { tab: MediaTab
               <button type="submit" className="btn btn-sm btn-ghost" disabled={movePending || tabIndex === tabTotal - 1} aria-label="Move down">&#9660;</button>
             </form>
             <button type="button" className="btn btn-sm btn-ghost" onClick={() => setRenaming(true)}>Edit</button>
-            <form action={delDispatch} onSubmit={e => { e.stopPropagation(); if (!confirm("This will remove all media items in this tab from the website. Files on disk are not deleted. Continue?")) e.preventDefault(); }}>
+            <form action={delDispatch} onSubmit={e => { e.stopPropagation(); if (!confirm("This will remove all media items in this tab from the website. Thumbnails will be deleted from disk. Continue?")) e.preventDefault(); }}>
               <input type="hidden" name="tab_id" value={tab.id} />
               <button type="submit" className="btn btn-sm btn-danger" disabled={delPending}>Delete</button>
             </form>

@@ -39,10 +39,15 @@ export const MIME_TYPES: Record<string, string> = {
 export function deleteThumbnail(thumbnailUrl: string | null): void {
   if (!thumbnailUrl || !thumbnailUrl.startsWith("/api/media/thumbnails/")) return;
   const filename = thumbnailUrl.replace("/api/media/thumbnails/", "");
+  if (!filename) return;
   const filepath = path.join(THUMBNAILS_DIR, filename);
   const resolved = path.resolve(filepath);
   if (!resolved.startsWith(THUMBNAILS_DIR + path.sep) && resolved !== THUMBNAILS_DIR) return;
-  fs.promises.unlink(resolved).catch((err) => { console.warn("Failed to delete thumbnail:", err); });
+  try {
+    fs.unlinkSync(resolved);
+  } catch (err) {
+    console.warn("Failed to delete thumbnail:", err);
+  }
 }
 
 let ensured = false;

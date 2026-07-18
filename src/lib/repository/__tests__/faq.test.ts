@@ -66,7 +66,8 @@ describe("faq repository", () => {
     const a = create("First?", "Answer A");
     const b = create("Second?", "Answer B");
 
-    swapSortOrder(a.id, a.sort_order, b.id, b.sort_order);
+    const result = swapSortOrder(a.id, "down");
+    expect(result.success).toBe(true);
 
     const all = getAll();
     expect(all[0].id).toBe(b.id);

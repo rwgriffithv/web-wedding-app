@@ -31,6 +31,7 @@ export function FileUpload({ onUpload, accept, label, size = "md" }: FileUploadP
       formData.append("file", file);
 
       const res = await fetch("/api/upload", { method: "POST", body: formData });
+      if (res.status === 401) { window.location.href = "/login"; return; }
       const data = await res.json();
 
       if (!res.ok) {

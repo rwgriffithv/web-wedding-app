@@ -44,12 +44,30 @@ export function deleteItem(id: number): void {
   })();
 }
 
-export function swapItemSortOrder(idA: number, orderA: number, idB: number, orderB: number): void {
+export function swapItemSortOrder(id: number, direction: "up" | "down"): { success: boolean; error?: string } {
   const db = getDb();
+  let result: { success: boolean; error?: string } = { success: false, error: "Media item not found." };
   db.transaction(() => {
-    db.prepare("UPDATE media_items SET sort_order = ? WHERE id = ?").run(orderB, idA);
-    db.prepare("UPDATE media_items SET sort_order = ? WHERE id = ?").run(orderA, idB);
+    const item = db.prepare("SELECT id, section, sort_order FROM media_items WHERE id = ?").get(id) as { id: number; section: string; sort_order: number } | undefined;
+    if (!item) return;
+
+    const sectionItems = db.prepare("SELECT id, sort_order FROM media_items WHERE section = ? ORDER BY sort_order, id").all(item.section) as Array<{ id: number; sort_order: number }>;
+    const index = sectionItems.findIndex(i => i.id === id);
+    if (index === -1) return;
+
+    const neighborIndex = direction === "up" ? index - 1 : index + 1;
+    if (neighborIndex < 0 || neighborIndex >= sectionItems.length) {
+      result = { success: false, error: direction === "up" ? "Already at top." : "Already at bottom." };
+      return;
+    }
+
+    const current = sectionItems[index];
+    const neighbor = sectionItems[neighborIndex];
+    db.prepare("UPDATE media_items SET sort_order = ? WHERE id = ?").run(neighbor.sort_order, current.id);
+    db.prepare("UPDATE media_items SET sort_order = ? WHERE id = ?").run(current.sort_order, neighbor.id);
+    result = { success: true };
   })();
+  return result;
 }
 
 export function getAllTabs(): MediaTab[] {
@@ -94,10 +112,25 @@ export function deleteTab(id: number): void {
   })();
 }
 
-export function swapTabSortOrder(idA: number, orderA: number, idB: number, orderB: number): void {
+export function swapTabSortOrder(id: number, direction: "up" | "down"): { success: boolean; error?: string } {
   const db = getDb();
+  let result: { success: boolean; error?: string } = { success: false, error: "Media tab not found." };
   db.transaction(() => {
-    db.prepare("UPDATE media_tabs SET sort_order = ? WHERE id = ?").run(orderB, idA);
-    db.prepare("UPDATE media_tabs SET sort_order = ? WHERE id = ?").run(orderA, idB);
+    const tabs = db.prepare("SELECT id, sort_order FROM media_tabs ORDER BY sort_order, id").all() as Array<{ id: number; sort_order: number }>;
+    const index = tabs.findIndex(t => t.id === id);
+    if (index === -1) return;
+
+    const neighborIndex = direction === "up" ? index - 1 : index + 1;
+    if (neighborIndex < 0 || neighborIndex >= tabs.length) {
+      result = { success: false, error: direction === "up" ? "Already at top." : "Already at bottom." };
+      return;
+    }
+
+    const current = tabs[index];
+    const neighbor = tabs[neighborIndex];
+    db.prepare("UPDATE media_tabs SET sort_order = ? WHERE id = ?").run(neighbor.sort_order, current.id);
+    db.prepare("UPDATE media_tabs SET sort_order = ? WHERE id = ?").run(current.sort_order, neighbor.id);
+    result = { success: true };
   })();
+  return result;
 }

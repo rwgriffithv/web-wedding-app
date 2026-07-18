@@ -40,6 +40,19 @@ User-facing mutation handlers. Use **domain verbs** that describe the user's int
 | `create*Inline(formData)` | Create + return ID for immediate UI use | `createTabInline()`, `createPartyInline()` |
 | `submit*(formData)` | Submit a response or form | `submitRsvp()` |
 
+**Batch-capable actions keep singular names.** When an `add*` action handles both single and multiple items, use `FormData.get()` for one item or `FormData.getAll()` for many — the function name stays singular (`addImage`, not `addImages`). The form component decides whether it submits one value or many; the action doesn't need to care.
+
+**Repository layer may use plural variants for different implementations.** While actions abstract over batch vs single (the caller doesn't care), the repository layer may have separate functions when the implementation differs. For example, `createImage` wraps each insert in its own transaction, while `createImages` wraps all inserts in a single transaction. The action calls the appropriate one based on input count.
+
+```
+addImage (action, singular)  →  createImage (repo, single transaction)
+                              →  createImages (repo, batch transaction)
+```
+
+This distinction exists because:
+- **Actions** are user-facing — the user adds "an image" or "images"; the function name reflects intent, not implementation.
+- **Repository functions** are implementation-facing — batch vs single have different transaction strategies, error handling, and performance characteristics.
+
 ### Why They Differ
 
 **Actions use domain verbs** (`add`, `save`, `move`) because they describe what the *user* is doing — adding a photo, saving settings, moving an item up.

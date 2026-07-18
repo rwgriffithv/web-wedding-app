@@ -23,6 +23,8 @@ export function MoodBoard({ images }: MoodBoardProps) {
     const overlay = overlayRef.current;
     overlay?.focus();
 
+    document.body.style.overflow = "hidden";
+
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         close();
@@ -41,7 +43,10 @@ export function MoodBoard({ images }: MoodBoardProps) {
       }
     };
     window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    return () => {
+      window.removeEventListener("keydown", handler);
+      document.body.style.overflow = "";
+    };
   }, [selected, close]);
 
   const openItem = (img: DressCodeImage, trigger: HTMLElement) => {

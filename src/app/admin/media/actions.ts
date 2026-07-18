@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { getString, getInt, validateMediaUrl } from "@/lib/form-data";
-import { create, deleteItem as deleteItemRepo, update, getAll, getBySection, swapItemSortOrder, createTab, updateTab, getAllTabs, deleteTab as deleteTabRepo, swapTabSortOrder } from "@/lib/repository/media";
+import { create, deleteItem as deleteItemRepo, update, swapItemSortOrder, createTab, updateTab, deleteTab as deleteTabRepo, swapTabSortOrder } from "@/lib/repository/media";
 import { ensureThumbnail } from "@/lib/thumbnail";
 import { detectMediaType } from "@/lib/media";
 
@@ -167,22 +167,8 @@ export async function moveItem(prevState: MediaState | null, formData: FormData)
   }
 
   try {
-    const allItems = getAll();
-    const targetItem = allItems.find(i => i.id === id);
-    if (!targetItem) return { success: false, error: "Item not found." };
-
-    const sectionItems = getBySection(targetItem.section);
-    const index = sectionItems.findIndex(i => i.id === id);
-    if (index === -1) return { success: false, error: "Item not found in section." };
-
-    const neighborIndex = direction === "up" ? index - 1 : index + 1;
-    if (neighborIndex < 0 || neighborIndex >= sectionItems.length) {
-      return { success: false, error: direction === "up" ? "Already at top." : "Already at bottom." };
-    }
-
-    const current = sectionItems[index];
-    const neighbor = sectionItems[neighborIndex];
-    swapItemSortOrder(current.id, current.sort_order, neighbor.id, neighbor.sort_order);
+    const result = swapItemSortOrder(id, direction);
+    if (!result.success) return { success: false, error: result.error! };
 
     revalidatePath("/admin/media");
     revalidatePath("/media");
@@ -205,18 +191,8 @@ export async function moveTab(prevState: MediaState | null, formData: FormData):
   }
 
   try {
-    const tabs = getAllTabs();
-    const index = tabs.findIndex(t => t.id === id);
-    if (index === -1) return { success: false, error: "Tab not found." };
-
-    const neighborIndex = direction === "up" ? index - 1 : index + 1;
-    if (neighborIndex < 0 || neighborIndex >= tabs.length) {
-      return { success: false, error: direction === "up" ? "Already at top." : "Already at bottom." };
-    }
-
-    const current = tabs[index];
-    const neighbor = tabs[neighborIndex];
-    swapTabSortOrder(current.id, current.sort_order, neighbor.id, neighbor.sort_order);
+    const result = swapTabSortOrder(id, direction);
+    if (!result.success) return { success: false, error: result.error! };
 
     revalidatePath("/admin/media");
     revalidatePath("/media");

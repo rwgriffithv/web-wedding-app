@@ -47,4 +47,34 @@ describe("schedule repository", () => {
     deleteItem(item.id);
     expect(getAll().length).toBe(0);
   });
+
+  it("swaps sort order between two items", async () => {
+    const { create, getAll, swapSortOrder } = await import("@/lib/repository/schedule");
+    const a = create("4:00 PM", "Cocktail Hour");
+    const b = create("6:00 PM", "Dinner");
+
+    const result = swapSortOrder(a.id, "down");
+    expect(result.success).toBe(true);
+
+    const all = getAll();
+    expect(all[0].id).toBe(b.id);
+    expect(all[1].id).toBe(a.id);
+  });
+
+  it("returns error when moving first item up", async () => {
+    const { create, swapSortOrder } = await import("@/lib/repository/schedule");
+    const a = create("4:00 PM", "Cocktail Hour");
+    create("6:00 PM", "Dinner");
+
+    const result = swapSortOrder(a.id, "up");
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("Already at top.");
+  });
+
+  it("returns error for nonexistent item", async () => {
+    const { swapSortOrder } = await import("@/lib/repository/schedule");
+    const result = swapSortOrder(9999, "down");
+    expect(result.success).toBe(false);
+    expect(result.error).toBe("Schedule item not found.");
+  });
 });

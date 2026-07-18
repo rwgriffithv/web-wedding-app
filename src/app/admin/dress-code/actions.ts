@@ -3,9 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { getString, getInt, validateMediaUrl } from "@/lib/form-data";
-import { createImage, deleteImage as deleteImageRepo, getImages, swapSortOrder } from "@/lib/repository/dress-code";
+import { createImage, createImages, deleteImage as deleteImageRepo, swapSortOrder } from "@/lib/repository/dress-code";
 import { setConfig } from "@/lib/repository/site-config";
 import { ensureThumbnail } from "@/lib/thumbnail";
+import { deleteThumbnail } from "@/lib/media";
 
 interface DressCodeState { success?: boolean; error?: string }
 
@@ -14,14 +15,30 @@ export async function addImage(prevState: DressCodeState | null, formData: FormD
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
-  const imageUrl = getString(formData, "image_url");
-  if (!imageUrl) return { success: false, error: "Image URL is required." };
-  const urlError = validateMediaUrl(imageUrl);
-  if (urlError) return { success: false, error: urlError };
+  const rawUrls = formData.getAll("image_url");
+  const urls = rawUrls.filter((v): v is string => typeof v === "string" && v.length > 0);
+
+  if (urls.length === 0) return { success: false, error: "Image URL is required." };
+
+  for (const url of urls) {
+    const urlError = validateMediaUrl(url);
+    if (urlError) return { success: false, error: `Invalid URL: ${urlError}` };
+  }
 
   try {
-    const thumbnailUrl = await ensureThumbnail(imageUrl);
-    createImage(imageUrl, thumbnailUrl ?? undefined);
+    const thumbnails = await Promise.all(urls.map(url => ensureThumbnail(url)));
+    try {
+      if (urls.length === 1) {
+        createImage(urls[0], thumbnails[0] ?? undefined);
+      } else {
+        createImages(urls.map((url, i) => ({ imageUrl: url, thumbnailUrl: thumbnails[i] ?? undefined })));
+      }
+    } catch (dbError) {
+      for (const thumb of thumbnails) {
+        if (thumb) deleteThumbnail(thumb);
+      }
+      throw dbError;
+    }
     revalidatePath("/admin/dress-code");
     revalidatePath("/guide");
     return { success: true };
@@ -62,18 +79,8 @@ export async function moveImage(prevState: DressCodeState | null, formData: Form
   }
 
   try {
-    const images = getImages();
-    const index = images.findIndex(i => i.id === id);
-    if (index === -1) return { success: false, error: "Image not found." };
-
-    const neighborIndex = direction === "up" ? index - 1 : index + 1;
-    if (neighborIndex < 0 || neighborIndex >= images.length) {
-      return { success: false, error: direction === "up" ? "Already at top." : "Already at bottom." };
-    }
-
-    const current = images[index];
-    const neighbor = images[neighborIndex];
-    swapSortOrder(current.id, current.sort_order, neighbor.id, neighbor.sort_order);
+    const result = swapSortOrder(id, direction);
+    if (!result.success) return { success: false, error: result.error! };
 
     revalidatePath("/admin/dress-code");
     revalidatePath("/guide");

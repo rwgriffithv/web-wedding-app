@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { getString, getInt } from "@/lib/form-data";
-import { create, update, deleteItem as deleteItemRepo, getAll, swapSortOrder } from "@/lib/repository/schedule";
+import { create, update, deleteItem as deleteItemRepo, swapSortOrder } from "@/lib/repository/schedule";
 import { setConfig } from "@/lib/repository/site-config";
 
 interface ScheduleState { success?: boolean; error?: string }
@@ -81,18 +81,8 @@ export async function moveItem(prevState: ScheduleState | null, formData: FormDa
   }
 
   try {
-    const items = getAll();
-    const index = items.findIndex(i => i.id === id);
-    if (index === -1) return { success: false, error: "Item not found." };
-
-    const neighborIndex = direction === "up" ? index - 1 : index + 1;
-    if (neighborIndex < 0 || neighborIndex >= items.length) {
-      return { success: false, error: direction === "up" ? "Already at top." : "Already at bottom." };
-    }
-
-    const current = items[index];
-    const neighbor = items[neighborIndex];
-    swapSortOrder(current.id, current.sort_order, neighbor.id, neighbor.sort_order);
+    const result = swapSortOrder(id, direction);
+    if (!result.success) return { success: false, error: result.error! };
 
     revalidatePath("/admin/schedule");
     revalidatePath("/guide");
@@ -134,6 +124,8 @@ export async function saveScheduleText(prevState: ScheduleState | null, formData
     return { success: false, error: "Intro text must be 1,000 characters or fewer." };
   }
   try {
+    // Empty string is intentional: admin can clear the intro text entirely.
+    // `?? ""` ensures the config key always stores a string (never null).
     setConfig("schedule_text", text ?? "");
     revalidatePath("/admin/schedule");
     revalidatePath("/guide");

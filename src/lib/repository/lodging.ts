@@ -1,5 +1,6 @@
 import { getDb, type LodgingOption } from "@/lib/db";
 import { deleteThumbnail } from "@/lib/media";
+import { swapSortOrder as swap } from "@/lib/repository/sort";
 
 export function getAll(): LodgingOption[] {
   const db = getDb();
@@ -31,12 +32,9 @@ export function update(id: number, data: { title?: string; image_url?: string; t
   if (result.changes === 0) throw new Error(`Lodging option ${id} not found`);
 }
 
-export function swapSortOrder(idA: number, orderA: number, idB: number, orderB: number): void {
+export function swapSortOrder(id: number, direction: "up" | "down"): { success: boolean; error?: string } {
   const db = getDb();
-  db.transaction(() => {
-    db.prepare("UPDATE lodging_options SET sort_order = ? WHERE id = ?").run(orderB, idA);
-    db.prepare("UPDATE lodging_options SET sort_order = ? WHERE id = ?").run(orderA, idB);
-  })();
+  return swap(db, "lodging_options", id, direction, "Lodging option not found.");
 }
 
 export function deleteOption(id: number): void {

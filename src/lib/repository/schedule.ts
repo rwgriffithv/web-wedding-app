@@ -1,4 +1,5 @@
 import { getDb, type ScheduleItem } from "@/lib/db";
+import { swapSortOrder as swap } from "@/lib/repository/sort";
 
 export function getAll(): ScheduleItem[] {
   const db = getDb();
@@ -26,12 +27,9 @@ export function update(id: number, data: { time?: string; label?: string }): voi
   if (result.changes === 0) throw new Error(`Schedule item ${id} not found`);
 }
 
-export function swapSortOrder(idA: number, orderA: number, idB: number, orderB: number): void {
+export function swapSortOrder(id: number, direction: "up" | "down"): { success: boolean; error?: string } {
   const db = getDb();
-  db.transaction(() => {
-    db.prepare("UPDATE schedule_items SET sort_order = ? WHERE id = ?").run(orderB, idA);
-    db.prepare("UPDATE schedule_items SET sort_order = ? WHERE id = ?").run(orderA, idB);
-  })();
+  return swap(db, "schedule_items", id, direction, "Schedule item not found.");
 }
 
 export function deleteItem(id: number): void {

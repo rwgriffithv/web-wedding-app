@@ -887,6 +887,7 @@ a:hover {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  overscroll-behavior: contain;
 }
 
 .lightbox-content {
@@ -942,6 +943,7 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: center;
+  overscroll-behavior: contain;
 }
 
 .file-browser-content {

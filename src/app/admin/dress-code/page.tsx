@@ -3,7 +3,7 @@ import { getConfig } from "@/lib/repository/site-config";
 import { Header } from "@/components/header";
 import { TabTextForm } from "@/components/tab-text-form";
 import { DressCodeImageList } from "./image-list";
-import { DressCodeImageForm } from "./image-form";
+import { DressCodeMultiImageForm } from "./multi-image-form";
 import { saveDressCodeText } from "./actions";
 
 export default function AdminDressCodePage() {
@@ -20,9 +20,9 @@ export default function AdminDressCodePage() {
         </div>
       </details>
       <details className="admin-section" open>
-        <summary>Add Image</summary>
+        <summary>Add Images</summary>
         <div className="admin-section-body">
-          <DressCodeImageForm />
+          <DressCodeMultiImageForm />
         </div>
       </details>
       <details className="admin-section" open>

@@ -1,5 +1,6 @@
 import { getDb, type DressCodeImage } from "@/lib/db";
 import { deleteThumbnail } from "@/lib/media";
+import { swapSortOrder as swap } from "@/lib/repository/sort";
 
 export function getImages(): DressCodeImage[] {
   const db = getDb();
@@ -15,12 +16,20 @@ export function createImage(imageUrl: string, thumbnailUrl?: string): DressCodeI
   return createTransaction();
 }
 
-export function swapSortOrder(idA: number, orderA: number, idB: number, orderB: number): void {
+export function createImages(items: Array<{ imageUrl: string; thumbnailUrl?: string }>): DressCodeImage[] {
+  if (items.length === 0) return [];
   const db = getDb();
-  db.transaction(() => {
-    db.prepare("UPDATE dress_code_images SET sort_order = ? WHERE id = ?").run(orderB, idA);
-    db.prepare("UPDATE dress_code_images SET sort_order = ? WHERE id = ?").run(orderA, idB);
-  })();
+  const insertMany = db.transaction(() => {
+    const maxOrder = db.prepare("SELECT COALESCE(MAX(sort_order), -1) + 1 AS next FROM dress_code_images").get() as { next: number };
+    const stmt = db.prepare("INSERT INTO dress_code_images (image_url, thumbnail_url, sort_order) VALUES (?, ?, ?) RETURNING *");
+    return items.map((item, i) => stmt.get(item.imageUrl, item.thumbnailUrl ?? null, maxOrder.next + i) as DressCodeImage);
+  });
+  return insertMany();
+}
+
+export function swapSortOrder(id: number, direction: "up" | "down"): { success: boolean; error?: string } {
+  const db = getDb();
+  return swap(db, "dress_code_images", id, direction, "Image not found.");
 }
 
 export function deleteImage(id: number): void {

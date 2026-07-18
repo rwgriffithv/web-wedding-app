@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { verifyToken, SESSION_COOKIE } from "@/lib/auth";
 import { isSessionRevoked } from "@/lib/session-revocation";
+import { parseClientIp } from "@/lib/ip";
 
 function clearSessionCookie(response: NextResponse): void {
   response.cookies.set(SESSION_COOKIE, "", {
@@ -28,10 +29,7 @@ export function proxy(request: NextRequest) {
     return setCacheHeader(response);
   }
 
-  const ip = request.headers.get("cf-connecting-ip")
-    ?? request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-    ?? request.headers.get("x-real-ip")
-    ?? "127.0.0.1";
+  const ip = parseClientIp(request.headers);
 
   if (isSessionRevoked(session, ip)) {
     const response = NextResponse.redirect(new URL("/login", request.url));

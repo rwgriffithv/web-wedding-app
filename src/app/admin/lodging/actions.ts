@@ -6,6 +6,7 @@ import { getString, getInt, validateMediaUrl } from "@/lib/form-data";
 import { create, update, getAll, swapSortOrder, deleteOption as deleteOptionRepo } from "@/lib/repository/lodging";
 import { setConfig } from "@/lib/repository/site-config";
 import { ensureThumbnail } from "@/lib/thumbnail";
+import { deleteThumbnail } from "@/lib/media";
 
 interface LodgingState { success?: boolean; error?: string }
 
@@ -64,10 +65,14 @@ export async function updateOption(prevState: LodgingState | null, formData: For
 
   try {
     const existing = getAll().find(o => o.id === id);
-    const thumbnailUrl = imageUrl !== existing?.image_url
+    const imageChanged = imageUrl !== existing?.image_url;
+    const thumbnailUrl = imageChanged
       ? await ensureThumbnail(imageUrl)
       : existing?.thumbnail_url ?? null;
     update(id, { title, image_url: imageUrl, thumbnail_url: thumbnailUrl, url });
+    if (imageChanged && existing?.thumbnail_url) {
+      deleteThumbnail(existing.thumbnail_url);
+    }
     revalidatePath("/admin/lodging");
     revalidatePath("/guide");
     return { success: true };
@@ -89,18 +94,8 @@ export async function moveOption(prevState: LodgingState | null, formData: FormD
   }
 
   try {
-    const items = getAll();
-    const index = items.findIndex(o => o.id === id);
-    if (index === -1) return { success: false, error: "Option not found." };
-
-    const neighborIndex = direction === "up" ? index - 1 : index + 1;
-    if (neighborIndex < 0 || neighborIndex >= items.length) {
-      return { success: false, error: direction === "up" ? "Already at top." : "Already at bottom." };
-    }
-
-    const current = items[index];
-    const neighbor = items[neighborIndex];
-    swapSortOrder(current.id, current.sort_order, neighbor.id, neighbor.sort_order);
+    const result = swapSortOrder(id, direction);
+    if (!result.success) return { success: false, error: result.error! };
 
     revalidatePath("/admin/lodging");
     revalidatePath("/guide");
@@ -140,6 +135,8 @@ export async function saveLodgingText(prevState: LodgingState | null, formData: 
     return { success: false, error: "Intro text must be 1,000 characters or fewer." };
   }
   try {
+    // Empty string is intentional: admin can clear the intro text entirely.
+    // `?? ""` ensures the config key always stores a string (never null).
     setConfig("lodging_text", text ?? "");
     revalidatePath("/admin/lodging");
     revalidatePath("/guide");

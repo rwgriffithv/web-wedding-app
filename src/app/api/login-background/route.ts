@@ -32,24 +32,7 @@ export async function GET() {
   }
 
   const stream = fs.createReadStream(resolved);
-  const readable = new ReadableStream({
-    start(controller) {
-      stream.on("data", (chunk) => {
-        if (typeof chunk === "string") {
-          controller.enqueue(new TextEncoder().encode(chunk));
-        } else {
-          controller.enqueue(new Uint8Array(chunk));
-        }
-      });
-      stream.on("end", () => controller.close());
-      stream.on("error", (err) => controller.error(err));
-    },
-    cancel() {
-      stream.destroy();
-    },
-  });
-
-  return new NextResponse(readable, {
+  return new NextResponse(stream as unknown as ReadableStream, {
     headers: {
       "Content-Type": MIME_TYPES[ext],
       "Content-Length": String(stat.size),

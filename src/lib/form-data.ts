@@ -38,7 +38,10 @@ const LOCAL_MEDIA_PATH_RE = /^\/[a-zA-Z0-9_\-.]+(?:\/[a-zA-Z0-9_\-.]+)*\/?$/;
 
 export function validateMediaUrl(url: string): string | null {
   if (url.startsWith("/")) {
-    return LOCAL_MEDIA_PATH_RE.test(url) ? null : "Invalid local path format.";
+    if (!LOCAL_MEDIA_PATH_RE.test(url)) return "Invalid local path format.";
+    const segments = url.split("/").filter(Boolean);
+    if (segments.some(s => s === "." || s === "..")) return "Invalid path segment.";
+    return null;
   }
   return validateHttpUrl(url);
 }

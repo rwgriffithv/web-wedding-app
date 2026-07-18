@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/auth";
+import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { MEDIA_DIR, ALLOWED_EXTENSIONS, isWithinMediaDir, MIME_TYPES } from "@/lib/media";
 import fs from "node:fs";
 import path from "node:path";
@@ -11,6 +11,9 @@ export async function GET(
   const session = await requireSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!(await validateSessionInDb(session))) {
+    return NextResponse.json({ error: "Session expired" }, { status: 401 });
   }
 
   const { path: segments } = await params;

@@ -49,7 +49,8 @@ describe("lodging repository", () => {
     const first = create({ title: "First", image_url: "https://example.com/a.jpg", url: "https://a.com" });
     const second = create({ title: "Second", image_url: "https://example.com/b.jpg", url: "https://b.com" });
 
-    swapSortOrder(first.id, first.sort_order, second.id, second.sort_order);
+    const result = swapSortOrder(first.id, "down");
+    expect(result.success).toBe(true);
 
     const all = getAll();
     expect(all[0].title).toBe("Second");
