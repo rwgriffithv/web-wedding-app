@@ -253,10 +253,199 @@ if (!orphansFound) {
 }
 console.log('');
 
-// ── Section 5: Duplicate Indexes ─────────────────────────
+// ── Section 5: Migration Verification ────────────────────
 
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-console.log('  5. INDEX COVERAGE');
+console.log('  5. MIGRATION VERIFICATION');
+console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+console.log('');
+
+const expectedMigrations = [
+  { name: 'idx_banned_ips_ip', table: 'banned_ips', columns: ['ip_address'] },
+  { name: 'idx_banned_ips_active', table: 'banned_ips', columns: ['ip_address'], unique: true, partial: 'unbanned_at IS NULL' },
+  { name: 'idx_rate_limit_violations_ip', table: 'rate_limit_violations', columns: ['ip_address'] },
+  { name: 'idx_rate_limit_violations_violated_at', table: 'rate_limit_violations', columns: ['violated_at'] },
+  { name: 'idx_media_tabs_sort_order', table: 'media_tabs', columns: ['sort_order'] },
+  { name: 'idx_media_section', table: 'media_items', columns: ['section'] },
+  { name: 'idx_faq_sort_order', table: 'faq_items', columns: ['sort_order'] },
+  { name: 'idx_questions_party_id', table: 'questions', columns: ['party_id'] },
+];
+
+const expectedColumns = [
+  { table: 'users', column: 'password_changed_at' },
+  { table: 'users', column: 'last_page_view_at' },
+  { table: 'parties', column: 'invited' },
+  { table: 'guests', column: 'unexpected' },
+];
+
+let migrationIssues = 0;
+
+// Check columns
+for (const { table, column } of expectedColumns) {
+  if (!tables.includes(table)) {
+    console.log('    ⚠ Table ' + table + ' missing (expected for column ' + column + ')');
+    migrationIssues++;
+    continue;
+  }
+  const cols = getColumns(table).map(c => c.name);
+  if (!cols.includes(column)) {
+    console.log('    ✗ ' + table + '.' + column + ' — MISSING (migration not applied)');
+    migrationIssues++;
+  } else {
+    console.log('    ✓ ' + table + '.' + column + ' — present');
+  }
+}
+
+// Check indexes
+for (const idx of expectedMigrations) {
+  if (!tables.includes(idx.table)) {
+    console.log('    ⚠ Table ' + idx.table + ' missing (skipping index check for ' + idx.name + ')');
+    migrationIssues++;
+    continue;
+  }
+  const indexes = getIndexInfo(idx.table);
+  const found = indexes.find(i => i.name === idx.name);
+  if (!found) {
+    console.log('    ✗ Index ' + idx.name + ' on ' + idx.table + ' — MISSING');
+    migrationIssues++;
+  } else {
+    const extra = [];
+    if (idx.unique && !found.unique) extra.push('should be UNIQUE');
+    if (found.origin === 'pk') extra.push('is primary key');
+    console.log('    ✓ Index ' + idx.name + ' on ' + idx.table + ' — present' + (extra.length ? ' (' + extra.join(', ') + ')' : ''));
+  }
+}
+
+if (migrationIssues === 0) {
+  console.log('');
+  console.log('  ✓ All migrations applied successfully.');
+} else {
+  console.log('');
+  console.log('  ⚠ ' + migrationIssues + ' issue(s) detected. Run ./scripts/migrate.sh to apply missing migrations.');
+}
+console.log('');
+
+// ── Section 6: Data Format Validation ────────────────────
+
+console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+console.log('  6. DATA FORMAT VALIDATION');
+console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+console.log('');
+
+const ISO_DATETIME = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+const IP_V4 = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)$/;
+const IP_V6 = /^[0-9a-fA-F]{0,4}(?::[0-9a-fA-F]{0,4}){2,7}$/;
+const VALID_USER_TYPES = ['admin', 'viewer', 'party'];
+
+let formatIssues = 0;
+
+function isValidIp(ip) {
+  return IP_V4.test(ip) || IP_V6.test(ip);
+}
+
+function isValidDatetime(s) {
+  if (!s || s === '') return true; // NULLs are allowed
+  return ISO_DATETIME.test(s);
+}
+
+// Validate banned_ips
+if (tables.includes('banned_ips')) {
+  const allBans = db.prepare('SELECT id, ip_address, banned_at, reason FROM banned_ips').all();
+  const badIps = allBans.filter(r => r.ip_address && !isValidIp(r.ip_address));
+  const badDates = allBans.filter(r => !isValidDatetime(r.banned_at));
+  const longReasons = allBans.filter(r => r.reason && r.reason.length > 500);
+
+  if (badIps.length > 0) {
+    console.log('  ✗ banned_ips.ip_address: ' + badIps.length + ' row(s) with invalid IP format:');
+    for (const r of badIps.slice(0, 5)) console.log('    id=' + r.id + ' ip="' + r.ip_address + '"');
+    formatIssues += badIps.length;
+  } else {
+    console.log('  ✓ banned_ips.ip_address — all ' + allBans.length + ' row(s) valid');
+  }
+
+  if (badDates.length > 0) {
+    console.log('  ✗ banned_ips.banned_at: ' + badDates.length + ' row(s) with invalid datetime:');
+    for (const r of badDates.slice(0, 5)) console.log('    id=' + r.id + ' banned_at="' + r.banned_at + '"');
+    formatIssues += badDates.length;
+  } else {
+    console.log('  ✓ banned_ips.banned_at — format valid');
+  }
+
+  if (longReasons.length > 0) {
+    console.log('  ✗ banned_ips.reason: ' + longReasons.length + ' row(s) exceed 500 chars:');
+    for (const r of longReasons.slice(0, 5)) console.log('    id=' + r.id + ' length=' + r.reason.length);
+    formatIssues += longReasons.length;
+  } else {
+    console.log('  ✓ banned_ips.reason — all within length limits');
+  }
+}
+
+// Validate rate_limit_violations
+if (tables.includes('rate_limit_violations')) {
+  const allViolations = db.prepare('SELECT id, ip_address, violated_at FROM rate_limit_violations').all();
+  const badIps = allViolations.filter(r => r.ip_address && !isValidIp(r.ip_address));
+  const badDates = allViolations.filter(r => !isValidDatetime(r.violated_at));
+
+  if (badIps.length > 0) {
+    console.log('  ✗ rate_limit_violations.ip_address: ' + badIps.length + ' row(s) with invalid IP format:');
+    for (const r of badIps.slice(0, 5)) console.log('    id=' + r.id + ' ip="' + r.ip_address + '"');
+    formatIssues += badIps.length;
+  } else {
+    console.log('  ✓ rate_limit_violations.ip_address — all ' + allViolations.length + ' row(s) valid');
+  }
+
+  if (badDates.length > 0) {
+    console.log('  ✗ rate_limit_violations.violated_at: ' + badDates.length + ' row(s) with invalid datetime:');
+    for (const r of badDates.slice(0, 5)) console.log('    id=' + r.id + ' violated_at="' + r.violated_at + '"');
+    formatIssues += badDates.length;
+  } else {
+    console.log('  ✓ rate_limit_violations.violated_at — format valid');
+  }
+}
+
+// Validate users.type
+if (tables.includes('users')) {
+  const allUsers = db.prepare('SELECT id, username, type FROM users').all();
+  const badTypes = allUsers.filter(function(r) { return VALID_USER_TYPES.indexOf(r.type) === -1; });
+  if (badTypes.length > 0) {
+    console.log('  ✗ users.type: ' + badTypes.length + ' row(s) with invalid type:');
+    for (var i = 0; i < Math.min(badTypes.length, 5); i++) {
+      var r = badTypes[i];
+      console.log('    id=' + r.id + ' username="' + r.username + '" type="' + r.type + '"');
+    }
+    formatIssues += badTypes.length;
+  } else {
+    var cnt = getRowCount('users');
+    console.log('  ✓ users.type — all ' + cnt + ' row(s) valid (admin/viewer/party)');
+  }
+}
+
+// Validate foreign key integrity
+if (tables.includes('guests') && tables.includes('parties')) {
+  var allGuests = db.prepare('SELECT id, party_id FROM guests WHERE party_id IS NOT NULL').all();
+  var partyIds = db.prepare('SELECT id FROM parties').all().map(function(r) { return r.id; });
+  var orphanedGuests = allGuests.filter(function(r) { return partyIds.indexOf(r.party_id) === -1; });
+  if (orphanedGuests.length > 0) {
+    console.log('  ✗ guests.party_id: ' + orphanedGuests.length + ' orphaned reference(s) to parties');
+    formatIssues += orphanedGuests.length;
+  } else {
+    console.log('  ✓ guests.party_id — all foreign keys valid');
+  }
+}
+
+if (formatIssues === 0) {
+  console.log('');
+  console.log('  ✓ All data formats valid.');
+} else {
+  console.log('');
+  console.log('  ⚠ ' + formatIssues + ' format issue(s) detected. Investigate before deploying.');
+}
+console.log('');
+
+// ── Section 7: Index Coverage ────────────────────────────
+
+console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+console.log('  7. INDEX COVERAGE');
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 console.log('');
 
@@ -281,7 +470,7 @@ for (const { table, indexes, names, note } of indexReport) {
 }
 console.log('');
 
-// ── Section 6: Summary ───────────────────────────────────
+// ── Section 8: Summary ───────────────────────────────────
 
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 console.log('  SUMMARY');
@@ -289,6 +478,8 @@ console.log('━━━━━━━━━━━━━━━━━━━━━━�
 console.log('');
 console.log('  Tables:       ' + tables.length + ' total, ' + emptyTables.length + ' empty, ' + unreferencedTables.length + ' unreferenced');
 console.log('  Columns:      ' + totalChecked.columns + ' checked, ' + unusedColumns.length + ' unreferenced');
+console.log('  Migrations:   ' + (migrationIssues === 0 ? 'all applied' : migrationIssues + ' issue(s)'));
+console.log('  Data formats: ' + (formatIssues === 0 ? 'all valid' : formatIssues + ' issue(s)'));
 console.log('  Foreign keys: ' + (orphansFound ? 'orphans detected (see above)' : 'all clean'));
 console.log('  Indexes:      ' + indexReport.filter(r => r.indexes > 0).length + ' tables indexed, ' + indexReport.filter(r => r.indexes === 0).length + ' tables without');
 console.log('');

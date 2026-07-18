@@ -17,36 +17,6 @@ function isValidIp(ip: string): boolean {
   return IP_V4.test(ip) || IP_V6.test(ip);
 }
 
-export async function saveAutoBanSettings(prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
-  const session = await requireSession("admin");
-  if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
-
-  try {
-    const threshold = getString(formData, "auto_ban_login_threshold") ?? "";
-    const windowSeconds = getString(formData, "auto_ban_window_seconds") ?? "";
-
-    const thresholdNum = parseInt(threshold, 10);
-    const windowNum = parseInt(windowSeconds, 10);
-
-    if (!Number.isFinite(thresholdNum) || thresholdNum < 1 || thresholdNum > 100) {
-      return { success: false, error: "Threshold must be a number between 1 and 100." };
-    }
-    if (!Number.isFinite(windowNum) || windowNum < 60 || windowNum > 86400) {
-      return { success: false, error: "Window must be between 60 and 86400 seconds." };
-    }
-
-    setConfig("auto_ban_login_threshold", String(thresholdNum));
-    setConfig("auto_ban_window_seconds", String(windowNum));
-    revalidatePath("/admin/security");
-    revalidatePath("/admin");
-    return { success: true };
-  } catch (error) {
-    console.error(error);
-    return { success: false, error: "Failed to save auto-ban settings." };
-  }
-}
-
 async function banIpCommon(ip: string, reason: string): Promise<SecurityState> {
   if (isIpBanned(ip)) return { success: false, error: "This IP is already banned." };
 
@@ -123,55 +93,51 @@ export async function banViolationIpAction(_prevState: SecurityState | null, for
   }
 }
 
-export async function saveSessionSettings(prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
+export async function saveSecuritySettings(prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
   const session = await requireSession("admin");
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   try {
-    const sessionMaxHours = getString(formData, "session_max_hours") ?? "";
-    const pageViewDebounceMinutes = getString(formData, "page_view_debounce_minutes") ?? "";
+    const fields = [
+      { key: "auto_ban_login_threshold", label: "Auto-Ban Threshold", min: 1, max: 100 },
+      { key: "auto_ban_window_seconds", label: "Auto-Ban Window", min: 60, max: 86400 },
+      { key: "rate_limit_max_attempts", label: "Rate Limit Max Attempts", min: 1, max: 1000 },
+      { key: "rate_limit_window_seconds", label: "Rate Limit Window", min: 1, max: 1000 },
+      { key: "session_max_hours", label: "Session Expiry", min: 1, max: 24 },
+      { key: "page_view_debounce_minutes", label: "Page View Debounce", min: 1, max: 1440 },
+      { key: "suspicious_ip_threshold", label: "Suspicious IP Threshold", min: 1, max: 100 },
+    ] as const;
 
-    const hoursNum = parseInt(sessionMaxHours, 10);
-    const minutesNum = parseInt(pageViewDebounceMinutes, 10);
-
-    if (!Number.isFinite(hoursNum) || hoursNum < 1 || hoursNum > 24) {
-      return { success: false, error: "Session expiry must be between 1 and 24 hours." };
+    const parsed: Record<string, number> = {};
+    for (const { key, label } of fields) {
+      const raw = getString(formData, key);
+      if (!raw) return { success: false, error: `${label} is required.` };
+      const n = parseInt(raw, 10);
+      if (!Number.isFinite(n)) return { success: false, error: `${label} must be a whole number.` };
+      parsed[key] = n;
     }
-    if (!Number.isFinite(minutesNum) || minutesNum < 1 || minutesNum > 1440) {
-      return { success: false, error: "Page view debounce must be between 1 and 1440 minutes." };
-    }
-
-    setConfig("session_max_hours", String(hoursNum));
-    setConfig("page_view_debounce_minutes", String(minutesNum));
-    revalidatePath("/admin/security");
-    return { success: true };
-  } catch (error) {
-    console.error(error);
-    return { success: false, error: "Failed to save session settings." };
-  }
-}
-
-export async function saveSuspiciousSettings(prevState: SecurityState | null, formData: FormData): Promise<SecurityState> {
-  const session = await requireSession("admin");
-  if (!session) return { success: false, error: "Unauthorized" };
-  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
-
-  try {
-    const threshold = getString(formData, "suspicious_ip_threshold") ?? "";
-    const thresholdNum = parseInt(threshold, 10);
-
-    if (!Number.isFinite(thresholdNum) || thresholdNum < 1 || thresholdNum > 100) {
-      return { success: false, error: "Threshold must be a number between 1 and 100." };
+    for (const { key, label, min, max } of fields) {
+      const n = parsed[key];
+      if (n < min || n > max) {
+        return { success: false, error: `${label} must be between ${min} and ${max}.` };
+      }
     }
 
-    setConfig("suspicious_ip_threshold", String(thresholdNum));
+    setConfig("auto_ban_login_threshold", String(parsed.auto_ban_login_threshold));
+    setConfig("auto_ban_window_seconds", String(parsed.auto_ban_window_seconds));
+    setConfig("rate_limit_max_attempts", String(parsed.rate_limit_max_attempts));
+    setConfig("rate_limit_window_seconds", String(parsed.rate_limit_window_seconds));
+    setConfig("session_max_hours", String(parsed.session_max_hours));
+    setConfig("page_view_debounce_minutes", String(parsed.page_view_debounce_minutes));
+    setConfig("suspicious_ip_threshold", String(parsed.suspicious_ip_threshold));
+
     revalidatePath("/admin/security");
     revalidatePath("/admin");
     return { success: true };
   } catch (error) {
     console.error(error);
-    return { success: false, error: "Failed to save suspicious IP settings." };
+    return { success: false, error: "Failed to save security settings." };
   }
 }
 

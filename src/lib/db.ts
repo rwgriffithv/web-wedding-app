@@ -5,7 +5,7 @@ import { getEnvConfig } from "./config";
 import { hashPassword } from "./auth";
 import { DDL } from "./schema";
 
-export type { Guest, User, SafeUser, Party, SiteConfig, LodgingOption, DressCodeImage, RsvpResponse, MediaItem, MediaTab, ScheduleItem, GuestRsvpStatus, FaqItem, Question, BannedIp, RateLimitViolation } from "./types";
+export type { Guest, User, SafeUser, Party, SiteConfig, LodgingOption, DressCodeImage, RsvpResponse, MediaItem, MediaTab, ScheduleItem, GuestRsvpStatus, FaqItem, Question, CombinedIp } from "./types";
 
 const DB_PATH = process.env.DATABASE_URL?.replace(/^file:/, "") || path.join(process.cwd(), "data", "dev.db");
 

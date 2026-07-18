@@ -1,5 +1,5 @@
 import { getDb } from "@/lib/db";
-import type { BannedIp, RateLimitViolation } from "@/lib/types";
+import type { CombinedIp } from "@/lib/types";
 import { AUTO_BAN_THRESHOLD_DEFAULT, AUTO_BAN_WINDOW_DEFAULT, SUSPICIOUS_THRESHOLD_DEFAULT } from "@/lib/constants";
 import { getConfig } from "@/lib/repository/site-config";
 
@@ -20,13 +20,6 @@ export function isIpBanned(ip: string): boolean {
     "SELECT id FROM banned_ips WHERE ip_address = ? AND unbanned_at IS NULL"
   ).get(ip);
   return !!row;
-}
-
-export function getBannedIps(): BannedIp[] {
-  const db = getDb();
-  return db.prepare(
-    "SELECT * FROM banned_ips WHERE unbanned_at IS NULL ORDER BY banned_at DESC"
-  ).all() as BannedIp[];
 }
 
 export function getSuspiciousIpCount(threshold: number): number {
@@ -97,33 +90,43 @@ export function deleteOldViolations(windowSeconds: number): void {
   ).run(windowSeconds);
 }
 
-export function getRateLimitViolations(windowSeconds: number): RateLimitViolation[] {
-  const db = getDb();
-  return db.prepare(
-    `SELECT ip_address, COUNT(*) as violation_count, MAX(violated_at) as last_violated_at
-     FROM rate_limit_violations
-     WHERE violated_at >= datetime('now', '-' || ? || ' seconds')
-     AND ip_address NOT IN (SELECT ip_address FROM banned_ips WHERE unbanned_at IS NULL)
-     GROUP BY ip_address
-     ORDER BY violation_count DESC`
-  ).all(windowSeconds) as RateLimitViolation[];
-}
-
-export function getSuspiciousIps(threshold: number): RateLimitViolation[] {
-  const db = getDb();
-  return db.prepare(
-    `SELECT ip_address, COUNT(*) as violation_count, MAX(violated_at) as last_violated_at
-     FROM rate_limit_violations
-     WHERE ip_address NOT IN (SELECT ip_address FROM banned_ips WHERE unbanned_at IS NULL)
-     GROUP BY ip_address
-     HAVING violation_count >= ?
-     ORDER BY violation_count DESC`
-  ).all(threshold) as RateLimitViolation[];
-}
-
 export function clearViolations(ip: string): void {
   const db = getDb();
   db.prepare("DELETE FROM rate_limit_violations WHERE ip_address = ?").run(ip);
+}
+
+export function getCombinedIpTable(suspiciousThreshold: number): CombinedIp[] {
+  const db = getDb();
+  return db.prepare(
+    `SELECT
+      v.ip_address,
+      CASE WHEN b.id IS NOT NULL THEN 1 ELSE 0 END AS is_banned,
+      b.id AS ban_id,
+      CASE WHEN v.violation_count >= ? THEN 1 ELSE 0 END AS is_suspicious,
+      v.violation_count,
+      v.last_violated_at
+    FROM (
+      SELECT ip_address, COUNT(*) AS violation_count, MAX(violated_at) AS last_violated_at
+      FROM rate_limit_violations
+      GROUP BY ip_address
+    ) v
+    LEFT JOIN banned_ips b ON v.ip_address = b.ip_address AND b.unbanned_at IS NULL
+
+    UNION ALL
+
+    SELECT
+      b.ip_address,
+      1 AS is_banned,
+      b.id AS ban_id,
+      0 AS is_suspicious,
+      0 AS violation_count,
+      NULL AS last_violated_at
+    FROM banned_ips b
+    WHERE b.unbanned_at IS NULL
+      AND b.ip_address NOT IN (SELECT ip_address FROM rate_limit_violations)
+
+    ORDER BY violation_count DESC, last_violated_at DESC`
+  ).all(suspiciousThreshold) as CombinedIp[];
 }
 
 let violationCleanupCounter = 0;

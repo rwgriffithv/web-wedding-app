@@ -108,14 +108,16 @@ Index: `idx_rate_limit_violations_ip` — lookup by IP for counting violations
 
 ### Security Page (`/admin/security`)
 
-Four sections:
+Six sections:
 
 | Section | Component | Description |
 |---|---|---|
 | Auto-Ban Settings | `AutoBanForm` | Configure threshold (1–100 lockouts) and window (60–86400s) |
 | Login Rate Limiting | `RateLimitForm` | Max attempts and window for login rate limiter |
+| Session & Tracking | `SessionSettingsForm` | Session expiry and page view debounce |
+| Suspicious IPs Settings | `SuspiciousSettingsForm` | Violation threshold for suspicious IP flagging |
 | Ban IP | `BanIpForm` | Manually ban an IP with optional reason (validates IPv4/IPv6 format) |
-| Banned IPs | `BanList` | List of active bans with unban buttons and reason labels |
+| IP Addresses | `SecurityTable` | Unified table of all IPs with violations or bans, sortable, with ban/unban/clear actions |
 
 ### Dashboard (`/admin`)
 
@@ -197,8 +199,10 @@ Running the app without Cloudflare (e.g. direct access to Caddy or Next.js) woul
 | `src/app/login/actions.ts` | Login server actions — call `tryAutoBan()` from repository layer |
 | `src/app/admin/security/page.tsx` | Security admin page |
 | `src/app/admin/security/actions.ts` | `saveAutoBanSettings`, `banIpAction`, `unbanIpAction`, `banViolationIpAction`, `clearViolationsAction`, `saveSessionSettings`, `saveSuspiciousSettings` |
-| `src/app/admin/security/ban-list.tsx` | Banned IPs list with unban |
+| `src/app/admin/security/security-table.tsx` | Unified IP table with ban/unban/clear actions |
 | `src/app/admin/security/auto-ban-form.tsx` | Auto-ban settings form |
 | `src/app/admin/security/ban-ip-form.tsx` | Manual IP ban form |
+| `src/app/admin/security/session-settings-form.tsx` | Session settings form |
+| `src/app/admin/security/suspicious-settings-form.tsx` | Suspicious IP threshold config |
 | `src/components/rate-limit-form/` | Reusable rate limit config form |
 | `src/app/admin/page.tsx` | Dashboard security stats |

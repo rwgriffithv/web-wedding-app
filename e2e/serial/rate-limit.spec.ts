@@ -196,19 +196,19 @@ test.describe("rate limiting", () => {
     await loginAsAdmin(page);
     await page.goto("/admin/security");
 
-    const violationsSection = page.locator("details").filter({ hasText: "Rate Limit Violations" });
-    await expect(violationsSection.getByText("No rate limit violations recorded.")).toBeVisible();
+    const tableSection = page.locator("details").filter({ hasText: /IP Addresses \(/ });
+    await expect(tableSection.getByText("No IPs with violations or bans.")).toBeVisible();
   });
 
-  test("admin security page has suspicious IPs section with empty state", async ({ page }) => {
+  test("admin security page has suspicious IPs settings with empty state", async ({ page }) => {
     await loginAsAdmin(page);
     await page.goto("/admin/security");
 
-    await expect(page.locator("summary").getByText("Suspicious IPs Settings", { exact: true })).toBeVisible();
-    await expect(page.locator("summary").filter({ hasText: /Suspicious IPs \(/ })).toBeVisible();
+    await expect(page.getByText("Suspicious IPs")).toBeVisible();
+    await expect(page.locator("summary").filter({ hasText: /IP Addresses \(/ })).toBeVisible();
 
-    const tableSection = page.locator("details").filter({ hasText: /Suspicious IPs \(/ });
-    await expect(tableSection.getByText("No suspicious IPs detected.")).toBeVisible();
+    const tableSection = page.locator("details").filter({ hasText: /IP Addresses \(/ });
+    await expect(tableSection.getByText("No IPs with violations or bans.")).toBeVisible();
   });
 
   test("multiple failed login attempts show credential error, not rate limit", async ({ page }) => {

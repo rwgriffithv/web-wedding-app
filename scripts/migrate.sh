@@ -170,6 +170,11 @@ console.log('  ✓ Index idx_media_tabs_sort_order ensured.');
 db.exec('CREATE INDEX IF NOT EXISTS idx_media_section ON media_items(section)');
 console.log('  ✓ Index idx_media_section ensured.');
 
+// ── Migration 12: idx_rate_limit_violations_violated_at ──
+// Optimizes the combined IP table query's MAX(violated_at) aggregation.
+db.exec('CREATE INDEX IF NOT EXISTS idx_rate_limit_violations_violated_at ON rate_limit_violations(violated_at)');
+console.log('  ✓ Index idx_rate_limit_violations_violated_at ensured.');
+
 db.close();
 "
 

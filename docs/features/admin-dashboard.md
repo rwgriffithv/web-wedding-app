@@ -150,8 +150,10 @@ IP banning and rate-limit configuration:
 |---|---|---|
 | Auto-Ban Settings | `AutoBanForm` | Threshold (1–100 lockouts) and window (60–86400s) |
 | Login Rate Limiting | `RateLimitForm` | Max attempts and window for login rate limiter |
-| Ban IP | `BanIpForm` | Manual IP ban with optional reason (validates IPv4) |
-| Banned IPs | `BanList` | Active bans with unban buttons and reason labels |
+| Session & Tracking | `SessionSettingsForm` | Session expiry and page view debounce |
+| Suspicious IPs Settings | `SuspiciousSettingsForm` | Violation threshold for suspicious IP flagging |
+| Ban IP | `BanIpForm` | Manual IP ban with optional reason (validates IPv4/IPv6) |
+| IP Addresses | `SecurityTable` | Unified table of all IPs with violations or bans, sortable, with ban/unban/clear actions |
 
 See [ip-banning.md](ip-banning.md) for the full implementation.
 
@@ -194,11 +196,13 @@ admin/layout.tsx              ← Server Component (guard + sidebar)
   │   ├── media-list.tsx       ← Client Component
   │   └── media-form.tsx       ← Client Component
   └── admin/security/
-      ├── page.tsx             ← Server Component (banned IPs, settings)
+      ├── page.tsx             ← Server Component (unified IP table, settings)
       ├── actions.ts           ← Server Actions (ban/unban/settings)
-      ├── ban-list.tsx         ← Client Component (banned IP list)
+      ├── security-table.tsx   ← Client Component (unified IP table)
       ├── auto-ban-form.tsx    ← Client Component (auto-ban settings)
-      └── ban-ip-form.tsx      ← Client Component (manual IP ban)
+      ├── ban-ip-form.tsx      ← Client Component (manual IP ban)
+      ├── session-settings-form.tsx  ← Client Component (session settings)
+      └── suspicious-settings-form.tsx ← Client Component (threshold config)
 ```
 
 All admin pages are Server Components. Forms are Client Components using `useActionState` for mutations with `revalidatePath()`.

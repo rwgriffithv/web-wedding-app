@@ -5,13 +5,17 @@ import { cleanupIp } from "../utils/rate-limit-helpers";
 const UNIQUE = Date.now();
 
 async function unbanIpViaAdmin(page: import("@playwright/test").Page, ip: string) {
-  await page.goto("/admin/security");
-  const bannedSection = page.locator(".admin-list").first();
-  const row = bannedSection.locator(".admin-list-item").filter({ hasText: ip });
-  const unbanBtn = row.getByRole("button", { name: "Unban" });
-  if (await unbanBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-    await unbanBtn.click();
-    await page.waitForLoadState("networkidle");
+  try {
+    await page.goto("/admin/security", { timeout: 10000 });
+    const table = page.locator(".admin-table");
+    const row = table.locator("tr").filter({ hasText: ip });
+    const unbanBtn = row.getByRole("button", { name: "Yes" });
+    if (await unbanBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await unbanBtn.click();
+      await page.waitForLoadState("networkidle");
+    }
+  } catch {
+    // page/context may already be closed during cleanup
   }
 }
 

@@ -167,4 +167,10 @@ Please help!
   * status: done
 
 * Now the Rate Limit Violations table and the Suspicous IPs and the Banned IPs tables in the Security portion of the admin dashboard need work. These should be combined (!) into one table. It will rows with the following columns (in order): IP, an editable "yes/no" "Banned" field, a "yes/no" "Suspicious" field, a total rate limit violations field, and a last violation timestamp field. The final column will be the standard edit and delete action buttons under the actions column. See how the Guests and Parties table do this in the admin dashboard. The table should be sortable by every column except for the IP address and the actions column. The only editable field is "banned" which is how the admin can unban someone. This combined table will be the ONLY table in the admin security page, and it will be below the Ban IP section.
+  * status: done
+
+* Please fix the styling on the admin dashboard security configuration forms so that they are more similar to the admin dashboard home settings entry? They have sections that are more compact and not collapsible. The entire "Configuration" section should be renamed "Settings" and it should have one global "Save Changes" button at the bottom like the admin dashboard home settings have. Make the style match, things will be much more compact and user friendly this way. Be sure to properly run tests with "npm run test" and make sure to update docs and e2e and unit tests as needed. Remove dead code and css styling. This will be audited, make sure it is of high quality and consistent with the code and UI style of the app.
+  * status: done
+
+* Please investigate if the landing page (login page) loading of the background image (public API, no session needed) is slow. It feels like the image loading is slow. Additionally, when a user is on the landing or banned page, can you make sure that the rest of the website is not aggressively cached? Caching should ONLY happen wonce a user session is authenticated to prevent sending data to malicious actors and unathenticated users who could then intercept and inspect it.
   * status: not done

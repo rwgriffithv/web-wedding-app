@@ -111,16 +111,11 @@ export interface Question {
   answered_at: string | null;
 }
 
-export interface BannedIp {
-  id: number;
+export interface CombinedIp {
   ip_address: string;
-  reason: string;
-  banned_at: string;
-  unbanned_at: string | null;
-}
-
-export interface RateLimitViolation {
-  ip_address: string;
+  is_banned: number;
+  ban_id: number | null;
+  is_suspicious: number;
   violation_count: number;
-  last_violated_at: string;
+  last_violated_at: string | null;
 }

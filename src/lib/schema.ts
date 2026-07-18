@@ -137,4 +137,5 @@ export const DDL = `
   CREATE INDEX IF NOT EXISTS idx_banned_ips_ip ON banned_ips(ip_address);
   CREATE UNIQUE INDEX IF NOT EXISTS idx_banned_ips_active ON banned_ips(ip_address) WHERE unbanned_at IS NULL;
   CREATE INDEX IF NOT EXISTS idx_rate_limit_violations_ip ON rate_limit_violations(ip_address);
+  CREATE INDEX IF NOT EXISTS idx_rate_limit_violations_violated_at ON rate_limit_violations(violated_at);
 `;

@@ -25,22 +25,21 @@ afterAll(() => { db.close(); });
 describe("ip-bans repository", () => {
   describe("banIp", () => {
     it("inserts a banned IP with default reason", async () => {
-      const { banIp, getBannedIps } = await import("@/lib/repository/ip-bans");
+      const { banIp } = await import("@/lib/repository/ip-bans");
       banIp("192.168.1.1", "manual");
 
-      const banned = getBannedIps();
-      expect(banned).toHaveLength(1);
-      expect(banned[0].ip_address).toBe("192.168.1.1");
-      expect(banned[0].reason).toBe("manual");
-      expect(banned[0].unbanned_at).toBeNull();
+      const banned = db.prepare("SELECT * FROM banned_ips WHERE ip_address = '192.168.1.1'").get() as { ip_address: string; reason: string; unbanned_at: string | null };
+      expect(banned.ip_address).toBe("192.168.1.1");
+      expect(banned.reason).toBe("manual");
+      expect(banned.unbanned_at).toBeNull();
     });
 
     it("inserts a banned IP with custom reason", async () => {
-      const { banIp, getBannedIps } = await import("@/lib/repository/ip-bans");
+      const { banIp } = await import("@/lib/repository/ip-bans");
       banIp("10.0.0.1", "auto:rate-limit-threshold");
 
-      const banned = getBannedIps();
-      expect(banned[0].reason).toBe("auto:rate-limit-threshold");
+      const banned = db.prepare("SELECT * FROM banned_ips WHERE ip_address = '10.0.0.1'").get() as { reason: string };
+      expect(banned.reason).toBe("auto:rate-limit-threshold");
     });
 
     it("throws on duplicate active ban", async () => {
@@ -63,54 +62,33 @@ describe("ip-bans repository", () => {
     });
 
     it("returns false after unbanning", async () => {
-      const { banIp, unbanIp, isIpBanned, getBannedIps } = await import("@/lib/repository/ip-bans");
+      const { banIp, unbanIp, isIpBanned } = await import("@/lib/repository/ip-bans");
       banIp("192.168.1.4", "manual");
-      const banned = getBannedIps();
-      unbanIp(banned[0].id);
+      const ban = db.prepare("SELECT id FROM banned_ips WHERE ip_address = '192.168.1.4'").get() as { id: number };
+      unbanIp(ban.id);
       expect(isIpBanned("192.168.1.4")).toBe(false);
     });
   });
 
   describe("unbanIp", () => {
     it("sets unbanned_at timestamp", async () => {
-      const { banIp, unbanIp, getBannedIps } = await import("@/lib/repository/ip-bans");
+      const { banIp, unbanIp } = await import("@/lib/repository/ip-bans");
       banIp("192.168.1.5", "manual");
-      const banned = getBannedIps();
-      unbanIp(banned[0].id);
+      const ban = db.prepare("SELECT id FROM banned_ips WHERE ip_address = '192.168.1.5'").get() as { id: number };
+      unbanIp(ban.id);
 
-      const all = db.prepare("SELECT * FROM banned_ips WHERE id = ?").get(banned[0].id) as { unbanned_at: string | null };
+      const all = db.prepare("SELECT * FROM banned_ips WHERE id = ?").get(ban.id) as { unbanned_at: string | null };
       expect(all.unbanned_at).not.toBeNull();
     });
 
-    it("unbanned IP no longer in getBannedIps", async () => {
-      const { banIp, unbanIp, getBannedIps } = await import("@/lib/repository/ip-bans");
+    it("unbanned IP no longer counted as active", async () => {
+      const { banIp, unbanIp, getBannedCount } = await import("@/lib/repository/ip-bans");
       banIp("192.168.1.6", "manual");
       banIp("192.168.1.7", "manual");
-      const banned = getBannedIps();
-      unbanIp(banned[0].id);
+      const ban = db.prepare("SELECT id FROM banned_ips WHERE ip_address = '192.168.1.6'").get() as { id: number };
+      unbanIp(ban.id);
 
-      const active = getBannedIps();
-      expect(active).toHaveLength(1);
-    });
-  });
-
-  describe("getBannedIps", () => {
-    it("returns empty array when no bans", async () => {
-      const { getBannedIps } = await import("@/lib/repository/ip-bans");
-      expect(getBannedIps()).toHaveLength(0);
-    });
-
-    it("returns only active bans ordered by banned_at DESC", async () => {
-      const { banIp, unbanIp, getBannedIps } = await import("@/lib/repository/ip-bans");
-      banIp("192.168.1.10", "manual");
-      banIp("192.168.1.11", "manual");
-      banIp("192.168.1.12", "manual");
-
-      const banned = getBannedIps();
-      expect(banned).toHaveLength(3);
-
-      unbanIp(banned[1].id);
-      expect(getBannedIps()).toHaveLength(2);
+      expect(getBannedCount()).toBe(1);
     });
   });
 
@@ -241,52 +219,6 @@ describe("ip-bans repository", () => {
     });
   });
 
-  describe("getSuspiciousIps", () => {
-    it("returns empty array when no violations", async () => {
-      const { getSuspiciousIps } = await import("@/lib/repository/ip-bans");
-      expect(getSuspiciousIps(5)).toHaveLength(0);
-    });
-
-    it("returns IPs at or above threshold", async () => {
-      const { recordRateLimitViolation, getSuspiciousIps } = await import("@/lib/repository/ip-bans");
-      for (let i = 0; i < 5; i++) recordRateLimitViolation("192.168.1.80");
-      for (let i = 0; i < 2; i++) recordRateLimitViolation("192.168.1.81");
-
-      const suspicious = getSuspiciousIps(5);
-      expect(suspicious).toHaveLength(1);
-      expect(suspicious[0].ip_address).toBe("192.168.1.80");
-      expect(suspicious[0].violation_count).toBe(5);
-    });
-
-    it("excludes banned IPs", async () => {
-      const { banIp, recordRateLimitViolation, getSuspiciousIps } = await import("@/lib/repository/ip-bans");
-      for (let i = 0; i < 5; i++) recordRateLimitViolation("192.168.1.82");
-      banIp("192.168.1.82", "manual");
-
-      expect(getSuspiciousIps(5)).toHaveLength(0);
-    });
-
-    it("orders by violation_count DESC", async () => {
-      const { recordRateLimitViolation, getSuspiciousIps } = await import("@/lib/repository/ip-bans");
-      for (let i = 0; i < 3; i++) recordRateLimitViolation("192.168.1.83");
-      for (let i = 0; i < 10; i++) recordRateLimitViolation("192.168.1.84");
-      for (let i = 0; i < 5; i++) recordRateLimitViolation("192.168.1.85");
-
-      const suspicious = getSuspiciousIps(2);
-      expect(suspicious[0].ip_address).toBe("192.168.1.84");
-      expect(suspicious[1].ip_address).toBe("192.168.1.85");
-      expect(suspicious[2].ip_address).toBe("192.168.1.83");
-    });
-
-    it("includes last_violated_at timestamp", async () => {
-      const { recordRateLimitViolation, getSuspiciousIps } = await import("@/lib/repository/ip-bans");
-      recordRateLimitViolation("192.168.1.86");
-
-      const suspicious = getSuspiciousIps(1);
-      expect(suspicious[0].last_violated_at).toBeTruthy();
-    });
-  });
-
   describe("tryAutoBan", () => {
     it("bans IP when violation count reaches threshold", async () => {
       const { recordRateLimitViolation, tryAutoBan, isIpBanned } = await import("@/lib/repository/ip-bans");
@@ -344,68 +276,4 @@ describe("ip-bans repository", () => {
     });
   });
 
-  describe("getRateLimitViolations", () => {
-    it("returns empty array when no violations", async () => {
-      const { getRateLimitViolations } = await import("@/lib/repository/ip-bans");
-      expect(getRateLimitViolations(3600)).toHaveLength(0);
-    });
-
-    it("groups violations by IP and returns counts", async () => {
-      const { recordRateLimitViolation, getRateLimitViolations } = await import("@/lib/repository/ip-bans");
-      for (let i = 0; i < 3; i++) recordRateLimitViolation("192.168.1.70");
-      for (let i = 0; i < 5; i++) recordRateLimitViolation("192.168.1.71");
-
-      const violations = getRateLimitViolations(3600);
-      expect(violations).toHaveLength(2);
-      expect(violations[0].ip_address).toBe("192.168.1.71");
-      expect(violations[0].violation_count).toBe(5);
-      expect(violations[1].ip_address).toBe("192.168.1.70");
-      expect(violations[1].violation_count).toBe(3);
-    });
-
-    it("orders by violation_count DESC", async () => {
-      const { recordRateLimitViolation, getRateLimitViolations } = await import("@/lib/repository/ip-bans");
-      for (let i = 0; i < 2; i++) recordRateLimitViolation("192.168.1.72");
-      for (let i = 0; i < 10; i++) recordRateLimitViolation("192.168.1.73");
-      for (let i = 0; i < 5; i++) recordRateLimitViolation("192.168.1.74");
-
-      const violations = getRateLimitViolations(3600);
-      expect(violations[0].ip_address).toBe("192.168.1.73");
-      expect(violations[1].ip_address).toBe("192.168.1.74");
-      expect(violations[2].ip_address).toBe("192.168.1.72");
-    });
-
-    it("excludes banned IPs", async () => {
-      const { banIp, recordRateLimitViolation, getRateLimitViolations } = await import("@/lib/repository/ip-bans");
-      for (let i = 0; i < 3; i++) recordRateLimitViolation("192.168.1.75");
-      for (let i = 0; i < 3; i++) recordRateLimitViolation("192.168.1.76");
-      banIp("192.168.1.75", "manual");
-
-      const violations = getRateLimitViolations(3600);
-      expect(violations).toHaveLength(1);
-      expect(violations[0].ip_address).toBe("192.168.1.76");
-    });
-
-    it("includes last_violated_at timestamp", async () => {
-      const { recordRateLimitViolation, getRateLimitViolations } = await import("@/lib/repository/ip-bans");
-      recordRateLimitViolation("192.168.1.77");
-
-      const violations = getRateLimitViolations(3600);
-      expect(violations[0].last_violated_at).toBeTruthy();
-      expect(new Date(violations[0].last_violated_at).getTime()).toBeGreaterThan(0);
-    });
-
-    it("excludes violations older than the window", async () => {
-      const { recordRateLimitViolation, getRateLimitViolations } = await import("@/lib/repository/ip-bans");
-      recordRateLimitViolation("192.168.1.78");
-
-      // Insert an old violation directly
-      db.prepare("INSERT INTO rate_limit_violations (ip_address, violated_at) VALUES (?, datetime('now', '-7200 seconds'))").run("192.168.1.78");
-
-      const violations = getRateLimitViolations(3600);
-      expect(violations).toHaveLength(1);
-      expect(violations[0].ip_address).toBe("192.168.1.78");
-      expect(violations[0].violation_count).toBe(1);
-    });
-  });
 });
