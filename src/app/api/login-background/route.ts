@@ -53,7 +53,9 @@ export async function GET() {
     headers: {
       "Content-Type": MIME_TYPES[ext],
       "Content-Length": String(stat.size),
-      "Cache-Control": "public, max-age=300",
+      // Admin-set background image rarely changes; daily cache avoids
+      // re-reading from disk on every login page load.
+      "Cache-Control": "public, max-age=86400",
     },
   });
 }

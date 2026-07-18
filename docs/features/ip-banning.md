@@ -145,7 +145,7 @@ The serial E2E tests in `session-revocation.spec.ts` cover both scenarios:
 - **Cached-Link navigation** (tests 4–6): banned user clicks a nav `<Link>` (served from cache), then submits a form or refreshes (hits server → proxy catches ban).
 - **Full server navigation** (test 7): banned user navigates via `page.goto()` (simulating a reload/bookmark), which always hits the server → proxy redirects to ban screen.
 
-See [authentication.md](authentication.md#known-limitations) for the full session revocation architecture.
+See [authentication.md](authentication.md#known-limitations) for the full session revocation architecture. See [conventions.md](../architecture/conventions.md#http-cache-vs-rsc-cache) for the general HTTP cache vs RSC cache architecture.
 
 ---
 

@@ -399,3 +399,53 @@ Serial tests (`e2e/serial/`) run sequentially in a single worker against the sam
 | `rate-limit.spec.ts` | `setConfig()` to low thresholds, `waitForTimeout(2000)` for stale entries | `nukeAllBansAndViolations()` + `setConfig()` restore in `finally`, `flushTestIps()` in `afterEach` |
 | `session-revocation.spec.ts` | `loginAsAdmin()`, create users via admin UI | `unbanIpViaAdmin()` via admin UI + `cleanupIp()` via DB in `finally`, `ctx2.close()` |
 | `tracking-page-views.spec.ts` | `setPageViewDebounce()`, `clearCookies()` | `setPageViewDebounce(15)` restore in `finally` |
+
+---
+
+## HTTP Cache vs RSC Cache
+
+This application has **two independent caching layers** that affect how pages are served to the browser. Understanding the difference is critical for security reasoning and E2E test design.
+
+### Layer 1: HTTP Cache (browser standard)
+
+Controlled by `Cache-Control` response headers. The browser stores HTML responses on disk and decides whether to serve from cache or make a new request.
+
+**How it works:**
+- `no-store` → browser never stores anything. Every navigation is a full request to the server.
+- `no-cache` → browser stores but must revalidate with the server before every use.
+- `max-age=X` → browser serves from cache for X seconds without contacting the server.
+- `stale-while-revalidate=X` → browser serves from cache immediately, revalidates in the background. Useful for public assets where slight staleness is acceptable.
+- No header → browser uses heuristic caching (may serve from disk without any request).
+
+**Where it's set:** The proxy (`src/proxy.ts`) sets `Cache-Control: no-store` on every page response. API routes (`/api/media/*`, `/api/login-background`) set their own headers and are excluded from the proxy matcher (`/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)`).
+
+**Security impact:** With `no-store`, every page navigation hits the server. The proxy runs on every request, verifying the session cookie and checking IP bans. A user whose session was revoked or IP was banned will be caught on their next navigation.
+
+### Layer 2: RSC Cache (Next.js client-side)
+
+The React Server Component (RSC) cache is a Next.js mechanism that stores serialized component payloads in the browser's JavaScript memory (not on disk). It is **not** controlled by `Cache-Control` headers.
+
+**How it works:**
+- Next.js App Router eagerly prefetches `<Link>` targets when they enter the viewport.
+- Once prefetched, the RSC payload is stored in memory.
+- When the user clicks a prefetched `<Link>`, the client-side router serves the cached payload **without making a server request**.
+- The proxy never runs. Session verification never happens.
+
+**What triggers a server request (bypassing the RSC cache):**
+- `page.goto()` — full navigation via URL bar, bookmark, or programmatic navigation
+- `page.reload()` / `window.location.reload()` — browser refresh
+- Form submissions — POST requests always hit the server
+- Hard navigation — any navigation that doesn't go through the Next.js client-side router
+
+**Security impact:** A banned user clicking a prefetched `<Link>` sees stale pre-ban content. This is not a security vulnerability — the server is fully protected. The stale content was already rendered in the browser before the ban. The ban takes effect on the next server request (form submit, reload, or full navigation).
+
+### Summary
+
+| Mechanism | Storage | Controlled by | Proxy runs? | Security boundary |
+|---|---|---|---|---|
+| HTTP cache | Browser disk | `Cache-Control` header | Yes (with `no-store`) | Server verifies session on every request |
+| RSC cache | Browser memory (JS heap) | Next.js internals | No | Stale content only; no new data served |
+
+**For E2E tests:** Tests that need to verify server-side enforcement (IP bans, session revocation) must use `page.goto()`, `page.reload()`, or form submissions — never `<Link>` clicks. See `e2e/serial/session-revocation.spec.ts` for reference implementations.
+
+**For new features:** Any page navigation that must verify the session (e.g., checking if an IP is banned) should use a full page navigation or form submission, not rely on client-side routing.

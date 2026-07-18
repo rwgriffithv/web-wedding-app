@@ -43,7 +43,7 @@ export async function GET(
     headers: {
       "Content-Type": contentType,
       "Content-Length": String(stat.size),
-      "Cache-Control": "public, max-age=31536000, immutable",
+      "Cache-Control": "private, max-age=86400, immutable",
     },
   });
 }

@@ -12,15 +12,20 @@ function clearSessionCookie(response: NextResponse): void {
   });
 }
 
+function setCacheHeader(response: NextResponse): NextResponse {
+  response.headers.set("Cache-Control", "no-store");
+  return response;
+}
+
 export function proxy(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
-  if (!token) return NextResponse.next();
+  if (!token) return setCacheHeader(NextResponse.next());
 
   const session = verifyToken(token);
   if (!session) {
     const response = NextResponse.next();
     clearSessionCookie(response);
-    return response;
+    return setCacheHeader(response);
   }
 
   const ip = request.headers.get("cf-connecting-ip")
@@ -31,10 +36,13 @@ export function proxy(request: NextRequest) {
   if (isSessionRevoked(session, ip)) {
     const response = NextResponse.redirect(new URL("/login", request.url));
     clearSessionCookie(response);
-    return response;
+    // Redirect responses are not cached by browsers, so no-store here is
+    // technically unnecessary.  Applied for logical consistency: every
+    // response that leaves the proxy carries the same directive.
+    return setCacheHeader(response);
   }
 
-  return NextResponse.next();
+  return setCacheHeader(NextResponse.next());
 }
 
 export const config = {

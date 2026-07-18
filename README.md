@@ -3,25 +3,27 @@
 A production-ready wedding website built with Next.js 16, SQLite, and Docker. Features an admin dashboard for managing all content, guest authentication, party-based RSVP, and a full deployment pipeline via Caddy + Cloudflare Tunnel.
 
 ```text
-┌─────────────────────────────────────────────────┐
-│                    Guests                        │
-│  ┌──────────┐  ┌──────────┐  ┌────────────────┐ │
-│  │ Landing  │  │  Login   │  │  Party Code    │ │
-│  │  Page    │  │(username │  │  (family login)│ │
-│  │          │  │ /password)│  │                │ │
-│  └──────────┘  └────┬─────┘  └───────┬────────┘ │
-│                     │                │          │
-│              ┌──────▼────────────────▼──────┐   │
-│              │      Authenticated Pages     │   │
-│              │  home | lodging | dress-code │   │
-│              │  rsvp | media                │   │
-│              └─────────────────────────────┘   │
-└─────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────┐
-│                     Admin                        │
-│  site | parties | guests | lodging | dress-code │
-│  rsvp | media                                    │
-└─────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│                      Guests                          │
+│  ┌──────────┐  ┌──────────┐  ┌──────────────────┐  │
+│  │ Landing  │  │  Login   │  │  Party Code      │  │
+│  │  Page    │  │(username │  │  (family login)  │  │
+│  │          │  │ /password)│  │                  │  │
+│  └──────────┘  └────┬─────┘  └───────┬──────────┘  │
+│                     │                │              │
+│              ┌──────▼────────────────▼──────┐       │
+│              │      Authenticated Pages     │       │
+│              │  home | schedule | lodging   │       │
+│              │  dress-code | rsvp | media   │       │
+│              │  guide | help                │       │
+│              └─────────────────────────────┘       │
+└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│                      Admin                           │
+│  site | users | parties | guests | schedule         │
+│  lodging | dress-code | rsvp | media | gifts        │
+│  help | security                                    │
+└─────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -32,13 +34,17 @@ A production-ready wedding website built with Next.js 16, SQLite, and Docker. Fe
 |---|---|
 | **Landing Page** | Configurable title and background image with login form |
 | **Home Page** | Wedding date, location, subtitle, optional background video |
+| **Schedule** | Event timeline with dates and descriptions |
 | **Lodging** | Curated hotel/resort recommendations with images and links |
 | **Dress Code** | Mood board with images and description text |
 | **RSVP** | Party-based group RSVP with per-member responses, plus ones |
 | **Media Gallery** | Photo and video sections (e.g. Engagement, Ceremony, Reception) |
+| **Guide** | Tabbed guide with schedule, lodging, and dress code info |
+| **Help / FAQ** | Guest questions and admin-managed FAQ |
 | **Admin Dashboard** | Full CRUD for all content, parties, guests, and RSVP viewer |
 | **Authentication** | Admin (username/password), Party (access code), Guest (shared view-only) |
 | **Security** | IP banning, auto-ban on brute-force, configurable rate limits |
+| **Page View Tracking** | Debounced view counts per authenticated page |
 | **Health Check** | `/api/health` endpoint for Docker health checks and monitoring |
 
 ---
@@ -115,10 +121,13 @@ After logging in as admin (`/admin`):
 | **Site Config** | Set landing title, background image, home page text, date, location, dress code description |
 | **Parties** | Create party groups (households) with unique access codes |
 | **Guests** | Add guests, assign them to parties, set RSVP permissions and +1 ability |
+| **Schedule** | Build the event timeline |
 | **Lodging** | Add hotel/resort recommendations with photos and booking links |
 | **Dress Code** | Upload mood board images |
 | **Media** | Upload engagement photos, ceremony/reception galleries |
 | **RSVP** | View all submitted responses in one place |
+| **Gifts** | Manage gift registry items |
+| **Help** | Create FAQ entries for guests |
 
 ### 3. Share Access
 
@@ -142,6 +151,7 @@ See [docs/architecture/deployment-pipeline.md](docs/architecture/deployment-pipe
 | Language | TypeScript 5.4 (strict, no `any`) |
 | Database | SQLite via better-sqlite3 (WAL mode) |
 | Auth | Cookie-based HMAC-signed JSON sessions |
+| Caching | `Cache-Control: no-store` on pages; `immutable` on media |
 | Styling | Plain CSS with custom properties (no Tailwind, no CSS-in-JS) |
 
 ### Directory Structure
@@ -149,25 +159,66 @@ See [docs/architecture/deployment-pipeline.md](docs/architecture/deployment-pipe
 ```text
 src/
 ├── app/                    # Next.js App Router
-│   ├── (main)/             # Authenticated public pages (home, lodging, dress-code, rsvp, media)
-│   ├── admin/              # Admin dashboard (site, guests, parties, lodging, dress-code, rsvp, media)
-│   ├── api/health/         # Health check endpoint
+│   ├── (main)/             # Authenticated public pages
+│   │   ├── home/           #   Wedding date, location, subtitle
+│   │   ├── schedule/       #   Event timeline
+│   │   ├── lodging/        #   Hotel recommendations
+│   │   ├── dress-code/     #   Mood board
+│   │   ├── rsvp/           #   Party-based RSVP
+│   │   ├── media/          #   Photo/video gallery
+│   │   ├── guide/          #   Tabbed guide
+│   │   └── help/           #   FAQ and guest questions
+│   ├── admin/              # Admin dashboard
+│   │   ├── site/           #   Site config
+│   │   ├── users/          #   User management
+│   │   ├── parties/        #   Party management
+│   │   ├── guests/         #   Guest management
+│   │   ├── schedule/       #   Schedule editor
+│   │   ├── lodging/        #   Lodging editor
+│   │   ├── dress-code/     #   Dress code editor
+│   │   ├── rsvp/           #   RSVP viewer
+│   │   ├── media/          #   Media manager
+│   │   ├── gifts/          #   Gift registry
+│   │   ├── help/           #   FAQ management
+│   │   └── security/       #   IP bans, rate limits
+│   ├── api/                # API routes
+│   │   ├── health/         #   Health check
+│   │   ├── login-background/ # Background image
+│   │   ├── media/          #   Media serving + list
+│   │   └── upload/         #   File upload
 │   └── login/              # Login page and actions
-├── components/             # Shared UI (header, navigation, logout-button)
+├── components/             # Shared UI components
 ├── lib/                    # Server-only utilities
-│   ├── repository/         # Data access layer (one file per entity)
+│   ├── repository/         # Data access layer (12 modules)
 │   ├── auth.ts             # Session management, password hashing
 │   ├── db.ts               # Database connection, migration, seed
-│   ├── schema.ts           # DDL statements
-│   └── config.ts           # Environment validation
-├── app/globals.css         # Global styles (490 lines)
+│   ├── schema.ts           # DDL statements (14 tables)
+│   ├── config.ts           # Environment validation
+│   ├── rate-limit.ts       # Rate limiting logic
+│   ├── session-revocation.ts # Session revocation checks
+│   └── thumbnail.ts        # Image thumbnail generation
+├── proxy.ts                # Next.js proxy (auth, caching, IP bans)
+└── globals.css             # Global styles
 ```
 
 ### Database
 
-12 tables: `users`, `parties`, `guests`, `site_config`, `lodging_options`, `dress_code_images`, `rsvp_responses`, `media_items`, `media_tabs`, `schedule_items`, `banned_ips`, `rate_limit_violations`.
+14 tables: `users`, `parties`, `guests`, `site_config`, `lodging_options`, `dress_code_images`, `rsvp_responses`, `media_items`, `media_tabs`, `schedule_items`, `faq_items`, `questions`, `banned_ips`, `rate_limit_violations`.
 
 See [docs/architecture/database-layer.md](docs/architecture/database-layer.md) for the full schema.
+
+### Caching
+
+The application uses two independent caching layers:
+
+| Layer | Storage | Controlled by | Purpose |
+|---|---|---|---|
+| HTTP cache | Browser disk | `Cache-Control` header | `no-store` on pages forces server verification on every navigation |
+| RSC cache | Browser memory | Next.js internals | Stale content only; no new data served to banned users |
+
+API routes set their own headers: media files use `private, max-age=86400, immutable`; the login background uses `public, max-age=86400`.
+
+See [docs/architecture/conventions.md](docs/architecture/conventions.md#http-cache-vs-rsc-cache) for the full explanation.
 
 ### Deployment
 
@@ -185,14 +236,14 @@ See [docs/architecture/deployment-pipeline.md](docs/architecture/deployment-pipe
 
 | Suite | Command | Count |
 |---|---|---|
-| Unit tests | `npm run test:unit` | 383 tests (38 files) |
-| E2E (parallel) | `npm run test:e2e:parallel` | 56 tests (13 specs) |
-| E2E (serial) | `npm run test:e2e:serial` | 11 tests (2 specs) |
-| All | `npm test` | 450 tests |
+| Unit tests | `npm run test:unit` | 372 tests (36 files) |
+| E2E (parallel) | `npm run test:e2e:parallel` | 59 tests (13 specs) |
+| E2E (serial) | `npm run test:e2e:serial` | 17 tests (3 specs) |
+| All | `npm test` | 448 tests |
 
-- Unit tests cover: auth, session revocation, db init, all repositories (guests, RSVP, lodging, dress code, media, site config, users, IP bans, sessions), all server actions (security, RSVP, help, media, lodging, users), components (header, navigation, RSVP form, media forms, cookie warning, char count, rate-limit cooldown), rate limiting, and more.
-- E2E tests cover: login/logout, session expiry, session indicator, admin auth, admin CRUD (lodging, guests, media), admin security (rate limits, violations, IP banning, suspicious IPs), RSVP flows (party code login, submission, plus ones, deadline locking, view-only guest, invalid code), help/FAQ, guide tabs, media sections, health check.
-- Serial E2E tests (rate limiting, session revocation) run separately with a fresh server to avoid interfering with parallel tests.
+- Unit tests cover: auth, session revocation, db init, all repositories (guests, RSVP, lodging, dress code, media, site config, users, IP bans, FAQ, questions, schedule, parties), all server actions (security, RSVP, help, media, lodging, users, schedule), components (header, navigation, RSVP form, media forms, cookie warning, char count, rate-limit cooldown), rate limiting, and more.
+- E2E tests cover: login/logout, session expiry, session indicator, admin auth, admin CRUD (lodging, guests, media), admin security (rate limits, violations, IP banning, suspicious IPs), RSVP flows (party code login, submission, plus ones, deadline locking, view-only guest, invalid code), help/FAQ, guide tabs, media sections, health check, page view tracking.
+- Serial E2E tests (rate limiting, session revocation, page view tracking) run separately with a fresh server to avoid interfering with parallel tests.
 
 ---
 
@@ -204,7 +255,14 @@ See [docs/architecture/deployment-pipeline.md](docs/architecture/deployment-pipe
 | [IP Banning](docs/features/ip-banning.md) | IP banning, auto-ban, rate-limit refactoring |
 | [Admin Dashboard](docs/features/admin-dashboard.md) | All admin pages and CRUD operations |
 | [RSVP System](docs/features/rsvp.md) | Party-based RSVP, per-member submission |
+| [Media Gallery](docs/features/media-gallery.md) | Gallery sections and media display |
+| [Media](docs/features/media.md) | Media upload and management |
+| [Guide](docs/features/guide.md) | Tabbed guide page |
+| [Help](docs/features/help.md) | FAQ and guest questions |
+| [Banner](docs/features/banner.md) | Banner text display |
+| [Error Handling](docs/features/error-handling.md) | Error boundaries and handling |
+| [Searchable Select](docs/features/searchable-select.md) | Searchable select component |
 | [Database Layer](docs/architecture/database-layer.md) | Schema, connection, migration, seed |
 | [Architecture Overview](docs/architecture/overview.md) | Full system architecture and route map |
-| [Project Structure](docs/architecture/project-structure.md) | Directory tree with annotations |
+| [Conventions](docs/architecture/conventions.md) | Code conventions, HTTP cache vs RSC cache |
 | [Deployment Pipeline](docs/architecture/deployment-pipeline.md) | Docker, Caddy, Cloudflare Tunnel |

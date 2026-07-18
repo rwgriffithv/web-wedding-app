@@ -9,15 +9,18 @@ A production-ready Next.js starter web application with admin dashboard, SQLite 
 - **Database**: SQLite via better-sqlite3 (WAL mode), server-only access
 - **Auth**: Cookie-based session (HMAC-signed JSON for demo)
 - **Security**: IP banning, auto-ban on rate-limit violations, configurable rate limits
+- **Caching**: `Cache-Control: no-store` on all page responses via `proxy.ts`; API routes set own headers
 - **Lint**: ESLint 9 with flat config (`eslint.config.js`)
 - **Deployment**: Multi-stage Docker → Caddy reverse proxy → Cloudflare Tunnel
 
 ## Directory Structure
 - `src/app/` — App Router pages and API routes
-- `src/lib/` — Shared utilities (db, auth)
+- `src/lib/` — Shared utilities (db, auth, rate-limit, session-revocation)
+- `src/lib/repository/` — Data access layer (12 modules: guests, rsvp, lodging, dress-code, media, site-config, users, ip-bans, faq, questions, schedule, parties)
 - `src/components/` — Reusable UI components
-- `scripts/` — Utility scripts (e.g. database seeding)
+- `scripts/` — Utility scripts (db-seed.ts, migrate.sh, validate.sh)
 - `data/` — SQLite database (gitignored)
+- `src/proxy.ts` — Next.js proxy: auth verification, session revocation, IP bans, cache headers
 - `Dockerfile` — Symlinked from web-deploy-env template (multi-stage build)
 - `.dockerignore` — Symlinked from web-deploy-env template (reduces build context)
 
@@ -27,6 +30,7 @@ A production-ready Next.js starter web application with admin dashboard, SQLite 
 - SQLite queries return typed interfaces from `src/lib/db.ts`
 - Admin routes protected via `requireAdminSessionOrNull()` check in layout
 - No Client Components unless interactivity requires it
+- `proxy.ts` sets `Cache-Control: no-store` on all page responses; API routes excluded via matcher
 
 ## Testing
 
