@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
-import { getString } from "@/lib/form-data";
+import { getRequiredString, getOptionalString } from "@/lib/form-data";
 import { setConfig, setConfigs, getConfig } from "@/lib/repository/site-config";
 import { ensureVideoPoster } from "@/lib/thumbnail";
 import { deleteThumbnail } from "@/lib/media";
@@ -38,7 +38,7 @@ export async function saveSiteConfig(prevState: SiteConfigState | null, formData
     const entries: [string, string][] = [];
     for (const key of CONFIG_KEYS) {
       const field = CONFIG_SCHEMA[key];
-      const value = getString(formData, key) ?? "";
+      const value = getOptionalString(formData, key);
 
       if (value.length > field.maxLength) {
         return { success: false, error: `"${key}" must be ${field.maxLength} characters or fewer.` };
@@ -65,7 +65,7 @@ export async function saveSiteConfig(prevState: SiteConfigState | null, formData
     }
     setConfigs(entries);
 
-    const videoUrl = getString(formData, "home_background_video") ?? "";
+    const videoUrl = getOptionalString(formData, "home_background_video");
     const existingPoster = getConfig("home_background_video_poster");
     try {
       if (videoUrl && videoUrl.startsWith("/api/media/")) {

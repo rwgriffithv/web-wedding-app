@@ -78,20 +78,23 @@ export function recordLogin(userId: number): void {
 
 export function incrementPageViews(userId: number, debounceMinutes: number): boolean {
   const db = getDb();
-  const user = db.prepare("SELECT last_page_view_at FROM users WHERE id = ?").get(userId) as { last_page_view_at: string | null } | undefined;
+
+  // Verify user exists
+  const user = db.prepare("SELECT id FROM users WHERE id = ?").get(userId);
   if (!user) throw new Error(`User ${userId} not found`);
 
-  if (user.last_page_view_at) {
-    // SQLite datetime('now') stores UTC. Appending 'Z' ensures Date.parse treats it as UTC.
-    // Date.now() is also UTC milliseconds, so the comparison is timezone-safe.
-    const lastViewMs = new Date(`${user.last_page_view_at}Z`).getTime();
-    const minutesSince = (Date.now() - lastViewMs) / (1000 * 60);
-    if (minutesSince < debounceMinutes) return false;
+  if (debounceMinutes <= 0) {
+    // No debounce: always increment
+    db.prepare("UPDATE users SET total_page_views = total_page_views + 1, last_page_view_at = datetime('now') WHERE id = ?").run(userId);
+    return true;
   }
 
-  const result = db.prepare("UPDATE users SET total_page_views = total_page_views + 1, last_page_view_at = datetime('now') WHERE id = ?").run(userId);
-  if (result.changes === 0) throw new Error(`User ${userId} not found`);
-  return true;
+  // Atomic: only update if debounce window has passed (prevents double-count race)
+  const result = db.prepare(
+    `UPDATE users SET total_page_views = total_page_views + 1, last_page_view_at = datetime('now')
+     WHERE id = ? AND (last_page_view_at IS NULL OR last_page_view_at < datetime('now', '-' || ? || ' minutes'))`
+  ).run(userId, debounceMinutes);
+  return result.changes > 0;
 }
 
 export function getPartyActivity(): SafeUser[] {

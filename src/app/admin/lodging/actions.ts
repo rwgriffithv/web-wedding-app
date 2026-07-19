@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
-import { getString, getInt, validateMediaUrl } from "@/lib/form-data";
+import { getRequiredString, getOptionalString, getInt, validateMediaUrl } from "@/lib/form-data";
 import { create, update, getAll, swapSortOrder, deleteOption as deleteOptionRepo } from "@/lib/repository/lodging";
 import { setConfig } from "@/lib/repository/site-config";
 import { ensureThumbnail } from "@/lib/thumbnail";
@@ -15,12 +15,12 @@ export async function addOption(prevState: LodgingState | null, formData: FormDa
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
-  const title = getString(formData, "title");
-  const imageUrl = getString(formData, "image_url");
-  const url = getString(formData, "url");
+  const title = getRequiredString(formData, "title");
+  const imageUrl = getRequiredString(formData, "image_url");
+  const url = getOptionalString(formData, "url");
 
-  if (!title || !imageUrl || !url) {
-    return { success: false, error: "All fields are required." };
+  if (!title || !imageUrl) {
+    return { success: false, error: "Title and image URL are required." };
   }
 
   const urlError = validateMediaUrl(url);
@@ -49,12 +49,12 @@ export async function updateOption(prevState: LodgingState | null, formData: For
   const id = getInt(formData, "option_id");
   if (id === null) return { success: false, error: "Invalid option ID." };
 
-  const title = getString(formData, "title");
-  const imageUrl = getString(formData, "image_url");
-  const url = getString(formData, "url");
+  const title = getRequiredString(formData, "title");
+  const imageUrl = getRequiredString(formData, "image_url");
+  const url = getOptionalString(formData, "url");
 
-  if (!title || !imageUrl || !url) {
-    return { success: false, error: "All fields are required." };
+  if (!title || !imageUrl) {
+    return { success: false, error: "Title and image URL are required." };
   }
 
   const urlError = validateMediaUrl(url);
@@ -88,7 +88,7 @@ export async function moveOption(prevState: LodgingState | null, formData: FormD
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "option_id");
-  const direction = getString(formData, "direction");
+  const direction = getOptionalString(formData, "direction");
   if (id === null || !direction || (direction !== "up" && direction !== "down")) {
     return { success: false, error: "Invalid parameters." };
   }
@@ -130,7 +130,7 @@ export async function saveLodgingText(prevState: LodgingState | null, formData: 
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
-  const text = getString(formData, "lodging_text");
+  const text = getRequiredString(formData, "lodging_text");
   if (text && text.length > 1000) {
     return { success: false, error: "Intro text must be 1,000 characters or fewer." };
   }

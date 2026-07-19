@@ -36,6 +36,7 @@ beforeEach(() => {
   mockIsAdmin.mockResolvedValue(true);
   mockValidateSessionForMutation.mockResolvedValue({ userId: 1, type: "admin" });
   mockIsIpBanned.mockReturnValue(false);
+  mockBanIp.mockReturnValue(true);
 });
 
 function formData(entries: Record<string, string>): FormData {
@@ -94,7 +95,7 @@ describe("banViolationIpAction", () => {
   });
 
   it("returns error for already-banned IP", async () => {
-    mockIsIpBanned.mockReturnValue(true);
+    mockBanIp.mockReturnValue(false);
     const { banViolationIpAction } = await import("../actions");
     const result = await banViolationIpAction(null, formData({ ip_address: "1.2.3.4" }));
     expect(result.error).toBe("This IP is already banned.");

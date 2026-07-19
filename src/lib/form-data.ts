@@ -1,10 +1,20 @@
 /**
- * Safely extract a string value from FormData.
+ * Safely extract a required string value from FormData.
  * Returns null if the value is missing, empty, or not a string (e.g. File).
+ * Use this for fields that MUST be non-empty.
  */
-export function getString(formData: FormData, key: string): string | null {
+export function getRequiredString(formData: FormData, key: string): string | null {
   const value = formData.get(key);
   return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+/**
+ * Extract a string value from FormData, returning "" for missing/empty/non-string values.
+ * Use this for optional fields where "" is a valid value (e.g. clearing a field).
+ */
+export function getOptionalString(formData: FormData, key: string): string {
+  const value = formData.get(key);
+  return typeof value === "string" ? value : "";
 }
 
 /**
@@ -12,7 +22,7 @@ export function getString(formData: FormData, key: string): string | null {
  * Returns null if the value is missing, not a string, or not a valid positive integer.
  */
 export function getInt(formData: FormData, key: string): number | null {
-  const raw = getString(formData, key);
+  const raw = getRequiredString(formData, key);
   if (raw === null) return null;
   const n = parseInt(raw, 10);
   return Number.isFinite(n) && n >= 1 ? n : null;

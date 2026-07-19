@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { getEnvConfig } from "@/lib/config";
-import { getString, getInt } from "@/lib/form-data";
+import { getRequiredString, getOptionalString, getInt } from "@/lib/form-data";
 import { createUser as createUserRepo, updateUser as updateUserRepo, deleteUser as deleteUserRepo, getUserById } from "@/lib/repository/users";
 import { revokeSessionsByPasswordChange, clearPasswordRevocation } from "@/lib/session-revocation";
 
@@ -16,10 +16,10 @@ export async function addUser(prevState: UserState | null, formData: FormData): 
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
-  const displayName = getString(formData, "display_name");
-  const username = getString(formData, "username");
-  const password = getString(formData, "password");
-  const type = getString(formData, "type");
+  const displayName = getRequiredString(formData, "display_name");
+  const username = getRequiredString(formData, "username");
+  const password = getRequiredString(formData, "password");
+  const type = getRequiredString(formData, "type");
 
   if (!displayName || !username || !password) {
     return { success: false, error: "All fields are required." };
@@ -61,8 +61,8 @@ export async function updateUser(prevState: UserState | null, formData: FormData
     return { success: false, error: "Cannot modify the primary admin account." };
   }
 
-  const password = getString(formData, "password");
-  const type = getString(formData, "type");
+  const password = getOptionalString(formData, "password");
+  const type = getOptionalString(formData, "type");
 
   if (password && password.trim().length === 0) {
     return { success: false, error: "Password cannot be empty." };

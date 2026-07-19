@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
-import { getString, getInt } from "@/lib/form-data";
+import { getRequiredString, getOptionalString, getInt } from "@/lib/form-data";
 import { MAX_QUESTION_LENGTH, MAX_ANSWER_LENGTH } from "@/lib/constants";
 import * as faqRepo from "@/lib/repository/faq";
 import * as questionsRepo from "@/lib/repository/questions";
@@ -10,13 +10,13 @@ import * as questionsRepo from "@/lib/repository/questions";
 interface HelpState { success?: boolean; error?: string }
 
 function validateFaqFields(formData: FormData): { ok: true; question: string; answer: string } | { ok: false; error: string } {
-  const question = getString(formData, "question")?.trim();
+  const question = getRequiredString(formData, "question")?.trim();
   if (!question) return { ok: false, error: "Question is required." };
   if (question.length > MAX_QUESTION_LENGTH) {
     return { ok: false, error: `Question must be ${MAX_QUESTION_LENGTH} characters or fewer.` };
   }
 
-  const answer = getString(formData, "answer")?.trim();
+  const answer = getRequiredString(formData, "answer")?.trim();
   if (!answer) return { ok: false, error: "Answer is required." };
   if (answer.length > MAX_ANSWER_LENGTH) {
     return { ok: false, error: `Answer must be ${MAX_ANSWER_LENGTH} characters or fewer.` };
@@ -91,7 +91,7 @@ export async function moveFaq(prevState: HelpState | null, formData: FormData): 
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "faq_id");
-  const direction = getString(formData, "direction");
+  const direction = getOptionalString(formData, "direction");
   if (id === null || !direction || (direction !== "up" && direction !== "down")) {
     return { success: false, error: "Invalid parameters." };
   }
@@ -117,7 +117,7 @@ export async function answerQuestion(prevState: HelpState | null, formData: Form
   const id = getInt(formData, "question_id");
   if (id === null) return { success: false, error: "Invalid question ID." };
 
-  const answer = getString(formData, "answer")?.trim();
+  const answer = getRequiredString(formData, "answer")?.trim();
   if (!answer) return { success: false, error: "Answer is required." };
   if (answer.length > MAX_ANSWER_LENGTH) {
     return { success: false, error: `Answer must be ${MAX_ANSWER_LENGTH} characters or fewer.` };

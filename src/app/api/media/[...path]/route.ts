@@ -10,10 +10,10 @@ export async function GET(
 ) {
   const session = await requireSession();
   if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
   }
   if (!(await validateSessionInDb(session))) {
-    return NextResponse.json({ error: "Session expired" }, { status: 401 });
+    return NextResponse.json({ success: false, error: "Session expired" }, { status: 401 });
   }
 
   const { path: segments } = await params;
@@ -22,12 +22,12 @@ export async function GET(
   const resolved = path.resolve(MEDIA_DIR, joined);
 
   if (!isWithinMediaDir(resolved)) {
-    return NextResponse.json({ error: "Invalid path." }, { status: 400 });
+    return NextResponse.json({ success: false, error: "Invalid path." }, { status: 400 });
   }
 
   const ext = path.extname(resolved).toLowerCase();
   if (!ALLOWED_EXTENSIONS.has(ext)) {
-    return NextResponse.json({ error: "Not found." }, { status: 404 });
+    return NextResponse.json({ success: false, error: "Not found." }, { status: 404 });
   }
 
   let stat: fs.Stats;
@@ -35,7 +35,7 @@ export async function GET(
     stat = await fs.promises.stat(resolved);
   } catch (error) {
     console.error("Failed to stat media file:", error);
-    return NextResponse.json({ error: "Not found." }, { status: 404 });
+    return NextResponse.json({ success: false, error: "Not found." }, { status: 404 });
   }
 
   const contentType = MIME_TYPES[ext] || "application/octet-stream";
@@ -47,6 +47,7 @@ export async function GET(
       "Content-Type": contentType,
       "Content-Length": String(stat.size),
       "Cache-Control": "private, max-age=86400, immutable",
+      "X-Content-Type-Options": "nosniff",
     },
   });
 }

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
-import { getString, getInt, validateMediaUrl } from "@/lib/form-data";
+import { getRequiredString, getOptionalString, getInt, validateMediaUrl } from "@/lib/form-data";
 import { createImage, createImages, deleteImage as deleteImageRepo, swapSortOrder } from "@/lib/repository/dress-code";
 import { setConfig } from "@/lib/repository/site-config";
 import { ensureThumbnail } from "@/lib/thumbnail";
@@ -73,7 +73,7 @@ export async function moveImage(prevState: DressCodeState | null, formData: Form
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "image_id");
-  const direction = getString(formData, "direction");
+  const direction = getOptionalString(formData, "direction");
   if (id === null || !direction || (direction !== "up" && direction !== "down")) {
     return { success: false, error: "Invalid parameters." };
   }
@@ -96,7 +96,7 @@ export async function saveDressCodeText(prevState: DressCodeState | null, formDa
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
-  const text = getString(formData, "dress_code_text");
+  const text = getRequiredString(formData, "dress_code_text");
   if (text && text.length > 5000) {
     return { success: false, error: "Description must be 5,000 characters or fewer." };
   }

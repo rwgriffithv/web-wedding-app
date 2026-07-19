@@ -462,3 +462,39 @@ The React Server Component (RSC) cache is a Next.js mechanism that stores serial
 **For E2E tests:** Tests that need to verify server-side enforcement (IP bans, session revocation) must use `page.goto()`, `page.reload()`, or form submissions — never `<Link>` clicks. See `e2e/serial/session-revocation.spec.ts` for reference implementations.
 
 **For new features:** Any page navigation that must verify the session (e.g., checking if an IP is banned) should use a full page navigation or form submission, not rely on client-side routing.
+
+---
+
+## 401 Redirect Convention (Client Components)
+
+When a client component fetches an API route and receives a 401 response, it should redirect to `/login` and throw an error with `message: "Session expired"`. Catch blocks must guard against this intentional error to prevent flashing "Failed to load..." messages before the redirect completes.
+
+**Pattern:**
+
+```typescript
+fetch("/api/some-endpoint")
+  .then(r => {
+    if (r.status === 401) { window.location.href = "/login"; throw new Error("Session expired"); }
+    if (!r.ok) throw new Error("Failed to load data.");
+    return r.json();
+  })
+  .then(data => { /* ... */ })
+  .catch((e) => {
+    // Guard against intentional redirect error — the redirect is already in progress.
+    if (e?.message === "Session expired") return;
+    setError("Failed to load data.");
+    setLoading(false);
+  });
+```
+
+**Why:** The `throw` after `window.location.href` ensures in-flight fetches are abandoned. Without the guard, the catch block would briefly flash an error message before navigation completes.
+
+---
+
+## Media Security: SVG Exclusion
+
+SVG files are **not allowed** in the media system. They are excluded from `ALLOWED_EXTENSIONS`, `IMAGE_EXTENSIONS`, and `MIME_TYPES` in `src/lib/media.ts`.
+
+**Why:** Serving SVGs as `image/svg+xml` enables stored XSS. If an attacker uploads a malicious SVG, it could execute JavaScript when rendered via `<object>`, `<embed>`, `<iframe>`, or CSS `background-image`. Even though the current codebase only renders media via `<img>` tags (which are safe), defense-in-depth requires blocking SVG at the upload layer.
+
+**If you need to re-enable SVGs:** You must also sanitize SVG content on upload (strip `<script>`, `<foreignObject>`, event handlers) and serve with `Content-Disposition: attachment` to prevent in-page rendering. This is non-trivial — prefer using raster formats (JPEG, PNG, WebP).

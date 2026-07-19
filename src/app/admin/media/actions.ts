@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
-import { getString, getInt, validateMediaUrl } from "@/lib/form-data";
+import { getRequiredString, getOptionalString, getInt, validateMediaUrl } from "@/lib/form-data";
 import { create, deleteItem as deleteItemRepo, update, swapItemSortOrder, createTab, updateTab, deleteTab as deleteTabRepo, swapTabSortOrder } from "@/lib/repository/media";
+import { setConfig } from "@/lib/repository/site-config";
 import { ensureThumbnail } from "@/lib/thumbnail";
 import { detectMediaType } from "@/lib/media";
 
@@ -18,7 +19,7 @@ export async function createTabInline(prevState: MediaState | null, formData: Fo
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
-  const name = getString(formData, "tab_name");
+  const name = getRequiredString(formData, "tab_name");
   if (!name?.trim()) return { success: false, error: "Tab name is required." };
 
   const slug = toSlug(name.trim());
@@ -41,7 +42,7 @@ export async function renameTab(prevState: MediaState | null, formData: FormData
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "tab_id");
-  const label = getString(formData, "tab_label");
+  const label = getRequiredString(formData, "tab_label");
   if (id === null || !label?.trim()) return { success: false, error: "Tab ID and label are required." };
 
   try {
@@ -79,9 +80,9 @@ export async function addItem(prevState: MediaState | null, formData: FormData):
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
-  const url = getString(formData, "url");
-  const title = getString(formData, "title");
-  const section = getString(formData, "section");
+  const url = getRequiredString(formData, "url");
+  const title = getOptionalString(formData, "title");
+  const section = getOptionalString(formData, "section");
 
   if (!url) {
     return { success: false, error: "URL is required." };
@@ -137,12 +138,12 @@ export async function updateItem(prevState: MediaState | null, formData: FormDat
   const id = getInt(formData, "item_id");
   if (id === null) return { success: false, error: "Invalid item ID." };
 
-  const title = getString(formData, "title");
-  const section = getString(formData, "section");
+  const title = getOptionalString(formData, "title");
+  const section = getOptionalString(formData, "section");
 
   const patch: { title?: string; section?: string } = {};
-  if (title !== null) patch.title = title;
-  if (section !== null) patch.section = section;
+  if (title) patch.title = title;
+  if (section) patch.section = section;
 
   try {
     update(id, patch);
@@ -161,7 +162,7 @@ export async function moveItem(prevState: MediaState | null, formData: FormData)
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "item_id");
-  const direction = getString(formData, "direction");
+  const direction = getRequiredString(formData, "direction");
   if (id === null || !direction || (direction !== "up" && direction !== "down")) {
     return { success: false, error: "Invalid parameters." };
   }
@@ -185,7 +186,7 @@ export async function moveTab(prevState: MediaState | null, formData: FormData):
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "tab_id");
-  const direction = getString(formData, "direction");
+  const direction = getRequiredString(formData, "direction");
   if (id === null || !direction || (direction !== "up" && direction !== "down")) {
     return { success: false, error: "Invalid parameters." };
   }
@@ -200,5 +201,27 @@ export async function moveTab(prevState: MediaState | null, formData: FormData):
   } catch (error) {
     console.error(error);
     return { success: false, error: "Failed to reorder tab." };
+  }
+}
+
+interface SettingsState { success?: boolean; error?: string }
+
+export async function saveMediaSettings(_prevState: SettingsState | null, formData: FormData): Promise<SettingsState> {
+  const session = await requireSession("admin");
+  if (!session) return { success: false, error: "Unauthorized" };
+  if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
+
+  const raw = getRequiredString(formData, "media_max_file_size_mb");
+  if (!raw) return { success: false, error: "Max file size is required." };
+  const n = parseInt(raw, 10);
+  if (!Number.isFinite(n) || n <= 0) return { success: false, error: "Max file size must be a positive number." };
+
+  try {
+    setConfig("media_max_file_size_mb", String(n));
+    revalidatePath("/admin/media");
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: "Failed to save media settings." };
   }
 }

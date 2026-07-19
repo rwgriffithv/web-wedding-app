@@ -15,3 +15,5 @@ export const RL_UNTIL_KEY = "rl_until";
 export const RL_Rsvp_UNTIL_KEY = "rl_r_until";
 export const RL_QUESTION_UNTIL_KEY = "rl_q_until";
 export const RATE_LIMIT_ERROR = "Too many attempts. Please wait before trying again.";
+
+export const MEDIA_MAX_FILE_SIZE_MB_DEFAULT = 16;

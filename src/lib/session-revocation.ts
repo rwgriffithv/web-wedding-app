@@ -8,12 +8,15 @@
  * This is NOT a general-purpose database cache. Nothing else goes in here.
  */
 
+import { getConfig } from "@/lib/repository/site-config";
+
 const passwordRevocations = new Map<number, number>();
 const recentBans = new Set<string>();
 
 /** Mark all sessions for this user as revoked (password changed). */
 export function revokeSessionsByPasswordChange(userId: number): void {
   passwordRevocations.set(userId, Date.now());
+  maybeCleanupPasswordRevocations();
 }
 
 /** Remove a user from the revocation map (user deleted). */
@@ -56,4 +59,20 @@ export function isSessionRevoked(
     (session.userId != null && isSessionRevokedByPasswordChange(session.userId, session.pwChangedAt ?? null))
     || isSessionRevokedByIpBan(ip)
   );
+}
+
+// Periodic cleanup: remove password revocations older than session timeout + 1 hour buffer.
+// Only runs on writes to avoid unnecessary overhead on reads.
+let cleanupCounter = 0;
+const CLEANUP_INTERVAL = 100;
+
+function maybeCleanupPasswordRevocations(): void {
+  if (++cleanupCounter % CLEANUP_INTERVAL !== 0) return;
+  const hours = parseFloat(getConfig("session_max_hours"));
+  const sessionSeconds = (Number.isFinite(hours) && hours > 0 ? Math.min(hours, 24) : 24) * 60 * 60;
+  const maxAgeMs = (sessionSeconds + 3600) * 1000; // session timeout + 1h buffer
+  const cutoff = Date.now() - maxAgeMs;
+  for (const [userId, timestamp] of passwordRevocations) {
+    if (timestamp < cutoff) passwordRevocations.delete(userId);
+  }
 }

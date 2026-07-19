@@ -3,5 +3,20 @@ This is an ordered list of features to implement along with a simple sub-bullet 
 * Please make the media addition actions in the dress code admin dashboard be able to handle multiple selections when uploading. This would streamline the process a lot. Since this is a common component, just add a flag for allowing multi-upload that is default to false (if possible). If you need a new component and that is cleaner then do that instead. There is freedom here, but the UI should look reasonably similar and still allow for uploading (multiple) files or using local files as well. Up to you if you think the local files can/should be multi-selectable as well. This works ONLY for the mood board because the mood board does not have titles and configuration for each photo, it is just the picture in a collage essentially.
   * status: done
 
+* We have just made a ton of changes as part of a large audit of the project. The audit report and status is here: docs/tmp/2026-07-18-audit-report.md. Please run another thorough audit of these changes and identify any issues with consistency, style, logic correctness, and structure. Be careful and do not identify false issues, otherwise this audit-of-audit cycle continues forever.
+  * status: not done
+
+* Please standardize how getConfig() is used and where and when database reads are done manually or through that function to get values set in the database through the admin dashboard settings and configuration tools. We added a lot of settings for security that I'm not sure are tracked in the site config properly. Same for many other things like rate limiting for example.
+  * status: not done
+
+* Please standardize how `revalidatePath` is used in the codebase and make sure there is a proper principled approach to how cache is invalidated alongside our auth, rate limiting, etc. features that all use a [client, proxy, hot-server, cold-server] hierarchy. Assess the current state of cache assumptions in the code and docs makes sense or if it needs to be updated to be more principled and consistent. Be thorough! Use internet research for appropriate standards and principles if needed.
+  * status: not done
+
+* Please thoroughly audit the media max filesize functionality added previously. I'm not very confident about it's style and logical consistency. Do a very heavy audit and let me know what you think of that feature and the code around it. Make sure the localstorage is set properly (and set at all...)
+  * status: not done
+
 * Sometimes (rarely!) when I click on a page (/guide or maybe one of the tabs, or just at random) on mobile the scrolling is locked out and I have to refresh the page. Do you know what could cause that? Is it some kind of race condition or weird timing thing or known issue with nextjs? Is it actually a but in the application code? Please help figure this out!
-  * status: done
+  * status: not done
+
+* Add rate limiting to media serving endpoints (`GET /api/media/[...path]` and `GET /api/media/list`). Must be configurable like existing rate limiting (see `src/lib/rate-limit.ts`, `src/lib/rate-limit-form/`). Follow the same patterns as login/RSVP rate limiting: in-memory limiter for enforcement, client cookies for UX cooldown display, `getRateLimitConfig()` for DB-stored settings. Add unit + E2E tests. Reference the existing rate limiting architecture in `docs/architecture/overview.md` and `docs/features/ip-banning.md`.
+  * status: not done

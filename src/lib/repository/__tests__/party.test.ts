@@ -113,4 +113,26 @@ describe("party repository", () => {
     expect(updated.name).toBe("Updated Family");
     expect(updated.invited).toBe(1);
   });
+
+  it("createParty retries auto-generated code on collision", async () => {
+    const { createParty } = await import("@/lib/repository/party");
+    // Create two parties with same name — auto-generated codes should both succeed
+    const p1 = createParty("Collision Family");
+    const p2 = createParty("Collision Family");
+    expect(p1.code).not.toBe(p2.code);
+  });
+
+  it("createParty throws on custom code collision", async () => {
+    const { createParty } = await import("@/lib/repository/party");
+    createParty("First Family", "UNIQUE-123456");
+    expect(() => createParty("Second Family", "UNIQUE-123456")).toThrow("Party code already exists.");
+  });
+
+  it("createParty allows same custom code after original is deleted", async () => {
+    const { createParty, deleteParty, getPartyByCode } = await import("@/lib/repository/party");
+    const p1 = createParty("Temp Family", "REUSE-123456");
+    deleteParty(p1.id);
+    const p2 = createParty("New Family", "REUSE-123456");
+    expect(p2.code).toBe("REUSE-123456");
+  });
 });

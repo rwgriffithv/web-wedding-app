@@ -35,11 +35,15 @@ export function FileBrowser({ onSelect, onClose }: FileBrowserProps) {
         return r.json();
       })
       .then(data => {
-        setListing(data);
-        setCurrentPath(data.path ?? "");
+        setListing(data.data);
+        setCurrentPath(data.data.path ?? "");
         setLoading(false);
       })
-      .catch(() => {
+      .catch((e) => {
+        // Guard against intentional redirect error from 401 handler —
+        // the redirect is already in progress, so we skip setting error state
+        // to avoid flashing "Failed to load files." before navigation completes.
+        if (e?.message === "Session expired") return;
         setError("Failed to load files.");
         setLoading(false);
       });

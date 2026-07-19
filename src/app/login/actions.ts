@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { createSession, destroySession, verifyPassword, SESSION_COOKIE, getSessionMaxSeconds } from "@/lib/auth";
 import { getUserWithPassword, getPartyUserWithPassword, recordLogin } from "@/lib/repository/users";
 import { getPartyByCode } from "@/lib/repository/party";
@@ -9,7 +10,7 @@ import { getGuestsByPartyId } from "@/lib/repository/guests";
 import { createRateLimiter, getRateLimitConfig } from "@/lib/rate-limit";
 import { isIpBanned, recordRateLimitViolation, tryAutoBan } from "@/lib/repository/ip-bans";
 import { getClientIp } from "@/lib/ip";
-import { getString } from "@/lib/form-data";
+import { getRequiredString } from "@/lib/form-data";
 import { RATE_LIMIT_MAX_ATTEMPTS_DEFAULT, RATE_LIMIT_WINDOW_SECONDS_DEFAULT } from "@/lib/constants";
 
 interface LoginState {
@@ -28,8 +29,8 @@ function getLoginRateLimitConfig() {
 }
 
 export async function login(formData: FormData): Promise<LoginState> {
-  const username = getString(formData, "username");
-  const password = getString(formData, "password");
+  const username = getRequiredString(formData, "username");
+  const password = getRequiredString(formData, "password");
   if (!username || !password) {
     return { error: "Username and password are required." };
   }
@@ -85,7 +86,7 @@ export async function login(formData: FormData): Promise<LoginState> {
 }
 
 export async function loginByPartyCode(formData: FormData): Promise<LoginState> {
-  const code = getString(formData, "code");
+  const code = getRequiredString(formData, "code");
   if (!code) {
     return { error: "Please enter your party code." };
   }
@@ -144,5 +145,6 @@ export async function loginByPartyCode(formData: FormData): Promise<LoginState> 
 
 export async function logout(): Promise<void> {
   await destroySession();
+  revalidatePath("/");
   redirect("/");
 }

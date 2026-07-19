@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
-import { getString, getInt } from "@/lib/form-data";
+import { getOptionalString, getInt } from "@/lib/form-data";
 import { updateParty as updatePartyRepo, deleteParty, getPartyById } from "@/lib/repository/party";
 
 interface PartyState { success?: boolean; error?: string }
@@ -18,9 +18,9 @@ export async function updateParty(prevState: PartyState | null, formData: FormDa
   const existing = getPartyById(id);
   if (!existing) return { success: false, error: "Party not found." };
 
-  const name = getString(formData, "name");
-  const code = getString(formData, "code");
-  const invited = getString(formData, "invited");
+  const name = getOptionalString(formData, "name");
+  const code = getOptionalString(formData, "code");
+  const invited = getOptionalString(formData, "invited");
 
   if (!name?.trim()) return { success: false, error: "Party name is required." };
   if (!code?.trim()) return { success: false, error: "Party code is required." };

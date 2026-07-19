@@ -44,11 +44,16 @@ export function getBannedCount(): number {
   return row.cnt;
 }
 
-export function banIp(ip: string, reason: string): void {
+export function banIp(ip: string, reason: string): boolean {
   const db = getDb();
-  db.prepare(
-    "INSERT INTO banned_ips (ip_address, reason) VALUES (?, ?)"
-  ).run(ip, reason);
+  try {
+    const result = db.prepare(
+      "INSERT INTO banned_ips (ip_address, reason) VALUES (?, ?)"
+    ).run(ip, reason);
+    return result.changes > 0;
+  } catch {
+    return false;
+  }
 }
 
 export function getBannedIpById(id: number): string | null {
@@ -61,9 +66,10 @@ export function getBannedIpById(id: number): string | null {
 
 export function unbanIp(id: number): void {
   const db = getDb();
-  db.prepare(
+  const result = db.prepare(
     "UPDATE banned_ips SET unbanned_at = datetime('now') WHERE id = ?"
   ).run(id);
+  if (result.changes === 0) throw new Error("Banned IP not found");
 }
 
 export function recordRateLimitViolation(ip: string): void {
@@ -134,11 +140,7 @@ let violationCleanupCounter = 0;
 export function tryAutoBan(ip: string): void {
   const { threshold, windowSeconds: autoBanWindow } = getAutoBanConfig();
   if (getViolationCount(ip, autoBanWindow) >= threshold && !isIpBanned(ip)) {
-    try {
-      banIp(ip, "auto:rate-limit-threshold");
-    } catch {
-      // Unique constraint: another concurrent request already banned this IP
-    }
+    banIp(ip, "auto:rate-limit-threshold");
   }
   if (++violationCleanupCounter % 50 === 0) {
     deleteOldViolations(autoBanWindow);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { getMaxFileSizeBytes } from "@/lib/media-config";
 
 interface UploadResult {
   url: string;
@@ -23,6 +24,14 @@ export function FileUpload({ onUpload, accept, label, size = "md" }: FileUploadP
     const file = e.target.files?.[0];
     if (!file || uploading) return;
 
+    const maxBytes = getMaxFileSizeBytes();
+    if (file.size > maxBytes) {
+      const maxMb = Math.round(maxBytes / (1024 * 1024));
+      setError(`File exceeds ${maxMb} MB limit.`);
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
+
     setUploading(true);
     setError(null);
 
@@ -39,7 +48,7 @@ export function FileUpload({ onUpload, accept, label, size = "md" }: FileUploadP
         return;
       }
 
-      onUpload(data);
+      onUpload(data.data);
     } catch {
       setError("Upload failed.");
     } finally {
@@ -48,7 +57,7 @@ export function FileUpload({ onUpload, accept, label, size = "md" }: FileUploadP
     }
   };
 
-  const inputId = `file-upload-${label?.replace(/\s+/g, "-").toLowerCase() ?? "input"}`;
+  const inputId = `file-upload-${(label || "input").replace(/\s+/g, "-").toLowerCase()}`;
 
   return (
     <>

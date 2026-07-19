@@ -35,7 +35,7 @@ export async function ensureThumbnail(
   if (!fs.existsSync(resolved)) return null;
 
   const ext = path.extname(resolved).toLowerCase();
-  const isImage = IMAGE_EXTENSIONS.has(ext) && ext !== ".svg";
+  const isImage = IMAGE_EXTENSIONS.has(ext);
   const isVideo = VIDEO_EXTENSIONS.has(ext);
   if (!isImage && !isVideo) return null;
 
@@ -75,7 +75,17 @@ export async function ensureVideoPoster(
   videoUrl: string,
   existingPosterUrl?: string | null,
 ): Promise<string | null> {
-  if (existingPosterUrl) return existingPosterUrl;
+  if (existingPosterUrl) {
+    // Verify cached poster still exists on disk; regenerate if deleted
+    const cachedPath = extractLocalPath(existingPosterUrl);
+    if (cachedPath) {
+      const resolved = path.resolve(MEDIA_DIR, cachedPath);
+      if (isWithinMediaDir(resolved) && fs.existsSync(resolved)) {
+        return existingPosterUrl;
+      }
+    }
+    // Cached file missing or not local — fall through to regenerate
+  }
 
   const localPath = extractLocalPath(videoUrl);
   if (!localPath) return null;

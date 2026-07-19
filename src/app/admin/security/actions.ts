@@ -2,9 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
-import { getString, getInt } from "@/lib/form-data";
+import { getRequiredString, getInt } from "@/lib/form-data";
 import { setConfig } from "@/lib/repository/site-config";
-import { banIp, unbanIp, isIpBanned, clearViolations, getBannedIpById } from "@/lib/repository/ip-bans";
+import { banIp, unbanIp, clearViolations, getBannedIpById } from "@/lib/repository/ip-bans";
 import { revokeSessionsByIpBan, unrevokeSessionsByIpBan } from "@/lib/session-revocation";
 
 interface SecurityState { success?: boolean; error?: string }
@@ -18,14 +18,9 @@ function isValidIp(ip: string): boolean {
 }
 
 async function banIpCommon(ip: string, reason: string): Promise<SecurityState> {
-  if (isIpBanned(ip)) return { success: false, error: "This IP is already banned." };
+  const inserted = banIp(ip, reason.slice(0, MAX_REASON_LENGTH));
+  if (!inserted) return { success: false, error: "This IP is already banned." };
 
-  try {
-    banIp(ip, reason.slice(0, MAX_REASON_LENGTH));
-  } catch (error) {
-    console.error(error);
-    return { success: false, error: "This IP is already banned." };
-  }
   revokeSessionsByIpBan(ip);
   revalidatePath("/admin/security");
   return { success: true };
@@ -37,8 +32,8 @@ export async function banIpAction(_prevState: SecurityState | null, formData: Fo
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   try {
-    const ip = getString(formData, "ip_address") ?? "";
-    const reason = getString(formData, "reason") ?? "manual";
+    const ip = getRequiredString(formData, "ip_address") ?? "";
+    const reason = getRequiredString(formData, "reason") ?? "manual";
 
     if (!ip) return { success: false, error: "IP address is required." };
 
@@ -79,7 +74,7 @@ export async function banViolationIpAction(_prevState: SecurityState | null, for
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   try {
-    const ip = getString(formData, "ip_address") ?? "";
+    const ip = getRequiredString(formData, "ip_address") ?? "";
     if (!ip) return { success: false, error: "IP address is required." };
 
     if (!isValidIp(ip)) {
@@ -111,7 +106,7 @@ export async function saveSecuritySettings(prevState: SecurityState | null, form
 
     const parsed: Record<string, number> = {};
     for (const { key, label } of fields) {
-      const raw = getString(formData, key);
+      const raw = getRequiredString(formData, key);
       if (!raw) return { success: false, error: `${label} is required.` };
       const n = parseInt(raw, 10);
       if (!Number.isFinite(n)) return { success: false, error: `${label} must be a whole number.` };
@@ -147,7 +142,7 @@ export async function clearViolationsAction(_prevState: SecurityState | null, fo
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   try {
-    const ip = getString(formData, "ip_address") ?? "";
+    const ip = getRequiredString(formData, "ip_address") ?? "";
     if (!ip) return { success: false, error: "IP address is required." };
 
     if (!isValidIp(ip)) {

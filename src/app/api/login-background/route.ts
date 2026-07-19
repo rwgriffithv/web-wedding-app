@@ -9,26 +9,26 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const background = getConfig("landing_background");
   if (!background || !background.startsWith("/api/media/")) {
-    return NextResponse.json({ error: "Not found." }, { status: 404 });
+    return NextResponse.json({ success: false, error: "Not found." }, { status: 404 });
   }
 
   const mediaPath = background.slice("/api/media/".length);
   const resolved = path.resolve(MEDIA_DIR, mediaPath);
 
   if (!isWithinMediaDir(resolved)) {
-    return NextResponse.json({ error: "Not found." }, { status: 404 });
+    return NextResponse.json({ success: false, error: "Not found." }, { status: 404 });
   }
 
   const ext = path.extname(resolved).toLowerCase();
   if (!IMAGE_EXTENSIONS.has(ext) || !MIME_TYPES[ext]) {
-    return NextResponse.json({ error: "Not found." }, { status: 404 });
+    return NextResponse.json({ success: false, error: "Not found." }, { status: 404 });
   }
 
   let stat: fs.Stats;
   try {
     stat = await fs.promises.stat(resolved);
   } catch {
-    return NextResponse.json({ error: "Not found." }, { status: 404 });
+    return NextResponse.json({ success: false, error: "Not found." }, { status: 404 });
   }
 
   const stream = fs.createReadStream(resolved);
@@ -39,6 +39,7 @@ export async function GET() {
       // Admin-set background image rarely changes; daily cache avoids
       // re-reading from disk on every login page load.
       "Cache-Control": "public, max-age=86400",
+      "X-Content-Type-Options": "nosniff",
     },
   });
 }

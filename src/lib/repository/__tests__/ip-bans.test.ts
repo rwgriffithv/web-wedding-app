@@ -42,10 +42,10 @@ describe("ip-bans repository", () => {
       expect(banned.reason).toBe("auto:rate-limit-threshold");
     });
 
-    it("throws on duplicate active ban", async () => {
+    it("returns false on duplicate active ban", async () => {
       const { banIp } = await import("@/lib/repository/ip-bans");
-      banIp("192.168.1.2", "manual");
-      expect(() => banIp("192.168.1.2", "manual")).toThrow();
+      expect(banIp("192.168.1.2", "manual")).toBe(true);
+      expect(banIp("192.168.1.2", "manual")).toBe(false);
     });
   });
 
@@ -215,7 +215,7 @@ describe("ip-bans repository", () => {
       const { getSuspiciousConfig } = await import("@/lib/repository/ip-bans");
       const config = getSuspiciousConfig();
       expect(config.threshold).toBe(20);
-      vi.mocked(siteConfig.getConfig).mockRestore();
+      vi.mocked(siteConfig.getConfig).mockReset();
     });
   });
 

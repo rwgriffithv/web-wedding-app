@@ -30,15 +30,44 @@ export function getPartyByCode(code: string): Party | undefined {
   return db.prepare("SELECT * FROM parties WHERE UPPER(code) = UPPER(?)").get(code.trim()) as Party | undefined;
 }
 
+const MAX_CODE_ATTEMPTS = 10;
+
 export function createParty(name: string, code?: string): Party {
   const db = getDb();
+  const isCustom = !!code?.trim();
   const partyCode = code?.trim().toUpperCase() || generatePartyCode(name);
-  const created = db.transaction(() => {
-    const party = db.prepare("INSERT INTO parties (name, code, invited) VALUES (?, ?, 0) RETURNING *").get(name, partyCode) as Party;
-    createPartyUser(party.code, party.name, party.id);
-    return party;
-  })();
-  return created;
+
+  // Custom codes fail immediately on collision — the user chose it, so retrying
+  // with a different code would be surprising.
+  if (isCustom) {
+    try {
+      return db.transaction(() => {
+        const party = db.prepare("INSERT INTO parties (name, code, invited) VALUES (?, ?, 0) RETURNING *").get(name, partyCode) as Party;
+        createPartyUser(party.code, party.name, party.id);
+        return party;
+      })();
+    } catch {
+      throw new Error("Party code already exists.");
+    }
+  }
+
+  // Auto-generated codes: retry on collision. The random suffix is 6 hex chars
+  // (~16M combinations), so collisions are astronomically unlikely. The loop
+  // exists as defense-in-depth — if the generated code happens to collide with
+  // an existing party, we just generate a new one and try again.
+  for (let attempt = 0; attempt < MAX_CODE_ATTEMPTS; attempt++) {
+    const currentCode = attempt === 0 ? partyCode : generatePartyCode(name);
+    try {
+      return db.transaction(() => {
+        const party = db.prepare("INSERT INTO parties (name, code, invited) VALUES (?, ?, 0) RETURNING *").get(name, currentCode) as Party;
+        createPartyUser(party.code, party.name, party.id);
+        return party;
+      })();
+    } catch {
+      // UNIQUE constraint failed — loop will retry with a fresh code
+    }
+  }
+  throw new Error("Failed to generate a unique party code.");
 }
 
 export function updateParty(id: number, data: { name?: string; code?: string; invited?: number }): void {

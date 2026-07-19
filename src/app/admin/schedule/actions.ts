@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
-import { getString, getInt } from "@/lib/form-data";
+import { getRequiredString, getOptionalString, getInt } from "@/lib/form-data";
 import { create, update, deleteItem as deleteItemRepo, swapSortOrder } from "@/lib/repository/schedule";
 import { setConfig } from "@/lib/repository/site-config";
 
@@ -15,8 +15,8 @@ export async function addItem(prevState: ScheduleState | null, formData: FormDat
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
-  const time = getString(formData, "time");
-  const label = getString(formData, "label");
+  const time = getRequiredString(formData, "time");
+  const label = getRequiredString(formData, "label");
 
   if (!time || !label) {
     return { success: false, error: "Both fields are required." };
@@ -46,8 +46,8 @@ export async function updateItem(prevState: ScheduleState | null, formData: Form
   const id = getInt(formData, "item_id");
   if (id === null) return { success: false, error: "Invalid item ID." };
 
-  const time = getString(formData, "time");
-  const label = getString(formData, "label");
+  const time = getRequiredString(formData, "time");
+  const label = getRequiredString(formData, "label");
 
   if (!time || !label) {
     return { success: false, error: "Both fields are required." };
@@ -75,7 +75,7 @@ export async function moveItem(prevState: ScheduleState | null, formData: FormDa
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "item_id");
-  const direction = getString(formData, "direction");
+  const direction = getOptionalString(formData, "direction");
   if (id === null || !direction || (direction !== "up" && direction !== "down")) {
     return { success: false, error: "Invalid parameters." };
   }
@@ -119,7 +119,7 @@ export async function saveScheduleText(prevState: ScheduleState | null, formData
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
-  const text = getString(formData, "schedule_text");
+  const text = getRequiredString(formData, "schedule_text");
   if (text && text.length > 1000) {
     return { success: false, error: "Intro text must be 1,000 characters or fewer." };
   }

@@ -28,8 +28,10 @@ The text input remains editable — you can modify the URL after upload if neede
 
 | Type | Extensions | Max Size |
 |---|---|---|
-| Images | `.jpg`, `.jpeg`, `.png`, `.gif`, `.webp`, `.svg` | 50 MB |
-| Videos | `.mp4`, `.webm`, `.mov` | 50 MB |
+| Images | `.jpg`, `.jpeg`, `.png`, `.gif`, `.webp`, `.avif` | Configurable (default 50 MB) |
+| Videos | `.mp4`, `.webm`, `.mov` | Configurable (default 50 MB) |
+
+> SVG files are intentionally excluded. Serving `image/svg+xml` enables stored XSS via `<object>`, `<embed>`, or CSS `background-image` contexts.
 
 ### Use an external URL
 
@@ -67,7 +69,15 @@ All uploaded files are served via the API route `GET /api/media/<filename>`. Thi
 
 ## Authentication
 
-Admin-only. Uses `requireSession("admin")` check in server actions.
+Admin-only. Uses `requireSession("admin")` check in server actions and API routes.
+
+### Security Notes
+
+- **No rate limiting on upload:** Admin-only endpoint; admins are trusted users. Rate limiting is unnecessary for trusted roles.
+- **No MIME/magic-byte validation:** Extension-based validation only. Admins are trusted not to upload malicious files.
+- **SVG excluded:** Serving SVGs enables stored XSS via `<object>`, `<embed>`, or CSS contexts.
+- **Streaming upload:** Files are piped to disk via `stream.pipeline()`, not buffered in memory.
+- **`X-Content-Type-Options: nosniff`** set on all file-serving responses to prevent browser MIME-sniffing.
 
 ## Backup
 
@@ -100,14 +110,14 @@ Upload a file. Requires admin session.
 
 **Response (200):**
 ```json
-{ "url": "/api/media/550e8400-e29b-41d4-a716-446655440000.jpg" }
+{ "success": true, "data": { "url": "/api/media/550e8400-e29b-41d4-a716-446655440000.jpg", "type": "image" } }
 ```
 
-**Response (401/400):**
+**Response (401/400/413):**
 ```json
-{ "error": "Unauthorized" }
-{ "error": "File type \".exe\" is not allowed." }
-{ "error": "File exceeds 50 MB limit." }
+{ "success": false, "error": "Unauthorized" }
+{ "success": false, "error": "File type \".exe\" is not allowed." }
+{ "success": false, "error": "File exceeds size limit." }
 ```
 
 ### `GET /api/media/[...path]`

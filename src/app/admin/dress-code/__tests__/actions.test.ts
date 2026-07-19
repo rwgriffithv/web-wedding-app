@@ -35,9 +35,13 @@ vi.mock("next/cache", () => ({
   revalidatePath: (...args: unknown[]) => mockRevalidatePath(...args),
 }));
 vi.mock("@/lib/form-data", () => ({
-  getString: (fd: FormData, key: string) => {
+  getRequiredString: (fd: FormData, key: string) => {
     const v = fd.get(key);
     return typeof v === "string" && v.length > 0 ? v : null;
+  },
+  getOptionalString: (fd: FormData, key: string) => {
+    const v = fd.get(key);
+    return typeof v === "string" ? v : "";
   },
   getInt: (fd: FormData, key: string) => {
     const raw = fd.get(key);

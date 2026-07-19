@@ -15,11 +15,12 @@ export function isWithinMediaDir(resolved: string): boolean {
 }
 
 export const ALLOWED_EXTENSIONS = new Set([
-  ".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".svg",
+  ".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif",
   ".mp4", ".webm", ".mov",
 ]);
 
-export const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".svg"]);
+// SVG intentionally excluded — serving image/svg+xml enables stored XSS via <object>, <embed>, or CSS.
+export const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif"]);
 
 export { VIDEO_EXTENSIONS, detectMediaType } from "./media-detect";
 
@@ -30,7 +31,6 @@ export const MIME_TYPES: Record<string, string> = {
   ".gif": "image/gif",
   ".webp": "image/webp",
   ".avif": "image/avif",
-  ".svg": "image/svg+xml",
   ".mp4": "video/mp4",
   ".webm": "video/webm",
   ".mov": "video/quicktime",
@@ -38,7 +38,8 @@ export const MIME_TYPES: Record<string, string> = {
 
 export function deleteThumbnail(thumbnailUrl: string | null): void {
   if (!thumbnailUrl || !thumbnailUrl.startsWith("/api/media/thumbnails/")) return;
-  const filename = thumbnailUrl.replace("/api/media/thumbnails/", "");
+  // URL always starts with the prefix above, so slice is safe (replace only handles first occurrence)
+  const filename = thumbnailUrl.slice("/api/media/thumbnails/".length);
   if (!filename) return;
   const filepath = path.join(THUMBNAILS_DIR, filename);
   const resolved = path.resolve(filepath);
@@ -52,6 +53,8 @@ export function deleteThumbnail(thumbnailUrl: string | null): void {
 
 let ensured = false;
 
+// Single media directory for both deployment and testing (set via MEDIA_DIR env var).
+// Module-level cache is safe — MEDIA_DIR is constant per process.
 export function ensureMediaDir(): void {
   if (ensured) return;
   fs.mkdirSync(MEDIA_DIR, { recursive: true });

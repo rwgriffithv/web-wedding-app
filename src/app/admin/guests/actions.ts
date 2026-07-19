@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
-import { getString, getInt } from "@/lib/form-data";
+import { getRequiredString, getInt } from "@/lib/form-data";
 import { getDb } from "@/lib/db";
 import { updateGuest as updateGuestRepo, createGuest, deleteGuest, getGuestById } from "@/lib/repository/guests";
 import { createParty, deleteEmptyParty } from "@/lib/repository/party";
@@ -14,7 +14,7 @@ export async function createPartyInline(prevState: GuestState | null, formData: 
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
-  const name = getString(formData, "party_name");
+  const name = getRequiredString(formData, "party_name");
   if (!name?.trim()) return { success: false, error: "Party name is required." };
 
   try {
@@ -23,7 +23,8 @@ export async function createPartyInline(prevState: GuestState | null, formData: 
     return { success: true, partyId: party.id };
   } catch (error) {
     console.error(error);
-    return { success: false, error: "Failed to create party." };
+    const msg = error instanceof Error ? error.message : "";
+    return { success: false, error: msg.includes("already exists") ? msg : "Failed to create party." };
   }
 }
 
@@ -38,10 +39,10 @@ export async function updateGuest(prevState: GuestState | null, formData: FormDa
   const existing = getGuestById(id);
   if (!existing) return { success: false, error: "Guest not found." };
 
-  const displayName = getString(formData, "display_name");
-  const partyIdRaw = getString(formData, "party_id");
-  const canBringPlusOneRaw = getString(formData, "can_bring_plus_one");
-  const unexpectedRaw = getString(formData, "unexpected");
+  const displayName = getRequiredString(formData, "display_name");
+  const partyIdRaw = getRequiredString(formData, "party_id");
+  const canBringPlusOneRaw = getRequiredString(formData, "can_bring_plus_one");
+  const unexpectedRaw = getRequiredString(formData, "unexpected");
 
   if (!displayName?.trim()) return { success: false, error: "Display name is required." };
 
@@ -80,10 +81,10 @@ export async function addGuest(prevState: GuestState | null, formData: FormData)
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
-  const displayName = getString(formData, "display_name");
-  const partyIdRaw = getString(formData, "party_id");
-  const canBringPlusOneRaw = getString(formData, "can_bring_plus_one");
-  const unexpectedRaw = getString(formData, "unexpected");
+  const displayName = getRequiredString(formData, "display_name");
+  const partyIdRaw = getRequiredString(formData, "party_id");
+  const canBringPlusOneRaw = getRequiredString(formData, "can_bring_plus_one");
+  const unexpectedRaw = getRequiredString(formData, "unexpected");
 
   if (!displayName?.trim()) {
     return { success: false, error: "Display name is required." };

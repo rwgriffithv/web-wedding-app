@@ -7,10 +7,10 @@ import path from "node:path";
 export async function GET(request: Request) {
   const session = await requireSession("admin");
   if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
   }
   if (!(await validateSessionInDb(session))) {
-    return NextResponse.json({ error: "Session expired" }, { status: 401 });
+    return NextResponse.json({ success: false, error: "Session expired" }, { status: 401 });
   }
 
   const { searchParams } = new URL(request.url);
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 
   const resolved = path.resolve(MEDIA_DIR, subpath);
   if (!isWithinMediaDir(resolved)) {
-    return NextResponse.json({ error: "Invalid path." }, { status: 400 });
+    return NextResponse.json({ success: false, error: "Invalid path." }, { status: 400 });
   }
 
   let entries: fs.Dirent[];
@@ -26,7 +26,7 @@ export async function GET(request: Request) {
     entries = await fs.promises.readdir(resolved, { withFileTypes: true }) as fs.Dirent[];
   } catch (error) {
     console.error("Failed to read media directory:", error);
-    return NextResponse.json({ path: subpath, dirs: [], files: [] });
+    return NextResponse.json({ success: false, error: "Failed to read directory." }, { status: 500 });
   }
 
   const dirs = entries
@@ -39,5 +39,5 @@ export async function GET(request: Request) {
     .map(e => e.name)
     .sort();
 
-  return NextResponse.json({ path: subpath, dirs, files });
+  return NextResponse.json({ success: true, data: { path: subpath, dirs, files } });
 }

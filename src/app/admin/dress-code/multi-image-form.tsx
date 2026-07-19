@@ -3,6 +3,7 @@
 import { useRef, useState, useActionState, useEffect } from "react";
 import { addImage } from "./actions";
 import { FileBrowser } from "@/components/file-browser";
+import { getMaxFileSizeBytes } from "@/lib/media-config";
 
 const initialState: { success?: boolean; error?: string } | null = null;
 
@@ -39,8 +40,14 @@ export function DressCodeMultiImageForm() {
     setUploading(true);
     setUploadErrors([]);
 
+    const maxBytes = getMaxFileSizeBytes();
+
     const failures: string[] = [];
     for (const file of Array.from(files)) {
+      if (file.size > maxBytes) {
+        failures.push(file.name);
+        continue;
+      }
       try {
         const formData = new FormData();
         formData.append("file", file);
@@ -49,7 +56,7 @@ export function DressCodeMultiImageForm() {
         if (res.status === 401) { window.location.href = "/login"; return; }
         if (!res.ok) { failures.push(file.name); continue; }
 
-        let data: { url?: string };
+        let data: { data?: { url?: string } };
         try {
           data = await res.json();
         } catch {
@@ -57,8 +64,8 @@ export function DressCodeMultiImageForm() {
           continue;
         }
 
-        if (data.url) {
-          setQueue(prev => [...prev, data.url!]);
+        if (data.data?.url) {
+          setQueue(prev => [...prev, data.data!.url!]);
         } else {
           failures.push(file.name);
         }

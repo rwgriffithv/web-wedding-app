@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb, destroySession } from "@/lib/auth";
-import { getString } from "@/lib/form-data";
+import { getRequiredString } from "@/lib/form-data";
 import { MAX_QUESTION_LENGTH, RATE_LIMIT_MAX_ATTEMPTS_DEFAULT, RATE_LIMIT_WINDOW_SECONDS_DEFAULT } from "@/lib/constants";
 import { create } from "@/lib/repository/questions";
 import { createRateLimiter, getRateLimitConfig } from "@/lib/rate-limit";
@@ -32,7 +32,7 @@ export async function submitQuestion(prevState: HelpState | null, formData: Form
     return { success: false, error: "Your party has made too many requests. Please wait before trying again.", action: "cooldown", cooldownUntil: Date.now() + rlConfig.windowMs };
   }
 
-  const question = getString(formData, "question")?.trim();
+  const question = getRequiredString(formData, "question")?.trim();
   if (!question) return { success: false, error: "Question is required." };
   if (question.length > MAX_QUESTION_LENGTH) {
     return { success: false, error: `Question must be ${MAX_QUESTION_LENGTH} characters or fewer.` };

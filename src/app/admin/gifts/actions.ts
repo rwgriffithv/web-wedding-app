@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
-import { getString } from "@/lib/form-data";
+import { getRequiredString } from "@/lib/form-data";
 import { setConfig } from "@/lib/repository/site-config";
 
 interface GiftsState { success?: boolean; error?: string }
@@ -12,7 +12,7 @@ export async function saveGiftsText(prevState: GiftsState | null, formData: Form
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
-  const text = getString(formData, "gifts_text");
+  const text = getRequiredString(formData, "gifts_text");
   if (text && text.length > 1000) {
     return { success: false, error: "Intro text must be 1,000 characters or fewer." };
   }

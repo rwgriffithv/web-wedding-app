@@ -7,7 +7,7 @@ import { getGuestById } from "@/lib/repository/guests";
 import { getPartyById } from "@/lib/repository/party";
 import { submitResponse } from "@/lib/repository/rsvp";
 import { createRateLimiter, getRateLimitConfig } from "@/lib/rate-limit";
-import { getString } from "@/lib/form-data";
+import { getRequiredString } from "@/lib/form-data";
 import { RATE_LIMIT_WINDOW_SECONDS_DEFAULT } from "@/lib/constants";
 
 export interface RsvpState {
@@ -48,12 +48,12 @@ export async function submitRsvp(_prevState: RsvpState | null, formData: FormDat
     }
   }
 
-  const memberIdRaw = getString(formData, "member_id");
+  const memberIdRaw = getRequiredString(formData, "member_id");
   if (!memberIdRaw) return { success: false, error: "Invalid member." };
   const memberId = parseInt(memberIdRaw, 10);
   if (isNaN(memberId) || memberId < 1) return { success: false, error: "Invalid member." };
 
-  const attending = getString(formData, `attending_${memberId}`);
+  const attending = getRequiredString(formData, `attending_${memberId}`);
   if (!attending) return { success: false, error: "Attendance is required." };
   if (attending !== "yes" && attending !== "no") return { success: false, error: "Invalid attendance value." };
 
@@ -82,9 +82,9 @@ async function rsvpMember(memberId: number, name: string, attending: string, for
   let plusOne: string | undefined;
 
   if (isAttending) {
-    const bringPlusOne = getString(formData, `bring_plus_one_${memberId}`);
+    const bringPlusOne = getRequiredString(formData, `bring_plus_one_${memberId}`);
     if (bringPlusOne === "yes") {
-      const plusOneRaw = getString(formData, `plus_one_${memberId}`);
+      const plusOneRaw = getRequiredString(formData, `plus_one_${memberId}`);
       if (!plusOneRaw) {
         return { success: false, error: "Please enter your plus-one's name." };
       }
