@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { login, loginByPartyCode } from "./actions";
-import { useRateLimitCooldown, type CooldownProps } from "@/lib/use-rate-limit-cooldown";
+import { useRateLimitCooldown, type CooldownProps } from "@/hooks/rate-limit";
 import { COOKIE_HEALTH_KEY, RATE_LIMIT_ERROR } from "@/lib/constants";
 
 function storeCookieHealth(until: number) {

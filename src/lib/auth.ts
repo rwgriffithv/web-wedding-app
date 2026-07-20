@@ -1,8 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import crypto from "crypto";
-import { getEnvConfig } from "./config";
-import { getConfig } from "./repository/site-config";
+import { getEnvConfig } from "./env";
 import { getUserById } from "./repository/users";
 import { getPartyById } from "./repository/party";
 import { getPartyUserWithPassword } from "./repository/users";
@@ -145,12 +144,7 @@ export async function destroySession(): Promise<void> {
   store.set(SESSION_COOKIE, "", { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 0 });
 }
 
-/** Parse session_max_hours from DB config, clamp to 1 second–24 hours, return seconds. */
-export function getSessionMaxSeconds(): number {
-  const hours = parseFloat(getConfig("session_max_hours"));
-  const seconds = (Number.isFinite(hours) && hours > 0 ? Math.min(hours, 24) : 24) * 60 * 60;
-  return Math.max(1, seconds);
-}
+export { getSessionMaxSeconds } from "./site-config";
 
 const SALT_LENGTH = 32;
 const KEY_LENGTH = 64;

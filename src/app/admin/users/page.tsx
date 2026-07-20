@@ -1,5 +1,5 @@
 import { getAllUsers, getPartyActivity } from "@/lib/repository/users";
-import { getEnvConfig } from "@/lib/config";
+import { getEnvConfig } from "@/lib/env";
 import { Header } from "@/components/header";
 import { UserForm } from "./user-form";
 import { UserTable } from "./user-table";

@@ -8,7 +8,7 @@ vi.mock("@/lib/repository/users", () => ({
 
 const mockGetPageViewDebounceMinutes = vi.fn();
 
-vi.mock("@/lib/repository/site-config", () => ({
+vi.mock("@/lib/site-config", () => ({
   getPageViewDebounceMinutes: () => mockGetPageViewDebounceMinutes(),
 }));
 

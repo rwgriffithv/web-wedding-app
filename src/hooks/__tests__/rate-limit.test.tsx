@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { useRateLimitCooldown } from "../use-rate-limit-cooldown";
+import { useRateLimitCooldown } from "../rate-limit";
 
 describe("useRateLimitCooldown", () => {
   beforeEach(() => {

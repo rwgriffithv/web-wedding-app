@@ -8,7 +8,7 @@
  * This is NOT a general-purpose database cache. Nothing else goes in here.
  */
 
-import { getConfig } from "@/lib/repository/site-config";
+import { getSessionMaxSeconds } from "@/lib/site-config";
 
 const passwordRevocations = new Map<number, number>();
 const recentBans = new Set<string>();
@@ -68,8 +68,7 @@ const CLEANUP_INTERVAL = 100;
 
 function maybeCleanupPasswordRevocations(): void {
   if (++cleanupCounter % CLEANUP_INTERVAL !== 0) return;
-  const hours = parseFloat(getConfig("session_max_hours"));
-  const sessionSeconds = (Number.isFinite(hours) && hours > 0 ? Math.min(hours, 24) : 24) * 60 * 60;
+  const sessionSeconds = getSessionMaxSeconds();
   const maxAgeMs = (sessionSeconds + 3600) * 1000; // session timeout + 1h buffer
   const cutoff = Date.now() - maxAgeMs;
   for (const [userId, timestamp] of passwordRevocations) {

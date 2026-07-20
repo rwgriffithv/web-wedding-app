@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { getAll as getScheduleItems } from "@/lib/repository/schedule";
-import { getConfig } from "@/lib/repository/site-config";
+import { getAllConfig } from "@/lib/repository/site-config";
 import { getImages } from "@/lib/repository/dress-code";
 import { getAll as getLodgingOptions } from "@/lib/repository/lodging";
 import { MoodBoard } from "./mood-board";
@@ -28,12 +28,13 @@ export default async function GuidePage({ searchParams }: GuidePageProps) {
   const activeTab: TabId = isValidTab(params.tab) ? params.tab : "schedule";
 
   const scheduleItems = getScheduleItems();
-  const scheduleText = getConfig("schedule_text");
-  const dressCodeText = getConfig("dress_code_text");
   const dressCodeImages = getImages();
   const lodgingOptions = getLodgingOptions();
-  const lodgingText = getConfig("lodging_text");
-  const giftsText = getConfig("gifts_text");
+  const config = Object.fromEntries(getAllConfig().map((c) => [c.key, c.value]));
+  const scheduleText = config.schedule_text || "";
+  const dressCodeText = config.dress_code_text || "";
+  const lodgingText = config.lodging_text || "";
+  const giftsText = config.gifts_text || "";
 
   return (
     <div className="page-content">

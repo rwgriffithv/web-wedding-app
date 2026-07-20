@@ -2,7 +2,7 @@
 
 import { verifyTokenInCookie } from "@/lib/auth";
 import { incrementPageViews } from "@/lib/repository/users";
-import { getPageViewDebounceMinutes } from "@/lib/repository/site-config";
+import { getPageViewDebounceMinutes } from "@/lib/site-config";
 
 /**
  * Intentionally uses verifyTokenInCookie() (fast path) instead of validateSessionInDb().

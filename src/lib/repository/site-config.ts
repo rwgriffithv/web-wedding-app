@@ -26,7 +26,3 @@ export function setConfigs(entries: [string, string][]): void {
   })();
 }
 
-export function getPageViewDebounceMinutes(): number {
-  const minutes = parseInt(getConfig("page_view_debounce_minutes"), 10);
-  return Number.isFinite(minutes) && minutes >= 0 ? Math.min(minutes, 1440) : 15;
-}

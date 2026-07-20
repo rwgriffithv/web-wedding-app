@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { submitQuestion } from "./actions";
 import { CharCount } from "@/components/char-count";
 import { MAX_QUESTION_LENGTH } from "@/lib/constants";
-import { useRateLimitCooldown } from "@/lib/use-rate-limit-cooldown";
+import { useRateLimitCooldown } from "@/hooks/rate-limit";
 import type { Question } from "@/lib/db";
 
 export function MyQuestions({ questions }: { questions: Question[] }) {

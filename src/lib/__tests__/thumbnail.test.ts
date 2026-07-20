@@ -1,9 +1,12 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
 import path from "node:path";
 import fs from "node:fs";
 import os from "node:os";
+import { execFile } from "node:child_process";
 
 let tmpDir: string;
+let imageBuffer: Buffer;
+let videoFixturePath: string;
 
 vi.mock("@/lib/media", () => ({
   get MEDIA_DIR() { return tmpDir; },
@@ -14,10 +17,37 @@ vi.mock("@/lib/media", () => ({
     const mediaDir = tmpDir;
     return resolved === mediaDir || resolved.startsWith(mediaDir + path.sep);
   },
-  generateImageThumbnail: vi.fn().mockResolvedValue("/api/media/thumbnails/thumb.webp"),
-  generateVideoThumbnail: vi.fn().mockResolvedValue("/api/media/thumbnails/thumb.webp"),
-  generateVideoPoster: vi.fn().mockResolvedValue("/api/media/thumbnails/poster.webp"),
 }));
+
+beforeAll(async () => {
+  const sharp = (await import("sharp")).default;
+  imageBuffer = await sharp({
+    create: { width: 1, height: 1, channels: 3, background: { r: 255, g: 0, b: 0 } },
+  }).jpeg().toBuffer();
+
+  const ffmpegPath = (await import("ffmpeg-static")).default;
+  if (!ffmpegPath) throw new Error("ffmpeg-static binary not found");
+
+  videoFixturePath = path.join(os.tmpdir(), `thumb-vid-${Date.now()}.mp4`);
+  await new Promise<void>((resolve, reject) => {
+    execFile(ffmpegPath, [
+      "-f", "lavfi",
+      "-i", "color=c=red:s=2x2:d=0.1",
+      "-frames:v", "1",
+      "-c:v", "libx264",
+      "-pix_fmt", "yuv420p",
+      "-y",
+      videoFixturePath,
+    ], { timeout: 15_000 }, (err) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
+});
+
+afterAll(() => {
+  if (videoFixturePath) fs.unlinkSync(videoFixturePath);
+});
 
 beforeEach(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "thumb-test-"));
@@ -51,18 +81,20 @@ describe("ensureThumbnail", () => {
 
   it("regenerates when cached thumbnail is missing from disk", async () => {
     const { ensureThumbnail } = await import("@/lib/thumbnail");
-    // Create source file
-    fs.writeFileSync(path.join(tmpDir, "photo.jpg"), "fake-image");
-    // Cached thumbnail path does NOT exist on disk
+    fs.writeFileSync(path.join(tmpDir, "photo.jpg"), imageBuffer);
     const result = await ensureThumbnail("/api/media/photo.jpg", "/api/media/thumbnails/missing.webp");
-    expect(result).toBe("/api/media/thumbnails/thumb.webp");
+    expect(result).toMatch(/^\/api\/media\/thumbnails\/.+_400x400\.webp$/);
+    const thumbName = result!.split("/").pop()!;
+    expect(fs.existsSync(path.join(tmpDir, "thumbnails", thumbName))).toBe(true);
   });
 
   it("generates thumbnail for existing local image", async () => {
     const { ensureThumbnail } = await import("@/lib/thumbnail");
-    fs.writeFileSync(path.join(tmpDir, "photo.jpg"), "fake-image");
+    fs.writeFileSync(path.join(tmpDir, "photo.jpg"), imageBuffer);
     const result = await ensureThumbnail("/api/media/photo.jpg");
-    expect(result).toBe("/api/media/thumbnails/thumb.webp");
+    expect(result).toMatch(/^\/api\/media\/thumbnails\/.+_400x400\.webp$/);
+    const thumbName = result!.split("/").pop()!;
+    expect(fs.existsSync(path.join(tmpDir, "thumbnails", thumbName))).toBe(true);
   });
 });
 
@@ -83,22 +115,25 @@ describe("ensureVideoPoster", () => {
 
   it("regenerates when cached poster is missing from disk", async () => {
     const { ensureVideoPoster } = await import("@/lib/thumbnail");
-    fs.writeFileSync(path.join(tmpDir, "video.mp4"), "fake-video");
-    // Cached poster path does NOT exist on disk
+    fs.copyFileSync(videoFixturePath, path.join(tmpDir, "video.mp4"));
     const result = await ensureVideoPoster("/api/media/video.mp4", "/api/media/thumbnails/missing-poster.webp");
-    expect(result).toBe("/api/media/thumbnails/poster.webp");
+    expect(result).toMatch(/^\/api\/media\/thumbnails\/.+_poster\.webp$/);
+    const posterName = result!.split("/").pop()!;
+    expect(fs.existsSync(path.join(tmpDir, "thumbnails", posterName))).toBe(true);
   });
 
   it("generates poster for existing local video", async () => {
     const { ensureVideoPoster } = await import("@/lib/thumbnail");
-    fs.writeFileSync(path.join(tmpDir, "video.mp4"), "fake-video");
+    fs.copyFileSync(videoFixturePath, path.join(tmpDir, "video.mp4"));
     const result = await ensureVideoPoster("/api/media/video.mp4");
-    expect(result).toBe("/api/media/thumbnails/poster.webp");
+    expect(result).toMatch(/^\/api\/media\/thumbnails\/.+_poster\.webp$/);
+    const posterName = result!.split("/").pop()!;
+    expect(fs.existsSync(path.join(tmpDir, "thumbnails", posterName))).toBe(true);
   });
 
   it("returns null for non-video files", async () => {
     const { ensureVideoPoster } = await import("@/lib/thumbnail");
-    fs.writeFileSync(path.join(tmpDir, "photo.jpg"), "fake-image");
+    fs.writeFileSync(path.join(tmpDir, "photo.jpg"), imageBuffer);
     const result = await ensureVideoPoster("/api/media/photo.jpg");
     expect(result).toBeNull();
   });

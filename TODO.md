@@ -7,12 +7,12 @@ This is an ordered list of features to implement along with a simple sub-bullet 
   * status: done
 
 * Please standardize how getConfig() is used and where and when database reads are done manually or through that function to get values set in the database through the admin dashboard settings and configuration tools. We added a lot of settings for security that I'm not sure are tracked in the site config properly. Same for many other things like rate limiting for example.
+  * status: done
+
+* Please thoroughly audit the media max filesize functionality added previously. I'm not very confident about it's style and logical consistency. Do a very heavy audit and let me know what you think of that feature and the code around it. Make sure the localstorage is set properly (and set at all...)
   * status: not done
 
 * Please standardize how `revalidatePath` is used in the codebase and make sure there is a proper principled approach to how cache is invalidated alongside our auth, rate limiting, etc. features that all use a [client, proxy, hot-server, cold-server] hierarchy. Assess the current state of cache assumptions in the code and docs makes sense or if it needs to be updated to be more principled and consistent. Be thorough! Use internet research for appropriate standards and principles if needed.
-  * status: not done
-
-* Please thoroughly audit the media max filesize functionality added previously. I'm not very confident about it's style and logical consistency. Do a very heavy audit and let me know what you think of that feature and the code around it. Make sure the localstorage is set properly (and set at all...)
   * status: not done
 
 * Sometimes (rarely!) when I click on a page (/guide or maybe one of the tabs, or just at random) on mobile the scrolling is locked out and I have to refresh the page. Do you know what could cause that? Is it some kind of race condition or weird timing thing or known issue with nextjs? Is it actually a but in the application code? Please help figure this out!

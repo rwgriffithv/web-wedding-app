@@ -1,14 +1,16 @@
 import { Header } from "@/components/header";
-import { getAutoBanConfig, getCombinedIpTable, getSuspiciousConfig, getSuspiciousIpCount } from "@/lib/repository/ip-bans";
+import { getCombinedIpTable, getSuspiciousIpCount } from "@/lib/repository/ip-bans";
 import { getAllConfig } from "@/lib/repository/site-config";
+import { AUTO_BAN_THRESHOLD_DEFAULT, AUTO_BAN_WINDOW_DEFAULT, SUSPICIOUS_THRESHOLD_DEFAULT } from "@/lib/constants";
 import { BanIpForm } from "./ban-ip-form";
 import { SecuritySettingsForm } from "./security-settings-form";
 import { SecurityTable } from "./security-table";
 
 export default function AdminSecurityPage() {
-  const { threshold: autoBanThreshold, windowSeconds: autoBanWindow } = getAutoBanConfig();
-  const { threshold: suspiciousThreshold } = getSuspiciousConfig();
   const config = Object.fromEntries(getAllConfig().map((c) => [c.key, c.value]));
+  const autoBanThreshold = parseInt(config.auto_ban_login_threshold, 10) || AUTO_BAN_THRESHOLD_DEFAULT;
+  const autoBanWindow = parseInt(config.auto_ban_window_seconds, 10) || AUTO_BAN_WINDOW_DEFAULT;
+  const suspiciousThreshold = parseInt(config.suspicious_ip_threshold, 10) || SUSPICIOUS_THRESHOLD_DEFAULT;
   const combinedIps = getCombinedIpTable(suspiciousThreshold);
   const suspiciousCount = getSuspiciousIpCount(suspiciousThreshold);
 

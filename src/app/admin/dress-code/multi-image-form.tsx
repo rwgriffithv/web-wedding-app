@@ -3,7 +3,7 @@
 import { useRef, useState, useActionState, useEffect } from "react";
 import { addImage } from "./actions";
 import { FileBrowser } from "@/components/file-browser";
-import { getMaxFileSizeBytes } from "@/lib/media-config";
+import { getMaxFileSizeBytes } from "@/lib/upload-limits";
 
 const initialState: { success?: boolean; error?: string } | null = null;
 

@@ -1,5 +1,5 @@
 import Database from "better-sqlite3";
-import { DDL } from "@/lib/schema";
+import { DDL } from "@/lib/db-schema";
 
 const TABLES = [
   "rate_limit_violations",

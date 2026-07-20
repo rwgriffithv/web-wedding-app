@@ -1,6 +1,6 @@
 import Database from "better-sqlite3";
 import path from "path";
-import { DDL } from "../src/lib/schema";
+import { DDL } from "../src/lib/db";
 import { hashPassword } from "../src/lib/auth";
 
 const dbPath = process.env.DATABASE_URL?.replace(/^file:/, "") || path.join(process.cwd(), "data", "dev.db");
@@ -64,11 +64,21 @@ const defaults: [string, string][] = [
   ["home_venue", ""],
   ["home_location", "Venue Name, City"],
   ["home_background_video", ""],
+  ["home_background_video_poster", ""],
   ["banner_text", ""],
   ["dress_code_text", "Please dress in formal attire. Our wedding will feature a black-tie optional dress code. We recommend suits and cocktail dresses."],
   ["schedule_text", ""],
   ["lodging_text", ""],
+  ["gifts_text", ""],
+  ["rsvp_deadline", ""],
   ["media_max_file_size_mb", "16"],
+  ["session_max_hours", "24"],
+  ["page_view_debounce_minutes", "15"],
+  ["suspicious_ip_threshold", "10"],
+  ["rsvp_rate_limit_max", "10"],
+  ["rsvp_rate_limit_window", "60"],
+  ["question_rate_limit_max", "5"],
+  ["question_rate_limit_window", "60"],
 ];
 for (const [key, value] of defaults) {
   upsertIfEmpty.run(value, key);

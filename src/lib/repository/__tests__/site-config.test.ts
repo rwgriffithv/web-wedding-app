@@ -36,42 +36,42 @@ describe("site-config repository", () => {
 
 describe("getPageViewDebounceMinutes", () => {
   it("returns 15 by default when config is missing", async () => {
-    const { getPageViewDebounceMinutes } = await import("@/lib/repository/site-config");
+    const { getPageViewDebounceMinutes } = await import("@/lib/site-config");
     expect(getPageViewDebounceMinutes()).toBe(15);
   });
 
   it("returns configured value", async () => {
     const { setConfig } = await import("@/lib/repository/site-config");
     setConfig("page_view_debounce_minutes", "30");
-    const { getPageViewDebounceMinutes } = await import("@/lib/repository/site-config");
+    const { getPageViewDebounceMinutes } = await import("@/lib/site-config");
     expect(getPageViewDebounceMinutes()).toBe(30);
   });
 
   it("caps at 1440", async () => {
     const { setConfig } = await import("@/lib/repository/site-config");
     setConfig("page_view_debounce_minutes", "9999");
-    const { getPageViewDebounceMinutes } = await import("@/lib/repository/site-config");
+    const { getPageViewDebounceMinutes } = await import("@/lib/site-config");
     expect(getPageViewDebounceMinutes()).toBe(1440);
   });
 
   it("returns 15 for NaN", async () => {
     const { setConfig } = await import("@/lib/repository/site-config");
     setConfig("page_view_debounce_minutes", "abc");
-    const { getPageViewDebounceMinutes } = await import("@/lib/repository/site-config");
+    const { getPageViewDebounceMinutes } = await import("@/lib/site-config");
     expect(getPageViewDebounceMinutes()).toBe(15);
   });
 
   it("returns 0 when configured as zero (no debounce)", async () => {
     const { setConfig } = await import("@/lib/repository/site-config");
     setConfig("page_view_debounce_minutes", "0");
-    const { getPageViewDebounceMinutes } = await import("@/lib/repository/site-config");
+    const { getPageViewDebounceMinutes } = await import("@/lib/site-config");
     expect(getPageViewDebounceMinutes()).toBe(0);
   });
 
   it("returns 15 for negative", async () => {
     const { setConfig } = await import("@/lib/repository/site-config");
     setConfig("page_view_debounce_minutes", "-5");
-    const { getPageViewDebounceMinutes } = await import("@/lib/repository/site-config");
+    const { getPageViewDebounceMinutes } = await import("@/lib/site-config");
     expect(getPageViewDebounceMinutes()).toBe(15);
   });
 });

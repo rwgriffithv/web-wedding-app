@@ -1,9 +1,11 @@
 import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
-import { getEnvConfig } from "./config";
+import { DDL } from "./db-schema";
+export { DDL };
+
+import { getEnvConfig } from "./env";
 import { hashPassword } from "./auth";
-import { DDL } from "./schema";
 
 export type { Guest, User, SafeUser, Party, SiteConfig, LodgingOption, DressCodeImage, RsvpResponse, MediaItem, MediaTab, ScheduleItem, GuestRsvpStatus, FaqItem, Question, CombinedIp } from "./types";
 

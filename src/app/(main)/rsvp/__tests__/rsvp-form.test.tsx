@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { useMemo } from "react";
 import { RsvpForm } from "../rsvp-form";
 import { RateLimitContext } from "../rate-limit-context";
-import { useRateLimitCooldown, type CooldownProps } from "@/lib/use-rate-limit-cooldown";
+import { useRateLimitCooldown, type CooldownProps } from "@/hooks/rate-limit";
 import type { ReactNode } from "react";
 
 const mockSubmit = vi.fn();

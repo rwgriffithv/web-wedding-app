@@ -1,18 +1,8 @@
 import { getDb } from "@/lib/db";
 import type { CombinedIp } from "@/lib/types";
-import { AUTO_BAN_THRESHOLD_DEFAULT, AUTO_BAN_WINDOW_DEFAULT, SUSPICIOUS_THRESHOLD_DEFAULT } from "@/lib/constants";
-import { getConfig } from "@/lib/repository/site-config";
+import { getAutoBanConfig } from "@/lib/site-config";
 
-export function getAutoBanConfig(): { threshold: number; windowSeconds: number } {
-  const threshold = parseInt(getConfig("auto_ban_login_threshold"), 10) || AUTO_BAN_THRESHOLD_DEFAULT;
-  const windowSeconds = parseInt(getConfig("auto_ban_window_seconds"), 10) || AUTO_BAN_WINDOW_DEFAULT;
-  return { threshold, windowSeconds };
-}
-
-export function getSuspiciousConfig(): { threshold: number } {
-  const threshold = parseInt(getConfig("suspicious_ip_threshold"), 10) || SUSPICIOUS_THRESHOLD_DEFAULT;
-  return { threshold };
-}
+export { getAutoBanConfig, getSuspiciousConfig } from "@/lib/site-config";
 
 export function isIpBanned(ip: string): boolean {
   const db = getDb();

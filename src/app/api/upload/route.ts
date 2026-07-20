@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { MEDIA_DIR, ensureMediaDir, ALLOWED_EXTENSIONS, IMAGE_EXTENSIONS } from "@/lib/media";
-import { getConfig } from "@/lib/repository/site-config";
-import { MEDIA_MAX_FILE_SIZE_MB_DEFAULT } from "@/lib/constants";
+import { getMediaMaxFileSizeMb } from "@/lib/site-config";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import { Readable } from "node:stream";
@@ -30,8 +29,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: `File type "${ext}" is not allowed.` }, { status: 400 });
   }
 
-  const maxSizeMb = parseInt(getConfig("media_max_file_size_mb"), 10);
-  const maxSizeBytes = (Number.isFinite(maxSizeMb) && maxSizeMb > 0 ? maxSizeMb : MEDIA_MAX_FILE_SIZE_MB_DEFAULT) * 1024 * 1024;
+  const maxSizeBytes = getMediaMaxFileSizeMb() * 1024 * 1024;
 
   if (file.size > maxSizeBytes) {
     return NextResponse.json({ success: false, error: "File exceeds size limit." }, { status: 413 });

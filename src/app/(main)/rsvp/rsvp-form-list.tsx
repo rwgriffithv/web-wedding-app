@@ -1,6 +1,6 @@
 "use client";
 
-import { useRateLimitCooldown } from "@/lib/use-rate-limit-cooldown";
+import { useRateLimitCooldown } from "@/hooks/rate-limit";
 import { RateLimitContext } from "./rate-limit-context";
 import { RsvpForm } from "./rsvp-form";
 import type { RsvpResponse } from "@/lib/types";

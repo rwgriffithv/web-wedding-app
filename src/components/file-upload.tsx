@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { getMaxFileSizeBytes } from "@/lib/media-config";
+import { getMaxFileSizeBytes } from "@/lib/upload-limits";
 
 interface UploadResult {
   url: string;

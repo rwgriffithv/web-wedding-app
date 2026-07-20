@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
-import { getEnvConfig } from "@/lib/config";
+import { getEnvConfig } from "@/lib/env";
 import { getRequiredString, getOptionalString, getInt } from "@/lib/form-data";
 import { createUser as createUserRepo, updateUser as updateUserRepo, deleteUser as deleteUserRepo, getUserById } from "@/lib/repository/users";
 import { revokeSessionsByPasswordChange, clearPasswordRevocation } from "@/lib/session-revocation";

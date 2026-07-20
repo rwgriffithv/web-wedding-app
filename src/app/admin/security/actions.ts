@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { getRequiredString, getOptionalString, getInt } from "@/lib/form-data";
-import { setConfig } from "@/lib/repository/site-config";
+import { setConfigs } from "@/lib/repository/site-config";
 import { banIp, unbanIp, clearViolations, getBannedIpById } from "@/lib/repository/ip-bans";
 import { revokeSessionsByIpBan, unrevokeSessionsByIpBan } from "@/lib/session-revocation";
 
@@ -119,13 +119,15 @@ export async function saveSecuritySettings(prevState: SecurityState | null, form
       }
     }
 
-    setConfig("auto_ban_login_threshold", String(parsed.auto_ban_login_threshold));
-    setConfig("auto_ban_window_seconds", String(parsed.auto_ban_window_seconds));
-    setConfig("rate_limit_max_attempts", String(parsed.rate_limit_max_attempts));
-    setConfig("rate_limit_window_seconds", String(parsed.rate_limit_window_seconds));
-    setConfig("session_max_hours", String(parsed.session_max_hours));
-    setConfig("page_view_debounce_minutes", String(parsed.page_view_debounce_minutes));
-    setConfig("suspicious_ip_threshold", String(parsed.suspicious_ip_threshold));
+    setConfigs([
+      ["auto_ban_login_threshold", String(parsed.auto_ban_login_threshold)],
+      ["auto_ban_window_seconds", String(parsed.auto_ban_window_seconds)],
+      ["rate_limit_max_attempts", String(parsed.rate_limit_max_attempts)],
+      ["rate_limit_window_seconds", String(parsed.rate_limit_window_seconds)],
+      ["session_max_hours", String(parsed.session_max_hours)],
+      ["page_view_debounce_minutes", String(parsed.page_view_debounce_minutes)],
+      ["suspicious_ip_threshold", String(parsed.suspicious_ip_threshold)],
+    ]);
 
     revalidatePath("/admin/security");
     revalidatePath("/admin");

@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import type { CooldownProps } from "@/lib/use-rate-limit-cooldown";
+import type { CooldownProps } from "@/hooks/rate-limit";
 
 export const RateLimitContext = createContext<CooldownProps | null>(null);
 

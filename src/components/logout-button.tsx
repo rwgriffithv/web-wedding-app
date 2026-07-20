@@ -2,8 +2,11 @@
 
 import { useState, type FormEvent } from "react";
 import { logout } from "@/app/login/actions";
-import { isRedirectError } from "@/lib/utils";
 import { COOKIE_HEALTH_KEY, PV_UNTIL_KEY } from "@/lib/constants";
+
+function isRedirectError(err: unknown): boolean {
+  return err instanceof Error && "digest" in err && typeof (err as { digest: string }).digest === "string" && (err as { digest: string }).digest.startsWith("NEXT_REDIRECT");
+}
 
 export function LogoutButton() {
   const [isPending, setIsPending] = useState(false);

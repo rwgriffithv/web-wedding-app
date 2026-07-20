@@ -1,21 +1,121 @@
 import path from "node:path";
 import fs from "node:fs";
-import { MEDIA_DIR, IMAGE_EXTENSIONS, VIDEO_EXTENSIONS, isWithinMediaDir, generateImageThumbnail, generateVideoThumbnail, generateVideoPoster } from "@/lib/media";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { randomUUID } from "node:crypto";
+import { MEDIA_DIR, THUMBNAILS_DIR, IMAGE_EXTENSIONS, VIDEO_EXTENSIONS, isWithinMediaDir } from "@/lib/media";
 
-/**
- * Given a media URL (e.g. "/api/media/file.jpg"), resolve it to an on-disk
- * path and generate a thumbnail if one doesn't already exist.
- *
- * Returns the thumbnail URL path, or null if generation was skipped
- * (remote URL, SVG, unknown type, file not found, etc.).
- */
+const execFileAsync = promisify(execFile);
+
+const THUMB_SIZE = 400;
+const POSTER_MAX = 1920;
+
+async function getVideoDimensions(inputPath: string): Promise<{ width: number; height: number }> {
+  const ffmpegPath = (await import("ffmpeg-static")).default;
+  if (!ffmpegPath) throw new Error("ffmpeg-static binary not found");
+
+  try {
+    await execFileAsync(ffmpegPath, ["-i", inputPath], { timeout: 5_000 });
+  } catch (err: unknown) {
+    const stderr = (err as { stderr?: Buffer }).stderr?.toString() ?? "";
+    const match = stderr.match(/Stream #\d+:\d+.*?: Video:.*?, (\d+)x(\d+)/);
+    if (match) {
+      const width = parseInt(match[1], 10);
+      const height = parseInt(match[2], 10);
+      if (width > 0 && height > 0) return { width, height };
+    }
+  }
+  return { width: 1920, height: 1080 };
+}
+
+export async function generateImageThumbnail(
+  buffer: Buffer,
+  outFilename: string,
+): Promise<string> {
+  fs.mkdirSync(THUMBNAILS_DIR, { recursive: true });
+  const sharp = (await import("sharp")).default;
+  const outPath = path.join(THUMBNAILS_DIR, outFilename);
+  await sharp(buffer)
+    .resize(THUMB_SIZE, THUMB_SIZE, { fit: "cover" })
+    .webp({ quality: 80 })
+    .toFile(outPath);
+  const stat = await fs.promises.stat(outPath);
+  if (stat.size === 0) throw new Error("Thumbnail file is empty");
+  return `/api/media/thumbnails/${outFilename}`;
+}
+
+export async function generateVideoThumbnail(
+  inputPath: string,
+  outFilename: string,
+): Promise<string> {
+  fs.mkdirSync(THUMBNAILS_DIR, { recursive: true });
+  const ffmpegPath = (await import("ffmpeg-static")).default;
+  if (!ffmpegPath) throw new Error("ffmpeg-static binary not found");
+
+  const tmpJpg = path.join(THUMBNAILS_DIR, `tmp-${outFilename}.jpg`);
+  try {
+    await execFileAsync(ffmpegPath, [
+      "-i", inputPath,
+      "-frames:v", "1",
+      "-q:v", "2",
+      tmpJpg,
+    ], { timeout: 10_000 });
+
+    const frameBuffer = await fs.promises.readFile(tmpJpg);
+    const sharp = (await import("sharp")).default;
+    const outPath = path.join(THUMBNAILS_DIR, outFilename);
+    await sharp(frameBuffer)
+      .resize(THUMB_SIZE, THUMB_SIZE, { fit: "cover" })
+      .webp({ quality: 80 })
+      .toFile(outPath);
+    return `/api/media/thumbnails/${outFilename}`;
+  } finally {
+    await fs.promises.unlink(tmpJpg).catch(() => {});
+  }
+}
+
+export async function generateVideoPoster(
+  inputPath: string,
+  outFilename: string,
+): Promise<string> {
+  fs.mkdirSync(THUMBNAILS_DIR, { recursive: true });
+  const ffmpegPath = (await import("ffmpeg-static")).default;
+  if (!ffmpegPath) throw new Error("ffmpeg-static binary not found");
+
+  const { width: srcW, height: srcH } = await getVideoDimensions(inputPath);
+  const aspect = srcW / srcH;
+  const posterW = aspect >= 1 ? POSTER_MAX : Math.round(POSTER_MAX * aspect);
+  const posterH = aspect >= 1 ? Math.round(POSTER_MAX / aspect) : POSTER_MAX;
+
+  const tmpJpg = path.join(THUMBNAILS_DIR, `tmp-poster-${outFilename}.jpg`);
+  try {
+    await execFileAsync(ffmpegPath, [
+      "-i", inputPath,
+      "-frames:v", "1",
+      "-q:v", "2",
+      tmpJpg,
+    ], { timeout: 10_000 });
+
+    const frameBuffer = await fs.promises.readFile(tmpJpg);
+    const sharp = (await import("sharp")).default;
+    const outPath = path.join(THUMBNAILS_DIR, outFilename);
+    await sharp(frameBuffer)
+      .resize(posterW, posterH, { fit: "cover" })
+      .webp({ quality: 80 })
+      .toFile(outPath);
+    const stat = await fs.promises.stat(outPath);
+    if (stat.size === 0) throw new Error("Poster file is empty");
+    return `/api/media/thumbnails/${outFilename}`;
+  } finally {
+    await fs.promises.unlink(tmpJpg).catch(() => {});
+  }
+}
+
 export async function ensureThumbnail(
   mediaUrl: string,
   existingThumbnailUrl?: string | null,
 ): Promise<string | null> {
   if (existingThumbnailUrl) {
-    // Verify cached thumbnail still exists on disk; regenerate if deleted
     const cachedPath = extractLocalPath(existingThumbnailUrl);
     if (cachedPath) {
       const resolved = path.resolve(MEDIA_DIR, cachedPath);
@@ -23,7 +123,6 @@ export async function ensureThumbnail(
         return existingThumbnailUrl;
       }
     }
-    // Cached file missing or not local — fall through to regenerate
   }
 
   const localPath = extractLocalPath(mediaUrl);
@@ -55,11 +154,6 @@ export async function ensureThumbnail(
   }
 }
 
-/**
- * Extract the relative path from a local media URL.
- * "/api/media/photos/img.jpg" → "photos/img.jpg"
- * "https://example.com/img.jpg" → null
- */
 function extractLocalPath(url: string): string | null {
   if (!url.startsWith("/api/media/")) return null;
   const relative = url.slice("/api/media/".length);
@@ -67,16 +161,11 @@ function extractLocalPath(url: string): string | null {
   return relative;
 }
 
-/**
- * Generate a full-width poster image from a local video's first frame.
- * Returns the poster URL path, or null if generation was skipped.
- */
 export async function ensureVideoPoster(
   videoUrl: string,
   existingPosterUrl?: string | null,
 ): Promise<string | null> {
   if (existingPosterUrl) {
-    // Verify cached poster still exists on disk; regenerate if deleted
     const cachedPath = extractLocalPath(existingPosterUrl);
     if (cachedPath) {
       const resolved = path.resolve(MEDIA_DIR, cachedPath);
@@ -84,7 +173,6 @@ export async function ensureVideoPoster(
         return existingPosterUrl;
       }
     }
-    // Cached file missing or not local — fall through to regenerate
   }
 
   const localPath = extractLocalPath(videoUrl);

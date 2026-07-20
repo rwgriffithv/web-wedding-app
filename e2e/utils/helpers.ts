@@ -22,5 +22,13 @@ export async function loginAsAdmin(page: Page) {
   await page.fill("input[name=username]", "admin");
   await page.fill("input[name=password]", "admin");
   await page.locator("button[type=submit]").click();
-  await page.waitForURL(/\/admin/, { timeout: 10000 });
+  try {
+    await expect(page).toHaveURL(/\/admin/, { timeout: 10000 });
+  } catch {
+    await page.waitForTimeout(2000);
+    await page.fill("input[name=username]", "admin");
+    await page.fill("input[name=password]", "admin");
+    await page.locator("button[type=submit]").click();
+    await expect(page).toHaveURL(/\/admin/, { timeout: 15000 });
+  }
 }
