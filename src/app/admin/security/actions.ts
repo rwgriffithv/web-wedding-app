@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
-import { getRequiredString, getInt } from "@/lib/form-data";
+import { getRequiredString, getOptionalString, getInt } from "@/lib/form-data";
 import { setConfig } from "@/lib/repository/site-config";
 import { banIp, unbanIp, clearViolations, getBannedIpById } from "@/lib/repository/ip-bans";
 import { revokeSessionsByIpBan, unrevokeSessionsByIpBan } from "@/lib/session-revocation";
@@ -32,8 +32,8 @@ export async function banIpAction(_prevState: SecurityState | null, formData: Fo
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   try {
-    const ip = getRequiredString(formData, "ip_address") ?? "";
-    const reason = getRequiredString(formData, "reason") ?? "manual";
+    const ip = getOptionalString(formData, "ip_address");
+    const reason = getOptionalString(formData, "reason") || "manual";
 
     if (!ip) return { success: false, error: "IP address is required." };
 
@@ -74,7 +74,7 @@ export async function banViolationIpAction(_prevState: SecurityState | null, for
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   try {
-    const ip = getRequiredString(formData, "ip_address") ?? "";
+    const ip = getOptionalString(formData, "ip_address");
     if (!ip) return { success: false, error: "IP address is required." };
 
     if (!isValidIp(ip)) {
@@ -142,7 +142,7 @@ export async function clearViolationsAction(_prevState: SecurityState | null, fo
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   try {
-    const ip = getRequiredString(formData, "ip_address") ?? "";
+    const ip = getOptionalString(formData, "ip_address");
     if (!ip) return { success: false, error: "IP address is required." };
 
     if (!isValidIp(ip)) {

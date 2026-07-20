@@ -4,7 +4,7 @@ This is an ordered list of features to implement along with a simple sub-bullet 
   * status: done
 
 * We have just made a ton of changes as part of a large audit of the project. The audit report and status is here: docs/tmp/2026-07-18-audit-report.md. Please run another thorough audit of these changes and identify any issues with consistency, style, logic correctness, and structure. Be careful and do not identify false issues, otherwise this audit-of-audit cycle continues forever.
-  * status: not done
+  * status: done
 
 * Please standardize how getConfig() is used and where and when database reads are done manually or through that function to get values set in the database through the admin dashboard settings and configuration tools. We added a lot of settings for security that I'm not sure are tracked in the site config properly. Same for many other things like rate limiting for example.
   * status: not done
@@ -19,4 +19,10 @@ This is an ordered list of features to implement along with a simple sub-bullet 
   * status: not done
 
 * Add rate limiting to media serving endpoints (`GET /api/media/[...path]` and `GET /api/media/list`). Must be configurable like existing rate limiting (see `src/lib/rate-limit.ts`, `src/lib/rate-limit-form/`). Follow the same patterns as login/RSVP rate limiting: in-memory limiter for enforcement, client cookies for UX cooldown display, `getRateLimitConfig()` for DB-stored settings. Add unit + E2E tests. Reference the existing rate limiting architecture in `docs/architecture/overview.md` and `docs/features/ip-banning.md`.
+  * status: not done
+
+* Please make adjusments to the "invited" state tracking for Guests. If a guest from a party has RSVP'd, that party should automatically be marked as "invited". This covers the case where the admin has forgot to manually mark a party as invited after they send the invite.
+  * status: not done
+
+* On the guests table of the guests page of the admin dashboard, please make the "+1" and "unexpected" columns both filterable and sortable. Reference the implementation of the RSVP table in the RSVP page of the admin dashboard for consistent styling and code reuse (if possible) as well as e2e and unit tests. Also, since it is a similar request and code change, make The parties table of the Parties page of the admin dashboard filterable by the invited column. Thank you!
   * status: not done

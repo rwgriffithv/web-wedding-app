@@ -162,7 +162,7 @@ export async function moveItem(prevState: MediaState | null, formData: FormData)
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "item_id");
-  const direction = getRequiredString(formData, "direction");
+  const direction = getOptionalString(formData, "direction");
   if (id === null || !direction || (direction !== "up" && direction !== "down")) {
     return { success: false, error: "Invalid parameters." };
   }
@@ -186,7 +186,7 @@ export async function moveTab(prevState: MediaState | null, formData: FormData):
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
   const id = getInt(formData, "tab_id");
-  const direction = getRequiredString(formData, "direction");
+  const direction = getOptionalString(formData, "direction");
   if (id === null || !direction || (direction !== "up" && direction !== "down")) {
     return { success: false, error: "Invalid parameters." };
   }

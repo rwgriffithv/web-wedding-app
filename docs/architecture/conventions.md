@@ -127,6 +127,40 @@ return { success: false, error: "Failed to do something." };
 
 ---
 
+## FormData Extraction Helpers
+
+Server actions use typed helpers from `src/lib/form-data.ts` to extract values from `FormData`. The naming describes extraction behavior, not business logic:
+
+| Function | Returns | Use when |
+|---|---|---|
+| `getRequiredString(fd, key)` | `string \| null` | The field must be non-empty; missing = a "required field" validation error |
+| `getOptionalString(fd, key)` | `string` | The field may be missing or empty; a downstream guard handles validation |
+| `getInt(fd, key)` | `number \| null` | The field must be a positive integer; missing = a "required field" validation error |
+
+**When to use `getOptionalString` even though the field is required by business logic:**
+
+```typescript
+// The direction field IS required, but the guard validates it alongside other
+// parameters in a combined check. The error is "Invalid parameters," not
+// "direction is required."
+const direction = getOptionalString(formData, "direction");
+if (id === null || !direction || (direction !== "up" && direction !== "down")) {
+  return { success: false, error: "Invalid parameters." };
+}
+
+// The URL field IS required, and the very next line treats missing = error.
+// Here getRequiredString is the right choice — extraction and enforcement
+// are a single thought unit.
+const url = getRequiredString(formData, "url");
+if (!url) {
+  return { success: false, error: "URL is required." };
+}
+```
+
+The distinction: `getRequiredString` signals "I expect this value; missing means the form is broken." `getOptionalString` signals "I'll accept whatever's there; my guard handles all validation." Use `getRequiredString` when the field is validated in isolation with a "required" error. Use `getOptionalString` when the field is part of a group validated together, or when empty is a valid intermediate value (e.g. clearing a field).
+
+---
+
 ## Error Handling
 
 ### Repository Layer

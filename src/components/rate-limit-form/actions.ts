@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
-import { getRequiredString } from "@/lib/form-data";
+import { getOptionalString } from "@/lib/form-data";
 import { setConfigs } from "@/lib/repository/site-config";
 
 const ALLOWED_KEYS = new Set([
@@ -34,7 +34,7 @@ export async function saveRateLimitConfig(
       if (!ALLOWED_KEYS.has(key)) {
         return { success: false, error: `Unknown config key: "${key}".` };
       }
-      const value = getRequiredString(formData, key) ?? "";
+      const value = getOptionalString(formData, key);
       const num = parseInt(value, 10);
       if (!Number.isFinite(num) || num <= 0 || num > 1000) {
         return {

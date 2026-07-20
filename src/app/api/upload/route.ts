@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
-import { MEDIA_DIR, ensureMediaDir, ALLOWED_EXTENSIONS, IMAGE_EXTENSIONS, VIDEO_EXTENSIONS } from "@/lib/media";
+import { MEDIA_DIR, ensureMediaDir, ALLOWED_EXTENSIONS, IMAGE_EXTENSIONS } from "@/lib/media";
 import { getConfig } from "@/lib/repository/site-config";
 import { MEDIA_MAX_FILE_SIZE_MB_DEFAULT } from "@/lib/constants";
 import { randomUUID } from "node:crypto";
@@ -56,7 +56,6 @@ export async function POST(request: Request) {
 
   // All allowed image extensions generate thumbnails.
   const isImage = IMAGE_EXTENSIONS.has(ext);
-  const isVideo = VIDEO_EXTENSIONS.has(ext);
   const type = isImage ? "image" : "video";
 
   return NextResponse.json({
