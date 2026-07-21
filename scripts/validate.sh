@@ -8,12 +8,14 @@ set -euo pipefail
 # Usage: ./scripts/validate.sh [--db path/to/db]
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 # If not inside Docker, re-exec inside the container
 if [ ! -f /.dockerenv ]; then
   echo "Running inside Docker container..."
   exec docker compose run --rm \
     -v "${SCRIPT_DIR}:/tmp/scripts:ro" \
+    -v "${PROJECT_DIR}/src:/app/src:ro" \
     webapp bash "/tmp/scripts/$(basename "$0")" "$@"
 fi
 
@@ -470,7 +472,40 @@ for (const { table, indexes, names, note } of indexReport) {
 }
 console.log('');
 
-// ── Section 8: Summary ───────────────────────────────────
+// ── Section 8: Site Config ──────────────────────────────
+
+console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+console.log('  8. SITE CONFIG');
+console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+console.log('');
+
+// Extract known key string literals from constants.ts for comparison.
+const knownKeys = new Set();
+try {
+  const src = require('fs').readFileSync('src/lib/constants.ts', 'utf-8');
+  for (const line of src.split('\n')) {
+    const m = line.match(/=\s+\"([^\"]+)\"/);
+    if (m) knownKeys.add(m[1]);
+  }
+} catch { /* ignore */ }
+
+const allConfig = db.prepare('SELECT key, value FROM site_config ORDER BY key').all();
+let staleKeys = 0;
+if (allConfig.length === 0) {
+  console.log('  (empty)');
+} else {
+  for (const { key, value } of allConfig) {
+    if (knownKeys.has(key)) {
+      console.log('    ' + key + ' = ' + value);
+    } else {
+      console.log('  ⚠ ' + key + ' = ' + value + '  (not found in src/lib/constants.ts)');
+      staleKeys++;
+    }
+  }
+}
+console.log('');
+
+// ── Section 9: Summary ───────────────────────────────────
 
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 console.log('  SUMMARY');
@@ -482,6 +517,7 @@ console.log('  Migrations:   ' + (migrationIssues === 0 ? 'all applied' : migrat
 console.log('  Data formats: ' + (formatIssues === 0 ? 'all valid' : formatIssues + ' issue(s)'));
 console.log('  Foreign keys: ' + (orphansFound ? 'orphans detected (see above)' : 'all clean'));
 console.log('  Indexes:      ' + indexReport.filter(r => r.indexes > 0).length + ' tables indexed, ' + indexReport.filter(r => r.indexes === 0).length + ' tables without');
+console.log('  Site config:  ' + allConfig.length + ' key(s)' + (staleKeys > 0 ? ', ' + staleKeys + ' stale' : ''));
 console.log('');
 
 db.close();

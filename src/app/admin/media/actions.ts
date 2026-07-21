@@ -8,8 +8,8 @@ import { create, deleteItem as deleteItemRepo, update, swapItemSortOrder, create
 import { setConfig } from "@/lib/repository/site-config";
 import { ensureThumbnail } from "@/lib/thumbnail";
 import { detectMediaType } from "@/lib/media";
-import { getMediaMaxFileSizeMb, getMediaMaxFileSizeTtlMs } from "@/lib/site-config";
-import { MEDIA_MAX_FILE_SIZE_MB_KEY, MEDIA_MAX_FILE_SIZE_TTL_MS_KEY } from "@/lib/constants";
+import { getMediaMaxFileSizeMb, getMediaMaxFileSizeTtlSeconds } from "@/lib/site-config";
+import { MEDIA_MAX_FILE_SIZE_MB_KEY, MEDIA_MAX_FILE_SIZE_TTL_SECONDS_KEY } from "@/lib/constants";
 
 interface MediaState { success?: boolean; error?: string; tabId?: number; slug?: string }
 
@@ -207,8 +207,8 @@ export async function moveTab(prevState: MediaState | null, formData: FormData):
   }
 }
 
-export async function getMediaMaxFileSizeAction(): Promise<{ mb: number; ttlMs: number }> {
-  return { mb: getMediaMaxFileSizeMb(), ttlMs: getMediaMaxFileSizeTtlMs() };
+export async function getMediaMaxFileSizeAction(): Promise<{ mb: number; ttlSeconds: number }> {
+  return { mb: getMediaMaxFileSizeMb(), ttlSeconds: getMediaMaxFileSizeTtlSeconds() };
 }
 
 interface SettingsState { success?: boolean; error?: string }
@@ -223,14 +223,14 @@ export async function saveMediaSettings(_prevState: SettingsState | null, formDa
   const n = parseInt(raw, 10);
   if (!Number.isFinite(n) || n < 0) return { success: false, error: "Max file size must be a non-negative number." };
 
-  const ttlRaw = getOptionalString(formData, MEDIA_MAX_FILE_SIZE_TTL_MS_KEY);
+  const ttlRaw = getOptionalString(formData, MEDIA_MAX_FILE_SIZE_TTL_SECONDS_KEY);
   if (ttlRaw === "") return { success: false, error: "Cache duration is required." };
   const ttl = parseInt(ttlRaw, 10);
   if (!Number.isFinite(ttl) || ttl < 0) return { success: false, error: "Cache duration must be a non-negative number." };
 
   try {
     setConfig(MEDIA_MAX_FILE_SIZE_MB_KEY, String(n));
-    setConfig(MEDIA_MAX_FILE_SIZE_TTL_MS_KEY, String(ttl));
+    setConfig(MEDIA_MAX_FILE_SIZE_TTL_SECONDS_KEY, String(ttl));
     revalidatePath("/admin/media");
     return { success: true };
   } catch (error) {

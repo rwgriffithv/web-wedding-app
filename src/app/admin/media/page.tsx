@@ -1,5 +1,5 @@
 import { getAll, getAllTabs } from "@/lib/repository/media";
-import { getMediaMaxFileSizeMb, getMediaMaxFileSizeTtlMs } from "@/lib/site-config";
+import { getMediaMaxFileSizeMb, getMediaMaxFileSizeTtlSeconds } from "@/lib/site-config";
 import { Header } from "@/components/header";
 import { MediaList } from "./media-list";
 import { MediaForm } from "./media-form";
@@ -9,7 +9,7 @@ export default function AdminMediaPage() {
   const items = getAll();
   const tabs = getAllTabs();
   const maxFileSizeMb = String(getMediaMaxFileSizeMb());
-  const maxFileSizeTtlMs = String(getMediaMaxFileSizeTtlMs());
+  const maxFileSizeTtlSeconds = String(getMediaMaxFileSizeTtlSeconds());
 
   return (
     <>
@@ -17,7 +17,7 @@ export default function AdminMediaPage() {
       <details className="admin-section">
         <summary>Settings</summary>
         <div className="admin-section-body">
-          <MediaSettingsForm maxFileSizeMb={maxFileSizeMb} maxFileSizeTtlMs={maxFileSizeTtlMs} />
+          <MediaSettingsForm maxFileSizeMb={maxFileSizeMb} maxFileSizeTtlSeconds={maxFileSizeTtlSeconds} />
         </div>
       </details>
       <details className="admin-section" open>

@@ -113,7 +113,7 @@ The `-50%` shift moves exactly one copy's worth, creating a seamless infinite lo
 
 ## Admin Configuration
 
-**Site Config page** → **Banner** fieldset → textarea for `banner_text`.
+**Site Config page** → **Banner** fieldset → textarea for `BANNER_TEXT_KEY`.
 
 | Config Key | Max Length | Default |
 |---|---|---|
@@ -136,5 +136,5 @@ Saved via `saveSiteConfig` server action. Revalidates `/admin/site`, `/`, and `/
 | `src/app/(main)/layout.tsx` | Server Component — conditional banner rendering |
 | `src/app/globals.css` | Banner CSS (`.banner`, `.banner-*`, `@keyframes`) |
 | `src/app/admin/site/site-config-form.tsx` | Admin form — banner_text textarea |
-| `src/app/admin/site/actions.ts` | `CONFIG_SCHEMA` with `banner_text: { maxLength: 500 }` |
+| `src/app/admin/site/actions.ts` | `CONFIG_SCHEMA` with `BANNER_TEXT_KEY: { maxLength: 500 }` |
 | `src/lib/repository/site-config.ts` | `getConfig(BANNER_TEXT_KEY)`, `setConfigs()` |

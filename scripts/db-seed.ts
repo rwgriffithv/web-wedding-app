@@ -3,12 +3,15 @@ import path from "path";
 import { DDL } from "../src/lib/db";
 import { hashPassword } from "../src/lib/auth";
 import {
-  MEDIA_MAX_FILE_SIZE_MB_KEY, MEDIA_MAX_FILE_SIZE_MB_DEFAULT, MEDIA_MAX_FILE_SIZE_TTL_MS_KEY, MEDIA_MAX_FILE_SIZE_TTL_MS_DEFAULT,
+  MEDIA_MAX_FILE_SIZE_MB_KEY, MEDIA_MAX_FILE_SIZE_MB_DEFAULT, MEDIA_MAX_FILE_SIZE_TTL_SECONDS_KEY, MEDIA_MAX_FILE_SIZE_TTL_SECONDS_DEFAULT,
   LOGIN_RATE_LIMIT_MAX_KEY, AUTO_BAN_LOGIN_THRESHOLD_KEY, AUTO_BAN_WINDOW_SECONDS_KEY, LOGIN_RATE_LIMIT_WINDOW_SECONDS_KEY,
   SUSPICIOUS_IP_THRESHOLD_KEY, SESSION_MAX_HOURS_KEY, SESSION_MAX_HOURS_DEFAULT,
   PAGE_VIEW_DEBOUNCE_MINUTES_KEY, PAGE_VIEW_DEBOUNCE_MINUTES_DEFAULT,
   SUSPICIOUS_THRESHOLD_DEFAULT, RSVP_RATE_LIMIT_MAX_KEY, RSVP_RATE_LIMIT_WINDOW_SECONDS_KEY, RSVP_RATE_LIMIT_MAX_DEFAULT, RSVP_RATE_LIMIT_WINDOW_SECONDS_DEFAULT,
   LOGIN_RATE_LIMIT_MAX_DEFAULT, LOGIN_RATE_LIMIT_WINDOW_SECONDS_DEFAULT, QUESTION_RATE_LIMIT_MAX_KEY, QUESTION_RATE_LIMIT_WINDOW_SECONDS_KEY, QUESTION_RATE_LIMIT_MAX_DEFAULT, QUESTION_RATE_LIMIT_WINDOW_SECONDS_DEFAULT,
+  LANDING_TITLE_KEY, LANDING_BACKGROUND_KEY,
+  HOME_TITLE_KEY, HOME_DATE_KEY, HOME_TIME_KEY, HOME_VENUE_KEY, HOME_LOCATION_KEY, HOME_BACKGROUND_VIDEO_KEY, HOME_BACKGROUND_VIDEO_POSTER_KEY,
+  BANNER_TEXT_KEY,
 } from "../src/lib/constants";
 
 const dbPath = process.env.DATABASE_URL?.replace(/^file:/, "") || path.join(process.cwd(), "data", "dev.db");
@@ -64,23 +67,23 @@ db.exec("DELETE FROM rate_limit_violations");
 // Ensure default config values exist for existing databases (only fills empty/null values)
 const upsertIfEmpty = db.prepare("UPDATE site_config SET value = ? WHERE key = ? AND (value IS NULL OR value = '')");
 const defaults: [string, string][] = [
-  ["landing_title", "We're Getting Married!"],
-  ["landing_background", ""],
-  ["home_title", "Our Wedding"],
-  ["home_date", "2026-08-15"],
-  ["home_time", "15:00"],
-  ["home_venue", ""],
-  ["home_location", "Venue Name, City"],
-  ["home_background_video", ""],
-  ["home_background_video_poster", ""],
-  ["banner_text", ""],
+  [LANDING_TITLE_KEY, "We're Getting Married!"],
+  [LANDING_BACKGROUND_KEY, ""],
+  [HOME_TITLE_KEY, "Our Wedding"],
+  [HOME_DATE_KEY, "2026-08-15"],
+  [HOME_TIME_KEY, "15:00"],
+  [HOME_VENUE_KEY, ""],
+  [HOME_LOCATION_KEY, "Venue Name, City"],
+  [HOME_BACKGROUND_VIDEO_KEY, ""],
+  [HOME_BACKGROUND_VIDEO_POSTER_KEY, ""],
+  [BANNER_TEXT_KEY, ""],
   ["dress_code_text", "Please dress in formal attire. Our wedding will feature a black-tie optional dress code. We recommend suits and cocktail dresses."],
   ["schedule_text", ""],
   ["lodging_text", ""],
   ["gifts_text", ""],
   ["rsvp_deadline", ""],
   [MEDIA_MAX_FILE_SIZE_MB_KEY, String(MEDIA_MAX_FILE_SIZE_MB_DEFAULT)],
-  [MEDIA_MAX_FILE_SIZE_TTL_MS_KEY, String(MEDIA_MAX_FILE_SIZE_TTL_MS_DEFAULT)],
+  [MEDIA_MAX_FILE_SIZE_TTL_SECONDS_KEY, String(MEDIA_MAX_FILE_SIZE_TTL_SECONDS_DEFAULT)],
   [SESSION_MAX_HOURS_KEY, String(SESSION_MAX_HOURS_DEFAULT)],
   [PAGE_VIEW_DEBOUNCE_MINUTES_KEY, String(PAGE_VIEW_DEBOUNCE_MINUTES_DEFAULT)],
   [SUSPICIOUS_IP_THRESHOLD_KEY, String(SUSPICIOUS_THRESHOLD_DEFAULT)],
@@ -110,15 +113,15 @@ if (existingParty.count === 0) {
     insertGuest.run("John Guest", partyId, 0);
     insertGuest.run("Website Guest", null, 0);
 
-    insertConfig.run("landing_title", "We're Getting Married!");
-    insertConfig.run("landing_background", "");
-    insertConfig.run("home_title", "Our Wedding");
-    insertConfig.run("home_date", "2026-08-15");
-    insertConfig.run("home_time", "15:00");
-    insertConfig.run("home_venue", "");
-    insertConfig.run("home_location", "Venue Name, City");
-    insertConfig.run("home_background_video", "");
-    insertConfig.run("banner_text", "");
+    insertConfig.run(LANDING_TITLE_KEY, "We're Getting Married!");
+    insertConfig.run(LANDING_BACKGROUND_KEY, "");
+    insertConfig.run(HOME_TITLE_KEY, "Our Wedding");
+    insertConfig.run(HOME_DATE_KEY, "2026-08-15");
+    insertConfig.run(HOME_TIME_KEY, "15:00");
+    insertConfig.run(HOME_VENUE_KEY, "");
+    insertConfig.run(HOME_LOCATION_KEY, "Venue Name, City");
+    insertConfig.run(HOME_BACKGROUND_VIDEO_KEY, "");
+    insertConfig.run(BANNER_TEXT_KEY, "");
     insertConfig.run("dress_code_text", "Please dress in formal attire. Our wedding will feature a black-tie optional dress code. We recommend suits and cocktail dresses.");
 
     const insertLodging = db.prepare("INSERT INTO lodging_options (title, image_url, url, sort_order) VALUES (?, ?, ?, ?)");

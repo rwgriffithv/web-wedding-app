@@ -5,8 +5,8 @@ import {
   SUSPICIOUS_THRESHOLD_DEFAULT,
   MEDIA_MAX_FILE_SIZE_MB_KEY,
   MEDIA_MAX_FILE_SIZE_MB_DEFAULT,
-  MEDIA_MAX_FILE_SIZE_TTL_MS_KEY,
-  MEDIA_MAX_FILE_SIZE_TTL_MS_DEFAULT,
+  MEDIA_MAX_FILE_SIZE_TTL_SECONDS_KEY,
+  MEDIA_MAX_FILE_SIZE_TTL_SECONDS_DEFAULT,
   SESSION_MAX_HOURS_KEY,
   SESSION_MAX_HOURS_DEFAULT,
   AUTO_BAN_LOGIN_THRESHOLD_KEY,
@@ -62,7 +62,7 @@ export function getMediaMaxFileSizeMb(): number {
   return Number.isFinite(mb) && mb >= 0 ? mb : MEDIA_MAX_FILE_SIZE_MB_DEFAULT;
 }
 
-export function getMediaMaxFileSizeTtlMs(): number {
-  const ttl = parseInt(getConfig(MEDIA_MAX_FILE_SIZE_TTL_MS_KEY), 10);
-  return Number.isFinite(ttl) && ttl >= 0 ? ttl : MEDIA_MAX_FILE_SIZE_TTL_MS_DEFAULT;
+export function getMediaMaxFileSizeTtlSeconds(): number {
+  const ttl = parseInt(getConfig(MEDIA_MAX_FILE_SIZE_TTL_SECONDS_KEY), 10);
+  return Number.isFinite(ttl) && ttl >= 0 ? ttl : MEDIA_MAX_FILE_SIZE_TTL_SECONDS_DEFAULT;
 }

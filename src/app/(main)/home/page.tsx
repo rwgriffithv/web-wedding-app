@@ -2,18 +2,23 @@ import { getAllConfig } from "@/lib/repository/site-config";
 import { getAll } from "@/lib/repository/schedule";
 import { MIME_TYPES } from "@/lib/media";
 import { CountdownTimer } from "@/components/countdown-timer";
+import {
+  HOME_TITLE_KEY, HOME_DATE_KEY, HOME_TIME_KEY,
+  HOME_VENUE_KEY, HOME_LOCATION_KEY,
+  HOME_BACKGROUND_VIDEO_KEY, HOME_BACKGROUND_VIDEO_POSTER_KEY,
+} from "@/lib/constants";
 
 export const revalidate = 60;
 
 export default function HomePage() {
   const config = Object.fromEntries(getAllConfig().map((c) => [c.key, c.value]));
-  const title = config.home_title || "";
-  const date = config.home_date || "";
-  const time = config.home_time || "";
-  const venue = config.home_venue || "";
-  const location = config.home_location || "";
-  const video = config.home_background_video || "";
-  const poster = config.home_background_video_poster || "";
+  const title = config[HOME_TITLE_KEY] || "";
+  const date = config[HOME_DATE_KEY] || "";
+  const time = config[HOME_TIME_KEY] || "";
+  const venue = config[HOME_VENUE_KEY] || "";
+  const location = config[HOME_LOCATION_KEY] || "";
+  const video = config[HOME_BACKGROUND_VIDEO_KEY] || "";
+  const poster = config[HOME_BACKGROUND_VIDEO_POSTER_KEY] || "";
   const videoExt = video.split(".").pop()?.split("?")[0]?.toLowerCase();
   const videoType = videoExt ? MIME_TYPES[`.${videoExt}`] : undefined;
   const scheduleItems = getAll();

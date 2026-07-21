@@ -21,9 +21,9 @@ export function useMediaMaxFileSize(): { maxBytes: number | null; refreshMaxByte
 
   const refreshMaxBytes = useCallback(async () => {
     try {
-      const { mb, ttlMs } = await getMediaMaxFileSizeAction();
+      const { mb, ttlSeconds } = await getMediaMaxFileSizeAction();
       const bytes = mb * 1024 * 1024;
-      setCachedValue(MEDIA_MAX_FILE_SIZE_MB_KEY, mb, ttlMs);
+      setCachedValue(MEDIA_MAX_FILE_SIZE_MB_KEY, mb, ttlSeconds * 1000);
       setMaxBytes(bytes);
       return bytes;
     } catch {
@@ -33,9 +33,9 @@ export function useMediaMaxFileSize(): { maxBytes: number | null; refreshMaxByte
 
   useEffect(() => {
     if (getCachedValue<number>(MEDIA_MAX_FILE_SIZE_MB_KEY) === null) {
-      getMediaMaxFileSizeAction().then(({ mb, ttlMs }) => {
+      getMediaMaxFileSizeAction().then(({ mb, ttlSeconds }) => {
         const bytes = mb * 1024 * 1024;
-        setCachedValue(MEDIA_MAX_FILE_SIZE_MB_KEY, mb, ttlMs);
+        setCachedValue(MEDIA_MAX_FILE_SIZE_MB_KEY, mb, ttlSeconds * 1000);
         setMaxBytes(bytes);
       }).catch(() => {});
     }

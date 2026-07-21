@@ -32,7 +32,7 @@ describe("FileUpload", () => {
     );
 
     // The refreshMaxBytes function fetches from the server action to get the current limit
-    mockGetMediaMaxFileSizeAction.mockResolvedValue({ mb: 8, ttlMs: 60_000 });
+    mockGetMediaMaxFileSizeAction.mockResolvedValue({ mb: 8, ttlSeconds: 60 });
 
     const mockFetch = vi.fn().mockResolvedValue({
       status: 413,

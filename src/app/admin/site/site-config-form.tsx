@@ -4,6 +4,13 @@ import { useRef, useState, useActionState } from "react";
 import { saveSiteConfig } from "./actions";
 import { FileBrowser } from "@/components/file-browser";
 import { MediaInput } from "@/components/media-input";
+import {
+  LANDING_TITLE_KEY, LANDING_BACKGROUND_KEY,
+  HOME_TITLE_KEY, HOME_DATE_KEY, HOME_TIME_KEY,
+  HOME_VENUE_KEY, HOME_LOCATION_KEY, HOME_BACKGROUND_VIDEO_KEY,
+  HOME_BACKGROUND_VIDEO_POSTER_KEY,
+  BANNER_TEXT_KEY,
+} from "@/lib/constants";
 
 interface SiteConfigFormProps {
   config: Record<string, string>;
@@ -34,17 +41,17 @@ export function SiteConfigForm({ config }: SiteConfigFormProps) {
       <fieldset className="admin-fieldset form-group">
         <legend>Landing</legend>
         <div className="form-group">
-          <label htmlFor="landing_title">Landing Page Title</label>
-          <input id="landing_title" name="landing_title" type="text" defaultValue={config.landing_title} />
+          <label htmlFor={LANDING_TITLE_KEY}>Landing Page Title</label>
+          <input id={LANDING_TITLE_KEY} name={LANDING_TITLE_KEY} type="text" defaultValue={config[LANDING_TITLE_KEY]} />
         </div>
         <div className="form-group">
-          <label htmlFor="landing_background">Landing Background Image URL</label>
+          <label htmlFor={LANDING_BACKGROUND_KEY}>Landing Background Image URL</label>
           <MediaInput
             inputRef={landingBgRef}
-            id="landing_background"
-            name="landing_background"
+            id={LANDING_BACKGROUND_KEY}
+            name={LANDING_BACKGROUND_KEY}
             placeholder="https://example.com/image.jpg or /api/media/file.jpg"
-            defaultValue={config.landing_background}
+            defaultValue={config[LANDING_BACKGROUND_KEY]}
             accept="image/*"
             onUpload={(result) => { if (landingBgRef.current) landingBgRef.current.value = result.url; }}
             onBrowse={() => setShowBrowser("landing")}
@@ -54,39 +61,39 @@ export function SiteConfigForm({ config }: SiteConfigFormProps) {
       <fieldset className="admin-fieldset form-group">
         <legend>Home</legend>
         <div className="form-group">
-          <label htmlFor="home_title">Home Page Title</label>
-          <input id="home_title" name="home_title" type="text" defaultValue={config.home_title} />
+          <label htmlFor={HOME_TITLE_KEY}>Home Page Title</label>
+          <input id={HOME_TITLE_KEY} name={HOME_TITLE_KEY} type="text" defaultValue={config[HOME_TITLE_KEY]} />
         </div>
         <div className="form-group">
-          <label htmlFor="home_date">Wedding Date</label>
-          <input id="home_date" name="home_date" type="date" defaultValue={config.home_date} />
+          <label htmlFor={HOME_DATE_KEY}>Wedding Date</label>
+          <input id={HOME_DATE_KEY} name={HOME_DATE_KEY} type="date" defaultValue={config[HOME_DATE_KEY]} />
         </div>
         <div className="form-group">
-          <label htmlFor="home_time">Wedding Time</label>
-          <input id="home_time" name="home_time" type="time" defaultValue={config.home_time} />
+          <label htmlFor={HOME_TIME_KEY}>Wedding Time</label>
+          <input id={HOME_TIME_KEY} name={HOME_TIME_KEY} type="time" defaultValue={config[HOME_TIME_KEY]} />
         </div>
         <div className="form-group">
-          <label htmlFor="home_venue">Wedding Venue</label>
-          <input id="home_venue" name="home_venue" type="text" defaultValue={config.home_venue} placeholder="e.g. The Grand Ballroom" />
+          <label htmlFor={HOME_VENUE_KEY}>Wedding Venue</label>
+          <input id={HOME_VENUE_KEY} name={HOME_VENUE_KEY} type="text" defaultValue={config[HOME_VENUE_KEY]} placeholder="e.g. The Grand Ballroom" />
         </div>
         <div className="form-group">
-          <label htmlFor="home_location">Wedding Location</label>
-          <input id="home_location" name="home_location" type="text" defaultValue={config.home_location} placeholder="e.g. City, State" />
+          <label htmlFor={HOME_LOCATION_KEY}>Wedding Location</label>
+          <input id={HOME_LOCATION_KEY} name={HOME_LOCATION_KEY} type="text" defaultValue={config[HOME_LOCATION_KEY]} placeholder="e.g. City, State" />
         </div>
         <div className="form-group">
-          <label htmlFor="home_background_video">Home Background Video URL</label>
+          <label htmlFor={HOME_BACKGROUND_VIDEO_KEY}>Home Background Video URL</label>
           <MediaInput
             inputRef={homeBgRef}
-            id="home_background_video"
-            name="home_background_video"
+            id={HOME_BACKGROUND_VIDEO_KEY}
+            name={HOME_BACKGROUND_VIDEO_KEY}
             placeholder="https://example.com/video.mp4 or /api/media/video.mp4"
-            defaultValue={config.home_background_video}
+            defaultValue={config[HOME_BACKGROUND_VIDEO_KEY]}
             accept="video/*"
             uploadLabel="Upload"
             onUpload={(result) => { if (homeBgRef.current) homeBgRef.current.value = result.url; }}
             onBrowse={() => setShowBrowser("home")}
           />
-          {config.home_background_video_poster && (
+          {config[HOME_BACKGROUND_VIDEO_POSTER_KEY] && (
             <p className="text-muted text-xs mt-1">
               Poster auto-generated from first frame.
             </p>
@@ -96,8 +103,8 @@ export function SiteConfigForm({ config }: SiteConfigFormProps) {
       <fieldset className="admin-fieldset form-group">
         <legend>Banner</legend>
         <div className="form-group">
-          <label htmlFor="banner_text">Banner Text</label>
-          <textarea id="banner_text" name="banner_text" rows={2} defaultValue={config.banner_text} placeholder="Optional announcement text (scrolls if too long for one line)" />
+          <label htmlFor={BANNER_TEXT_KEY}>Banner Text</label>
+          <textarea id={BANNER_TEXT_KEY} name={BANNER_TEXT_KEY} rows={2} defaultValue={config[BANNER_TEXT_KEY]} placeholder="Optional announcement text (scrolls if too long for one line)" />
           <p className="text-muted text-xs" style={{ marginTop: "0.25rem" }}>
             Optional banner displayed on all pages. Leave empty to hide.
           </p>

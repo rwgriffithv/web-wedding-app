@@ -5,7 +5,7 @@ import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { getRequiredString, getOptionalString } from "@/lib/form-data";
 import { logError } from "@/lib/logger";
 import { setConfig, setConfigs, getConfig } from "@/lib/repository/site-config";
-import { HOME_BACKGROUND_VIDEO_POSTER_KEY } from "@/lib/constants";
+import { HOME_BACKGROUND_VIDEO_POSTER_KEY, HOME_TITLE_KEY, HOME_DATE_KEY, HOME_TIME_KEY, HOME_VENUE_KEY, HOME_LOCATION_KEY, HOME_BACKGROUND_VIDEO_KEY, BANNER_TEXT_KEY, LANDING_TITLE_KEY, LANDING_BACKGROUND_KEY } from "@/lib/constants";
 import { ensureVideoPoster } from "@/lib/thumbnail";
 import { deleteThumbnail } from "@/lib/media";
 
@@ -18,15 +18,15 @@ interface ConfigField {
 }
 
 const CONFIG_SCHEMA: Record<string, ConfigField> = {
-  landing_title:              { maxLength: 200 },
-  landing_background:         { maxLength: 2000 },
-  home_title:                 { maxLength: 200 },
-  home_date:                  { maxLength: 50 },
-  home_time:                  { maxLength: 50 },
-  home_venue:                 { maxLength: 500 },
-  home_location:              { maxLength: 500 },
-  home_background_video:      { maxLength: 1000 },
-  banner_text:                { maxLength: 500 },
+  [LANDING_TITLE_KEY]:              { maxLength: 200 },
+  [LANDING_BACKGROUND_KEY]:         { maxLength: 2000 },
+  [HOME_TITLE_KEY]:                 { maxLength: 200 },
+  [HOME_DATE_KEY]:                  { maxLength: 50 },
+  [HOME_TIME_KEY]:                  { maxLength: 50 },
+  [HOME_VENUE_KEY]:                 { maxLength: 500 },
+  [HOME_LOCATION_KEY]:              { maxLength: 500 },
+  [HOME_BACKGROUND_VIDEO_KEY]:      { maxLength: 1000 },
+  [BANNER_TEXT_KEY]:                { maxLength: 500 },
 };
 
 const CONFIG_KEYS = Object.keys(CONFIG_SCHEMA) as (keyof typeof CONFIG_SCHEMA)[];
@@ -67,7 +67,7 @@ export async function saveSiteConfig(prevState: SiteConfigState | null, formData
     }
     setConfigs(entries);
 
-    const videoUrl = getOptionalString(formData, "home_background_video");
+    const videoUrl = getOptionalString(formData, HOME_BACKGROUND_VIDEO_KEY);
     const existingPoster = getConfig(HOME_BACKGROUND_VIDEO_POSTER_KEY);
     try {
       if (videoUrl && videoUrl.startsWith("/api/media/")) {
