@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { getEnvConfig } from "@/lib/env";
 import { getRequiredString, getOptionalString, getInt } from "@/lib/form-data";
+import { logError } from "@/lib/logger";
 import { createUser as createUserRepo, updateUser as updateUserRepo, deleteUser as deleteUserRepo, getUserById } from "@/lib/repository/users";
 import { revokeSessionsByPasswordChange, clearPasswordRevocation } from "@/lib/session-revocation";
 
@@ -42,7 +43,7 @@ export async function addUser(prevState: UserState | null, formData: FormData): 
     revalidatePath("/admin/users");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Users", error);
     return { success: false, error: "Failed to create user. Username may already exist." };
   }
 }
@@ -89,7 +90,7 @@ export async function updateUser(prevState: UserState | null, formData: FormData
     revalidatePath("/admin/users");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Users", error);
     return { success: false, error: "Failed to update user." };
   }
 }
@@ -118,7 +119,7 @@ export async function removeUser(prevState: UserState | null, formData: FormData
     revalidatePath("/admin/users");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Users", error);
     return { success: false, error: "Failed to delete user." };
   }
 }

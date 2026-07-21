@@ -76,7 +76,7 @@ A vertical timeline with dots connecting time entries. CSS-only implementation �
 
 Two content elements:
 
-1. **Text block** (`.dress-code-text`) — `dress_code_text` from site config. Rendered with `white-space: pre-wrap` to preserve line breaks. Max width 650px.
+1. **Text block** (`.dress-code-text`) — `DRESS_CODE_TEXT_KEY` from site config. Rendered with `white-space: pre-wrap` to preserve line breaks. Max width 650px.
 2. **Mood board** — Grid of dress code images with lightbox. Rendered by the `MoodBoard` client component.
 
 Both can exist independently. If neither has content, shows "Dress Code coming soon."
@@ -131,9 +131,13 @@ The guide page is a single Server Component that fetches all data in parallel:
 
 ```ts
 const scheduleItems = getScheduleItems();
-const dressCodeText = getConfig("dress_code_text");
 const dressCodeImages = getImages();
 const lodgingOptions = getLodgingOptions();
+const config = Object.fromEntries(getAllConfig().map((c) => [c.key, c.value]));
+const dressCodeText = config[DRESS_CODE_TEXT_KEY] ?? "";
+const lodgingText = config[LODGING_TEXT_KEY] ?? "";
+const scheduleText = config[SCHEDULE_TEXT_KEY] ?? "";
+const giftsText = config[GIFTS_TEXT_KEY] ?? "";
 ```
 
 All four queries run synchronously (better-sqlite3 is synchronous). The page conditionally renders only the active tab's content.
@@ -145,7 +149,7 @@ All four queries run synchronously (better-sqlite3 is synchronous). The page con
 | `src/app/(main)/guide/page.tsx` | Server Component — tab routing, data loading, layout |
 | `src/app/(main)/guide/mood-board.tsx` | Client Component — image grid + lightbox |
 | `src/lib/repository/schedule.ts` | `getAll()` for schedule items |
-| `src/lib/repository/site-config.ts` | `getConfig("dress_code_text")` |
+| `src/lib/repository/site-config.ts` | `getAllConfig()`, `getConfig()` |
 | `src/lib/repository/dress-code.ts` | `getImages()` |
 | `src/lib/repository/lodging.ts` | `getAll()` for lodging options |
 | `src/app/globals.css` | `.schedule-*`, `.lodging-*`, `.mood-board*`, `.dress-code-text` |

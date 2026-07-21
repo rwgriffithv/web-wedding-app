@@ -2,6 +2,15 @@
 
 import { useActionState } from "react";
 import { saveSecuritySettings } from "./actions";
+import {
+  AUTO_BAN_LOGIN_THRESHOLD_KEY,
+  AUTO_BAN_WINDOW_SECONDS_KEY,
+  LOGIN_RATE_LIMIT_MAX_KEY,
+  LOGIN_RATE_LIMIT_WINDOW_SECONDS_KEY,
+  SUSPICIOUS_IP_THRESHOLD_KEY,
+  SESSION_MAX_HOURS_KEY,
+  PAGE_VIEW_DEBOUNCE_MINUTES_KEY,
+} from "@/lib/constants";
 
 interface SecuritySettingsFormProps {
   autoBanThreshold: string;
@@ -32,10 +41,10 @@ export function SecuritySettingsForm({
         <legend>Login</legend>
         <div className="form-row">
           <div className="form-group">
-            <label htmlFor="auto_ban_login_threshold">Auto-Ban Threshold (lockouts)</label>
+            <label htmlFor={AUTO_BAN_LOGIN_THRESHOLD_KEY}>Auto-Ban Threshold (lockouts)</label>
             <input
-              id="auto_ban_login_threshold"
-              name="auto_ban_login_threshold"
+              id={AUTO_BAN_LOGIN_THRESHOLD_KEY}
+              name={AUTO_BAN_LOGIN_THRESHOLD_KEY}
               type="number"
               min="1"
               max="100"
@@ -43,10 +52,10 @@ export function SecuritySettingsForm({
             />
           </div>
           <div className="form-group">
-            <label htmlFor="auto_ban_window_seconds">Auto-Ban Window (seconds)</label>
+            <label htmlFor={AUTO_BAN_WINDOW_SECONDS_KEY}>Auto-Ban Window (seconds)</label>
             <input
-              id="auto_ban_window_seconds"
-              name="auto_ban_window_seconds"
+              id={AUTO_BAN_WINDOW_SECONDS_KEY}
+              name={AUTO_BAN_WINDOW_SECONDS_KEY}
               type="number"
               min="60"
               max="86400"
@@ -59,10 +68,10 @@ export function SecuritySettingsForm({
         </p>
         <div className="form-row">
           <div className="form-group">
-            <label htmlFor="rate_limit_max_attempts">Rate Limit Max Attempts</label>
+            <label htmlFor={LOGIN_RATE_LIMIT_MAX_KEY}>Rate Limit Max Attempts</label>
             <input
-              id="rate_limit_max_attempts"
-              name="rate_limit_max_attempts"
+              id={LOGIN_RATE_LIMIT_MAX_KEY}
+              name={LOGIN_RATE_LIMIT_MAX_KEY}
               type="number"
               min="1"
               max="1000"
@@ -70,10 +79,10 @@ export function SecuritySettingsForm({
             />
           </div>
           <div className="form-group">
-            <label htmlFor="rate_limit_window_seconds">Rate Limit Window (seconds)</label>
+            <label htmlFor={LOGIN_RATE_LIMIT_WINDOW_SECONDS_KEY}>Rate Limit Window (seconds)</label>
             <input
-              id="rate_limit_window_seconds"
-              name="rate_limit_window_seconds"
+              id={LOGIN_RATE_LIMIT_WINDOW_SECONDS_KEY}
+              name={LOGIN_RATE_LIMIT_WINDOW_SECONDS_KEY}
               type="number"
               min="1"
               max="1000"
@@ -89,10 +98,10 @@ export function SecuritySettingsForm({
         <legend>Session & Tracking</legend>
         <div className="form-row">
           <div className="form-group">
-            <label htmlFor="session_max_hours">Session Expiry (hours)</label>
+            <label htmlFor={SESSION_MAX_HOURS_KEY}>Session Expiry (hours)</label>
             <input
-              id="session_max_hours"
-              name="session_max_hours"
+              id={SESSION_MAX_HOURS_KEY}
+              name={SESSION_MAX_HOURS_KEY}
               type="number"
               min="1"
               max="24"
@@ -100,10 +109,10 @@ export function SecuritySettingsForm({
             />
           </div>
           <div className="form-group">
-            <label htmlFor="page_view_debounce_minutes">Page View Debounce (minutes)</label>
+            <label htmlFor={PAGE_VIEW_DEBOUNCE_MINUTES_KEY}>Page View Debounce (minutes)</label>
             <input
-              id="page_view_debounce_minutes"
-              name="page_view_debounce_minutes"
+              id={PAGE_VIEW_DEBOUNCE_MINUTES_KEY}
+              name={PAGE_VIEW_DEBOUNCE_MINUTES_KEY}
               type="number"
               min="0"
               max="1440"
@@ -119,10 +128,10 @@ export function SecuritySettingsForm({
         <legend>Suspicious IPs</legend>
         <div className="form-row">
           <div className="form-group">
-            <label htmlFor="suspicious_ip_threshold">Violation Threshold</label>
+            <label htmlFor={SUSPICIOUS_IP_THRESHOLD_KEY}>Violation Threshold</label>
             <input
-              id="suspicious_ip_threshold"
-              name="suspicious_ip_threshold"
+              id={SUSPICIOUS_IP_THRESHOLD_KEY}
+              name={SUSPICIOUS_IP_THRESHOLD_KEY}
               type="number"
               min="1"
               max="100"

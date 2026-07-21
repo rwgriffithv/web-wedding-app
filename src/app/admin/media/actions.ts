@@ -3,10 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { getRequiredString, getOptionalString, getInt, validateMediaUrl } from "@/lib/form-data";
+import { logError } from "@/lib/logger";
 import { create, deleteItem as deleteItemRepo, update, swapItemSortOrder, createTab, updateTab, deleteTab as deleteTabRepo, swapTabSortOrder } from "@/lib/repository/media";
 import { setConfig } from "@/lib/repository/site-config";
 import { ensureThumbnail } from "@/lib/thumbnail";
 import { detectMediaType } from "@/lib/media";
+import { getMediaMaxFileSizeMb, getMediaMaxFileSizeTtlMs } from "@/lib/site-config";
+import { MEDIA_MAX_FILE_SIZE_MB_KEY, MEDIA_MAX_FILE_SIZE_TTL_MS_KEY } from "@/lib/constants";
 
 interface MediaState { success?: boolean; error?: string; tabId?: number; slug?: string }
 
@@ -31,7 +34,7 @@ export async function createTabInline(prevState: MediaState | null, formData: Fo
     revalidatePath("/media");
     return { success: true, tabId: tab.id, slug: tab.slug };
   } catch (error) {
-    console.error(error);
+    logError("Media", error);
     return { success: false, error: "Failed to create tab. A tab with this name may already exist." };
   }
 }
@@ -51,7 +54,7 @@ export async function renameTab(prevState: MediaState | null, formData: FormData
     revalidatePath("/media");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Media", error);
     return { success: false, error: "Failed to rename tab." };
   }
 }
@@ -70,7 +73,7 @@ export async function deleteTab(prevState: MediaState | null, formData: FormData
     revalidatePath("/media");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Media", error);
     return { success: false, error: "Failed to delete tab." };
   }
 }
@@ -106,7 +109,7 @@ export async function addItem(prevState: MediaState | null, formData: FormData):
     revalidatePath("/media");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Media", error);
     return { success: false, error: "Failed to add media item." };
   }
 }
@@ -125,7 +128,7 @@ export async function deleteItem(prevState: MediaState | null, formData: FormDat
     revalidatePath("/media");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Media", error);
     return { success: false, error: "Failed to delete media item." };
   }
 }
@@ -151,7 +154,7 @@ export async function updateItem(prevState: MediaState | null, formData: FormDat
     revalidatePath("/media");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Media", error);
     return { success: false, error: "Failed to update media item." };
   }
 }
@@ -169,13 +172,13 @@ export async function moveItem(prevState: MediaState | null, formData: FormData)
 
   try {
     const result = swapItemSortOrder(id, direction);
-    if (!result.success) return { success: false, error: result.error! };
+    if (!result.success) return { success: false, error: result.error ?? "Unknown error" };
 
     revalidatePath("/admin/media");
     revalidatePath("/media");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Media", error);
     return { success: false, error: "Failed to reorder media item." };
   }
 }
@@ -193,15 +196,19 @@ export async function moveTab(prevState: MediaState | null, formData: FormData):
 
   try {
     const result = swapTabSortOrder(id, direction);
-    if (!result.success) return { success: false, error: result.error! };
+    if (!result.success) return { success: false, error: result.error ?? "Unknown error" };
 
     revalidatePath("/admin/media");
     revalidatePath("/media");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Media", error);
     return { success: false, error: "Failed to reorder tab." };
   }
+}
+
+export async function getMediaMaxFileSizeAction(): Promise<{ mb: number; ttlMs: number }> {
+  return { mb: getMediaMaxFileSizeMb(), ttlMs: getMediaMaxFileSizeTtlMs() };
 }
 
 interface SettingsState { success?: boolean; error?: string }
@@ -211,17 +218,23 @@ export async function saveMediaSettings(_prevState: SettingsState | null, formDa
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
-  const raw = getRequiredString(formData, "media_max_file_size_mb");
+  const raw = getRequiredString(formData, MEDIA_MAX_FILE_SIZE_MB_KEY);
   if (!raw) return { success: false, error: "Max file size is required." };
   const n = parseInt(raw, 10);
-  if (!Number.isFinite(n) || n <= 0) return { success: false, error: "Max file size must be a positive number." };
+  if (!Number.isFinite(n) || n < 0) return { success: false, error: "Max file size must be a non-negative number." };
+
+  const ttlRaw = getOptionalString(formData, MEDIA_MAX_FILE_SIZE_TTL_MS_KEY);
+  if (ttlRaw === "") return { success: false, error: "Cache duration is required." };
+  const ttl = parseInt(ttlRaw, 10);
+  if (!Number.isFinite(ttl) || ttl < 0) return { success: false, error: "Cache duration must be a non-negative number." };
 
   try {
-    setConfig("media_max_file_size_mb", String(n));
+    setConfig(MEDIA_MAX_FILE_SIZE_MB_KEY, String(n));
+    setConfig(MEDIA_MAX_FILE_SIZE_TTL_MS_KEY, String(ttl));
     revalidatePath("/admin/media");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Media", error);
     return { success: false, error: "Failed to save media settings." };
   }
 }

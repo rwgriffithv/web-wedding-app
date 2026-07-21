@@ -91,7 +91,7 @@ All admin actions are guarded by `requireSession("admin")` and revalidate both `
 
 ### Rate Limiting (collapsed by default)
 
-Reusable `<RateLimitForm>` component with config keys `question_rate_limit_max` and `question_rate_limit_window`. Defaults: 5 attempts, 60 seconds. Changes take effect on next request.
+Reusable `<RateLimitForm>` component with config keys `QUESTION_RATE_LIMIT_MAX_KEY` and `QUESTION_RATE_LIMIT_WINDOW_KEY`. Defaults: 5 attempts, 60 seconds. Changes take effect on next request.
 
 ### Add FAQ Item (open by default)
 
@@ -117,12 +117,12 @@ Stats bar showing total and unanswered counts. Searchable, filterable, sortable 
 
 Question submissions are rate-limited per party using an in-memory sliding-window limiter (key: `party:{partyId}`). This is the same rate-limiting infrastructure used for login and RSVP — see [authentication.md](authentication.md#rate-limiting) for how it works.
 
-| Config Key | Default | Range |
+| Config Key Constant | Default | Range |
 |---|---|---|
-| `question_rate_limit_max` | 5 | 1–1000 |
-| `question_rate_limit_window` | 60 | 1–1000 seconds |
+| `QUESTION_RATE_LIMIT_MAX_KEY` | 5 | 1–1000 |
+| `QUESTION_RATE_LIMIT_WINDOW_KEY` | 60 | 1–1000 seconds |
 
-When the limit is exceeded, the server returns `{ error: "...", action: "cooldown", cooldownUntil }`. The client creates a `rl_q_until` cookie from the timestamp and displays a countdown timer ("Please wait Xs..."). The form is disabled during the cooldown. Config is editable via the Rate Limiting section on `/admin/help`.
+When the limit is exceeded, the server returns `{ error: "...", action: "cooldown", cooldownUntil }`. The client creates a `QUESTION_LIMIT_UNTIL_KEY` cookie from the timestamp and displays a countdown timer ("Please wait Xs..."). The form is disabled during the cooldown. Config is editable via the Rate Limiting section on `/admin/help`.
 
 ## Files
 

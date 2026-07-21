@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { getRequiredString, getOptionalString } from "@/lib/form-data";
+import { logError } from "@/lib/logger";
 import { setConfig, setConfigs, getConfig } from "@/lib/repository/site-config";
+import { HOME_BACKGROUND_VIDEO_POSTER_KEY } from "@/lib/constants";
 import { ensureVideoPoster } from "@/lib/thumbnail";
 import { deleteThumbnail } from "@/lib/media";
 
@@ -66,7 +68,7 @@ export async function saveSiteConfig(prevState: SiteConfigState | null, formData
     setConfigs(entries);
 
     const videoUrl = getOptionalString(formData, "home_background_video");
-    const existingPoster = getConfig("home_background_video_poster");
+    const existingPoster = getConfig(HOME_BACKGROUND_VIDEO_POSTER_KEY);
     try {
       if (videoUrl && videoUrl.startsWith("/api/media/")) {
         const poster = await ensureVideoPoster(videoUrl);
@@ -74,13 +76,13 @@ export async function saveSiteConfig(prevState: SiteConfigState | null, formData
           if (existingPoster && existingPoster !== poster) {
             deleteThumbnail(existingPoster);
           }
-          setConfig("home_background_video_poster", poster);
+          setConfig(HOME_BACKGROUND_VIDEO_POSTER_KEY, poster);
         }
       } else if (!videoUrl) {
         if (existingPoster) {
           deleteThumbnail(existingPoster);
         }
-        setConfig("home_background_video_poster", "");
+        setConfig(HOME_BACKGROUND_VIDEO_POSTER_KEY, "");
       }
     } catch {
       // Poster generation is best-effort — text configs are already saved
@@ -91,7 +93,7 @@ export async function saveSiteConfig(prevState: SiteConfigState | null, formData
     revalidatePath("/home");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Site", error);
     return { success: false, error: "Failed to save configuration." };
   }
 }

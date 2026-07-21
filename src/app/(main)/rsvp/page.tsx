@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { verifyTokenInCookie } from "@/lib/auth";
 import { getConfig } from "@/lib/repository/site-config";
+import { RSVP_DEADLINE_KEY } from "@/lib/constants";
 import { getResponsesByGuests } from "@/lib/repository/rsvp";
 import { getGuestsByPartyId } from "@/lib/repository/guests";
 import { getPartyById } from "@/lib/repository/party";
@@ -53,7 +54,7 @@ export default async function RsvpPage() {
   const responses = getResponsesByGuests(members.map(m => m.id));
   const responsesByGuest = new Map(responses.map(r => [r.guest_id, r]));
 
-  const deadlineStr = getConfig("rsvp_deadline");
+  const deadlineStr = getConfig(RSVP_DEADLINE_KEY);
   const deadline = deadlineStr ? new Date(deadlineStr) : null;
   const isLocked = deadline ? new Date() > deadline : false;
   const formattedDeadline = deadline

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { MEDIA_DIR, ALLOWED_EXTENSIONS, isWithinMediaDir } from "@/lib/media";
+import { logError } from "@/lib/logger";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -25,7 +26,7 @@ export async function GET(request: Request) {
   try {
     entries = await fs.promises.readdir(resolved, { withFileTypes: true }) as fs.Dirent[];
   } catch (error) {
-    console.error("Failed to read media directory:", error);
+    logError("MediaList", error);
     return NextResponse.json({ success: false, error: "Failed to read directory." }, { status: 500 });
   }
 

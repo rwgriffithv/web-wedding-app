@@ -31,6 +31,7 @@ A production-ready Next.js starter web application with admin dashboard, SQLite 
 - Admin routes protected via `requireAdminSessionOrNull()` check in layout
 - No Client Components unless interactivity requires it
 - `proxy.ts` sets `Cache-Control: no-store` on all page responses; API routes excluded via matcher
+- **Constants**: `UPPER_SNAKE_CASE` with descriptive prefixes and suffixes (e.g. `LOGIN_RATE_LIMIT_MAX_DEFAULT`, `COOKIE_HEALTH_KEY`, `MEDIA_MAX_FILE_SIZE_MB_DEFAULT`). Use the domain prefix for grouping (e.g. `RL_` for rate-limit keys). Never break casing convention.
 
 ## Testing
 

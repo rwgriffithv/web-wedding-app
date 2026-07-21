@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { getRequiredString, getOptionalString, getInt } from "@/lib/form-data";
+import { SCHEDULE_TEXT_KEY } from "@/lib/constants";
+import { logError } from "@/lib/logger";
 import { create, update, deleteItem as deleteItemRepo, swapSortOrder } from "@/lib/repository/schedule";
 import { setConfig } from "@/lib/repository/site-config";
 
@@ -33,7 +35,7 @@ export async function addItem(prevState: ScheduleState | null, formData: FormDat
     revalidatePath("/home");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Schedule", error);
     return { success: false, error: "Failed to add schedule item." };
   }
 }
@@ -64,7 +66,7 @@ export async function updateItem(prevState: ScheduleState | null, formData: Form
     revalidatePath("/home");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Schedule", error);
     return { success: false, error: "Failed to update schedule item." };
   }
 }
@@ -82,14 +84,14 @@ export async function moveItem(prevState: ScheduleState | null, formData: FormDa
 
   try {
     const result = swapSortOrder(id, direction);
-    if (!result.success) return { success: false, error: result.error! };
+    if (!result.success) return { success: false, error: result.error ?? "Unknown error" };
 
     revalidatePath("/admin/schedule");
     revalidatePath("/guide");
     revalidatePath("/home");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Schedule", error);
     return { success: false, error: "Failed to reorder schedule item." };
   }
 }
@@ -109,7 +111,7 @@ export async function deleteItem(prevState: ScheduleState | null, formData: Form
     revalidatePath("/home");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Schedule", error);
     return { success: false, error: "Failed to delete schedule item." };
   }
 }
@@ -119,19 +121,19 @@ export async function saveScheduleText(prevState: ScheduleState | null, formData
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
-  const text = getRequiredString(formData, "schedule_text");
+  const text = getRequiredString(formData, SCHEDULE_TEXT_KEY);
   if (text && text.length > 1000) {
     return { success: false, error: "Intro text must be 1,000 characters or fewer." };
   }
   try {
     // Empty string is intentional: admin can clear the intro text entirely.
     // `?? ""` ensures the config key always stores a string (never null).
-    setConfig("schedule_text", text ?? "");
+    setConfig(SCHEDULE_TEXT_KEY, text ?? "");
     revalidatePath("/admin/schedule");
     revalidatePath("/guide");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Schedule", error);
     return { success: false, error: "Failed to save intro text." };
   }
 }

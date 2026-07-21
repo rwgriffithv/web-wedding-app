@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, act } from "@testing-library/react";
-import { PV_UNTIL_KEY } from "@/lib/constants";
+import { VIEW_DEBOUNCE_UNTIL_KEY } from "@/lib/constants";
 
 const mockTrackPageView = vi.fn();
 
@@ -20,11 +20,11 @@ describe("PageViewTracker", () => {
     mockTrackPageView.mockReset();
     mockTrackPageView.mockResolvedValue({ debounceMinutes: 15 });
     pathname = "/home";
-    localStorage.removeItem(PV_UNTIL_KEY);
+    localStorage.removeItem(VIEW_DEBOUNCE_UNTIL_KEY);
   });
 
   afterEach(() => {
-    localStorage.removeItem(PV_UNTIL_KEY);
+    localStorage.removeItem(VIEW_DEBOUNCE_UNTIL_KEY);
   });
 
   it("renders nothing", async () => {
@@ -46,13 +46,13 @@ describe("PageViewTracker", () => {
     await act(async () => {
       render(<Tracker />);
     });
-    const raw = localStorage.getItem(PV_UNTIL_KEY);
+    const raw = localStorage.getItem(VIEW_DEBOUNCE_UNTIL_KEY);
     expect(raw).toBeTruthy();
     expect(parseInt(raw!, 10)).toBeGreaterThan(Date.now());
   });
 
   it("skips server call when within debounce window", async () => {
-    localStorage.setItem(PV_UNTIL_KEY, String(Date.now() + 60_000));
+    localStorage.setItem(VIEW_DEBOUNCE_UNTIL_KEY, String(Date.now() + 60_000));
     const { PageViewTracker: Tracker } = await import("../page-view-tracker");
     await act(async () => {
       render(<Tracker />);
@@ -61,7 +61,7 @@ describe("PageViewTracker", () => {
   });
 
   it("calls trackPageView when debounce window has expired", async () => {
-    localStorage.setItem(PV_UNTIL_KEY, String(Date.now() - 1000));
+    localStorage.setItem(VIEW_DEBOUNCE_UNTIL_KEY, String(Date.now() - 1000));
     const { PageViewTracker: Tracker } = await import("../page-view-tracker");
     await act(async () => {
       render(<Tracker />);
@@ -76,7 +76,7 @@ describe("PageViewTracker", () => {
     expect(mockTrackPageView).toHaveBeenCalledTimes(1);
 
     // Expire the debounce window
-    localStorage.setItem(PV_UNTIL_KEY, String(Date.now() - 1000));
+    localStorage.setItem(VIEW_DEBOUNCE_UNTIL_KEY, String(Date.now() - 1000));
 
     await act(async () => {
       pathname = "/rsvp";
@@ -105,7 +105,7 @@ describe("PageViewTracker", () => {
     render(<Tracker />);
     await act(async () => {});
 
-    const raw = localStorage.getItem(PV_UNTIL_KEY);
+    const raw = localStorage.getItem(VIEW_DEBOUNCE_UNTIL_KEY);
     const until = parseInt(raw!, 10);
     // Should be ~30 minutes from now
     expect(until).toBeGreaterThan(Date.now() + 29 * 60_000);
@@ -124,15 +124,15 @@ describe("PageViewTracker", () => {
     spy.mockRestore();
   });
 
-  it("calls server when PV_UNTIL_KEY removed externally (logout)", async () => {
-    localStorage.setItem(PV_UNTIL_KEY, String(Date.now() + 60_000));
+  it("calls server when VIEW_DEBOUNCE_UNTIL_KEY removed externally (logout)", async () => {
+    localStorage.setItem(VIEW_DEBOUNCE_UNTIL_KEY, String(Date.now() + 60_000));
     const { PageViewTracker: Tracker } = await import("../page-view-tracker");
     const { rerender } = render(<Tracker />);
     await act(async () => {});
     expect(mockTrackPageView).not.toHaveBeenCalled();
 
     // Simulate logout clearing the key
-    localStorage.removeItem(PV_UNTIL_KEY);
+    localStorage.removeItem(VIEW_DEBOUNCE_UNTIL_KEY);
 
     await act(async () => {
       pathname = "/rsvp";

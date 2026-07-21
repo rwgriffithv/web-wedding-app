@@ -9,6 +9,12 @@ import {
   nukeAllBansAndViolations,
   flushTestIps,
 } from "../utils/rate-limit-helpers";
+import {
+  LOGIN_RATE_LIMIT_MAX_KEY,
+  LOGIN_RATE_LIMIT_WINDOW_SECONDS_KEY,
+  AUTO_BAN_LOGIN_THRESHOLD_KEY,
+  AUTO_BAN_WINDOW_SECONDS_KEY,
+} from "../../src/lib/constants";
 
 test.describe("rate limiting", () => {
   test.describe.configure({ mode: "serial" });
@@ -35,16 +41,23 @@ test.describe("rate limiting", () => {
     // Total: 9 bad login attempts, but only 3 rate-limit lockouts → ban.
     // Without the rate-limit gate, 3 bad logins would trigger the ban — that is NOT the case.
 
-    setConfig("rate_limit_max_attempts", "2");
-    setConfig("rate_limit_window_seconds", "1");
-    setConfig("auto_ban_login_threshold", "3");
-    setConfig("auto_ban_window_seconds", "3600");
+    setConfig(LOGIN_RATE_LIMIT_MAX_KEY, "2");
+    setConfig(LOGIN_RATE_LIMIT_WINDOW_SECONDS_KEY, "1");
+    setConfig(AUTO_BAN_LOGIN_THRESHOLD_KEY, "3");
+    setConfig(AUTO_BAN_WINDOW_SECONDS_KEY, "3600");
 
     const username = "rl-e2e-ban-chain";
 
     // try/finally ensures we always clean up the ban and restore config,
     // even if the test fails mid-way (e.g. timeout).
     try {
+      // Use 127.0.0.2 to avoid stale in-memory rate limiter state from prior admin logins
+      await page.route("**/*", async (route) => {
+        await route.continue({
+          headers: { ...route.request().headers(), "x-forwarded-for": "127.0.0.2" },
+        });
+      });
+
       await page.goto("/login");
       await page.getByRole("button", { name: "User sign in" }).click();
 
@@ -121,11 +134,12 @@ test.describe("rate limiting", () => {
     } finally {
       // Always clean up: unban ALL IPs, remove ALL violations, restore seed config.
       // This runs even on timeout/failure to prevent contaminating subsequent tests.
+      await page.unroute("**/*");
       nukeAllBansAndViolations();
-      setConfig("rate_limit_max_attempts", "100");
-      setConfig("rate_limit_window_seconds", "60");
-      setConfig("auto_ban_login_threshold", "50");
-      setConfig("auto_ban_window_seconds", "3600");
+      setConfig(LOGIN_RATE_LIMIT_MAX_KEY, "100");
+      setConfig(LOGIN_RATE_LIMIT_WINDOW_SECONDS_KEY, "60");
+      setConfig(AUTO_BAN_LOGIN_THRESHOLD_KEY, "50");
+      setConfig(AUTO_BAN_WINDOW_SECONDS_KEY, "3600");
     }
   });
 
@@ -142,14 +156,21 @@ test.describe("rate limiting", () => {
     //   3. Wait for cooldown (3s = window + buffer)
     //   4. Fourth login → credential error (NOT rate limit — window has reset)
 
-    setConfig("rate_limit_max_attempts", "2");
-    setConfig("rate_limit_window_seconds", "2");
-    setConfig("auto_ban_login_threshold", "50");
-    setConfig("auto_ban_window_seconds", "3600");
+    setConfig(LOGIN_RATE_LIMIT_MAX_KEY, "2");
+    setConfig(LOGIN_RATE_LIMIT_WINDOW_SECONDS_KEY, "2");
+    setConfig(AUTO_BAN_LOGIN_THRESHOLD_KEY, "50");
+    setConfig(AUTO_BAN_WINDOW_SECONDS_KEY, "3600");
 
     const username = "rl-e2e-window-reset";
 
     try {
+      // Use 127.0.0.2 to avoid stale in-memory rate limiter state from prior admin logins
+      await page.route("**/*", async (route) => {
+        await route.continue({
+          headers: { ...route.request().headers(), "x-forwarded-for": "127.0.0.2" },
+        });
+      });
+
       // Wait for any stale in-memory rate limiter entries from the prior
       // auto-ban test (1s window) to expire before setting our own thresholds.
       await page.waitForTimeout(2000);
@@ -182,11 +203,12 @@ test.describe("rate limiting", () => {
       await page.locator("button[type=submit]").click();
       await expect(page.getByText("Invalid username or password.")).toBeVisible();
     } finally {
+      await page.unroute("**/*");
       nukeAllBansAndViolations();
-      setConfig("rate_limit_max_attempts", "100");
-      setConfig("rate_limit_window_seconds", "60");
-      setConfig("auto_ban_login_threshold", "50");
-      setConfig("auto_ban_window_seconds", "3600");
+      setConfig(LOGIN_RATE_LIMIT_MAX_KEY, "100");
+      setConfig(LOGIN_RATE_LIMIT_WINDOW_SECONDS_KEY, "60");
+      setConfig(AUTO_BAN_LOGIN_THRESHOLD_KEY, "50");
+      setConfig(AUTO_BAN_WINDOW_SECONDS_KEY, "3600");
     }
   });
 

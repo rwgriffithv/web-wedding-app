@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { getMaxFileSizeBytes } from "@/lib/upload-limits";
+import { useMediaMaxFileSize } from "@/hooks/media-max-file-size";
+import { STATUS_UNAUTHORIZED, STATUS_PAYLOAD_TOO_LARGE } from "@/lib/http-status";
 
 interface UploadResult {
   url: string;
@@ -19,13 +20,13 @@ export function FileUpload({ onUpload, accept, label, size = "md" }: FileUploadP
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { maxBytes, refreshMaxBytes } = useMediaMaxFileSize();
 
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || uploading) return;
 
-    const maxBytes = getMaxFileSizeBytes();
-    if (file.size > maxBytes) {
+    if (maxBytes !== null && file.size > maxBytes) {
       const maxMb = Math.round(maxBytes / (1024 * 1024));
       setError(`File exceeds ${maxMb} MB limit.`);
       if (inputRef.current) inputRef.current.value = "";
@@ -40,7 +41,13 @@ export function FileUpload({ onUpload, accept, label, size = "md" }: FileUploadP
       formData.append("file", file);
 
       const res = await fetch("/api/upload", { method: "POST", body: formData });
-      if (res.status === 401) { window.location.href = "/login"; return; }
+      // Session expired — redirect to login to re-authenticate
+      if (res.status === STATUS_UNAUTHORIZED) { window.location.href = "/login"; return; }
+
+      // Server rejected the file as too large — our cached limit is stale, so refresh it
+      // so the next upload attempt uses the corrected value without another round-trip
+      if (res.status === STATUS_PAYLOAD_TOO_LARGE) { void refreshMaxBytes(); }
+
       const data = await res.json();
 
       if (!res.ok) {

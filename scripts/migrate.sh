@@ -175,6 +175,24 @@ console.log('  ✓ Index idx_media_section ensured.');
 db.exec('CREATE INDEX IF NOT EXISTS idx_rate_limit_violations_violated_at ON rate_limit_violations(violated_at)');
 console.log('  ✓ Index idx_rate_limit_violations_violated_at ensured.');
 
+// ── Migration 13: standardize site_config key names for rate limit configs ──
+// Adds _max_attempts and _window_seconds suffixes for consistency.
+const SITE_CONFIG_RENAMES = [
+  { from: 'rsvp_rate_limit_max', to: 'rsvp_rate_limit_max_attempts' },
+  { from: 'rsvp_rate_limit_window', to: 'rsvp_rate_limit_window_seconds' },
+  { from: 'question_rate_limit_max', to: 'question_rate_limit_max_attempts' },
+  { from: 'question_rate_limit_window', to: 'question_rate_limit_window_seconds' },
+];
+for (const { from, to } of SITE_CONFIG_RENAMES) {
+  const existing = db.prepare('SELECT value FROM site_config WHERE key = ?').get(from);
+  if (existing) {
+    db.prepare('UPDATE site_config SET key = ? WHERE key = ?').run(to, from);
+    console.log('  ✓ site_config key \"' + from + '\" → \"' + to + '\"');
+  } else {
+    console.log('  - site_config key \"' + from + '\" not found, skipping.');
+  }
+}
+
 db.close();
 "
 

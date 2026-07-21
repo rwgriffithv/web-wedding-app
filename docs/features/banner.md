@@ -13,7 +13,7 @@ If the text fits on one screen width, it displays statically. If it overflows, i
 The banner is rendered in `(main)/layout.tsx`, which wraps all authenticated pages:
 
 ```
-Session check → Read banner_text from site_config → Conditionally render <BannerText>
+Session check → Read BANNER_TEXT_KEY from site_config → Conditionally render <BannerText>
 ```
 
 When the banner is active, page content flows naturally underneath since the banner is fixed-position with semi-transparent backdrop blur.
@@ -117,7 +117,7 @@ The `-50%` shift moves exactly one copy's worth, creating a seamless infinite lo
 
 | Config Key | Max Length | Default |
 |---|---|---|
-| `banner_text` | 500 | (empty — no banner) |
+| `BANNER_TEXT_KEY` (`constants.ts`) | 500 | (empty — no banner) |
 
 Saved via `saveSiteConfig` server action. Revalidates `/admin/site`, `/`, and `/home`.
 
@@ -137,4 +137,4 @@ Saved via `saveSiteConfig` server action. Revalidates `/admin/site`, `/`, and `/
 | `src/app/globals.css` | Banner CSS (`.banner`, `.banner-*`, `@keyframes`) |
 | `src/app/admin/site/site-config-form.tsx` | Admin form — banner_text textarea |
 | `src/app/admin/site/actions.ts` | `CONFIG_SCHEMA` with `banner_text: { maxLength: 500 }` |
-| `src/lib/repository/site-config.ts` | `getConfig("banner_text")`, `setConfigs()` |
+| `src/lib/repository/site-config.ts` | `getConfig(BANNER_TEXT_KEY)`, `setConfigs()` |

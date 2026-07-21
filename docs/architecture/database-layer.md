@@ -115,7 +115,7 @@ CREATE TABLE IF NOT EXISTS site_config (
 );
 ```
 
-Common keys: `landing_title`, `landing_background`, `home_title`, `home_date`, `home_time`, `home_venue`, `home_location`, `home_background_video`, `dress_code_text`.
+Keys are defined as constants in `src/lib/constants.ts`: `LANDING_TITLE_KEY`, `LANDING_BACKGROUND_KEY`, `DRESS_CODE_TEXT_KEY`, `SCHEDULE_TEXT_KEY`, `LODGING_TEXT_KEY`, `GIFTS_TEXT_KEY`, `RSVP_DEADLINE_KEY`, `HOME_BACKGROUND_VIDEO_POSTER_KEY`. Configuration keys (rate limits, auto-ban, session) follow the same pattern with `RL_`/`AUTO_BAN_`/`SESSION_` prefixes.
 
 ### `lodging_options`
 
@@ -331,7 +331,7 @@ Three tables store `thumbnail_url` (nullable): `media_items`, `lodging_options`,
 
 ## Schema Management
 
-DDL in `src/lib/schema.ts` handles all table creation via `CREATE TABLE IF NOT EXISTS`. No migration system — fresh databases only. Schema changes require recreating the database.
+DDL in `src/lib/db-schema.ts` handles all table creation via `CREATE TABLE IF NOT EXISTS`. No migration system — fresh databases only. Schema changes require recreating the database.
 
 ```typescript
 // db.ts — DDL runs on every startup

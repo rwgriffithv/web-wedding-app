@@ -61,15 +61,14 @@ Server-first Next.js 16 App Router application with SQLite, deployed via Docker 
 ## Route Map
 
 | Route | Type | Auth | Purpose |
-|---|---|---|---|
+|---|---|---|---|---|
 | `/` | Dynamic | `requireSessionOrRedirect()` | Root router — redirects to `/home` |
 | `/login` | Dynamic | `requireSession()` | Authentication (credentials or party code) |
 | `/(main)/home` | Dynamic | `requireSessionOrRedirect()` | Wedding home with countdown timer |
-| `/(main)/lodging` | Dynamic | `requireSessionOrRedirect()` | Hotel/resort recommendations |
-| `/(main)/dress-code` | Dynamic | `requireSessionOrRedirect()` | Dress code mood board |
+| `/(main)/guide` | Dynamic | `requireSessionOrRedirect()` | Tabbed guide (schedule, dress-code, lodging, gifts) |
 | `/(main)/rsvp` | Dynamic | `requireSessionOrRedirect()` | Party-based RSVP with per-member forms |
 | `/(main)/media` | Dynamic | `requireSessionOrRedirect()` | Photo/video gallery with tab routing |
-| `/(main)/schedule` | Dynamic | `requireSessionOrRedirect()` | Wedding day timeline |
+| `/(main)/help` | Dynamic | `requireSessionOrRedirect()` | FAQ and guest questions |
 | `/admin` | Dynamic | `requireSessionOrRedirect("admin")` | Dashboard with stats and RSVP table |
 | `/admin/users` | Dynamic | `requireSessionOrRedirect("admin")` | User management (admin, viewer, party) |
 | `/admin/guests` | Dynamic | `requireSessionOrRedirect("admin")` | Guest CRUD with party assignment |
@@ -116,7 +115,7 @@ Two categories of cookies serve different purposes:
 
 **Session cookie (`session`)** — Set and read by the server. HTTP-only, HMAC-signed JSON containing `{userId, type, partyId?, pwChangedAt?}`. Uses four-tier validation: proxy (crypto + revocation via `verifyToken()`), fast path (`verifyTokenInCookie()` — crypto-only, no DB) for page loads, revocation check (in-memory maps via `isSessionRevoked()`), mutation path (`validateSessionInDb()` — DB check) for state-changing actions. This is the only cookie the server uses for authentication.
 
-**Rate-limit cookies (`rl_until`, `rl_r_until`, `rl_q_until`)** — Set and read by the client only. Created from `cooldownUntil` timestamps returned in server responses. Never read by the server. These are UX helpers that provide pre-submit guards (block form before server call) and reload persistence (restore cooldown timer after page refresh). They have no security function — the server's in-memory rate limiter enforces limits regardless of cookies.
+**Rate-limit cookies (`LOGIN_LIMIT_UNTIL_KEY`, `RSVP_LIMIT_UNTIL_KEY`, `QUESTION_LIMIT_UNTIL_KEY`)** — Set and read by the client only. Created from `cooldownUntil` timestamps returned in server responses. Never read by the server. These are UX helpers that provide pre-submit guards (block form before server call) and reload persistence (restore cooldown timer after page refresh). They have no security function — the server's in-memory rate limiter enforces limits regardless of cookies.
 
 ### Session Revocation
 
@@ -209,19 +208,21 @@ src/
 │   ├── auth.ts                   # Session create/destroy, verifyToken, requireSession, validateSessionInDb, password hash/verify
 │   ├── session-revocation.ts     # In-memory revocation maps (password changes + IP bans)
 │   ├── db.ts                     # Connection + DDL + seed
-│   ├── schema.ts                 # DDL (14 tables)
-│   ├── config.ts                 # Env validation
+│   ├── db-schema.ts              # DDL (14 tables)
+│   ├── env.ts                    # Env validation
 │   ├── constants.ts              # Shared constants (cookie keys, rate limit defaults)
 │   ├── form-data.ts              # Safe FormData extraction + validateMediaUrl
 │   ├── ip.ts                     # getClientIp() — IP extraction from proxy headers
 │   ├── media.ts                  # Media directory config
-│   ├── media-detect.ts           # MIME type detection
+│   ├── media-types.ts            # MIME type detection
 │   ├── thumbnail.ts              # Video poster generation
 │   ├── rate-limit.ts             # In-memory rate limiter + getRateLimitConfig()
-│   ├── use-rate-limit-cooldown.ts # Client-side cooldown hook
-│   └── utils.ts                  # General utilities
+│   ├── logger.ts                 # Console logging wrapper
+│   ├── datetime.ts               # Date/time formatting
+│   ├── http-status.ts            # HTTP status code helpers
+│   ├── upload-limits.ts          # File upload config constants
+│   ├── localstorage-cache.ts     # localStorage expiration cache
 ├── test/                         # Test utilities
-│   ├── test-utils.ts             # Shared test helpers
 │   ├── db-test-utils.ts          # createTestDb() + truncateAll()
 │   └── setup.ts                  # Test setup
 └── app/globals.css               # Styles + utility classes
@@ -247,6 +248,8 @@ src/
 | Home page | ISR (revalidate: 60) | Zero personalization, safe to cache. All other pages are dynamic (session-dependent). |
 | Video poster | ffmpeg + sharp pipeline | Auto-generates 1920x1080 WebP from first frame. Reuses existing thumbnail infrastructure. |
 | RSVP deadline | Server-timezone comparison | `datetime-local` input parsed as server time (Pacific). Works because admin and server share timezone. |
+| Logger | Rate-limited `console.error` wrapper | Prevents log flooding from rapid server-action errors while preserving error visibility. |
+| Rate-limit hook | `src/hooks/rate-limit.ts` | Client-side cooldown hook with localStorage persistence — replaced previous inline patterns. |
 
 ## Database Migrations
 
@@ -257,7 +260,7 @@ When schema changes require new columns or tables:
 2. **Run it manually** on the production server before deploying: `./scripts/migrate-<name>.sh`
 3. The script backs up the database, runs `ALTER TABLE`, and reports success
 
-Like database backups, migrations are an explicit operator responsibility. The DDL in `schema.ts` uses `CREATE TABLE IF NOT EXISTS` — it creates new tables but **never alters existing ones**.
+Like database backups, migrations are an explicit operator responsibility. The DDL in `db-schema.ts` uses `CREATE TABLE IF NOT EXISTS` — it creates new tables but **never alters existing ones**.
 
 ## Known Issues & Limitations
 

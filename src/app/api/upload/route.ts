@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { MEDIA_DIR, ensureMediaDir, ALLOWED_EXTENSIONS, IMAGE_EXTENSIONS } from "@/lib/media";
+import { logError } from "@/lib/logger";
 import { getMediaMaxFileSizeMb } from "@/lib/site-config";
+import { STATUS_UNAUTHORIZED } from "@/lib/http-status";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import { Readable } from "node:stream";
@@ -11,10 +13,22 @@ import { pipeline } from "node:stream/promises";
 export async function POST(request: Request) {
   const session = await requireSession("admin");
   if (!session) {
-    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: STATUS_UNAUTHORIZED });
   }
   if (!(await validateSessionInDb(session))) {
-    return NextResponse.json({ success: false, error: "Session expired" }, { status: 401 });
+    return NextResponse.json({ success: false, error: "Session expired" }, { status: STATUS_UNAUTHORIZED });
+  }
+
+  const maxSizeMb = getMediaMaxFileSizeMb();
+  const maxSizeBytes = maxSizeMb * 1024 * 1024;
+
+  // Early content-length guard — reject oversized uploads before buffering
+  // the entire multipart body. Multipart boundaries and headers add ~few
+  // hundred bytes on top of the file size; a 4 KB overhead allowance is
+  // generous enough to never miscategorize a valid request.
+  const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
+  if (contentLength > maxSizeBytes + 4096) {
+    return NextResponse.json({ success: false, error: `File exceeds ${maxSizeMb} MB limit.`, maxFileSizeMb: maxSizeMb }, { status: 413 });
   }
 
   const formData = await request.formData();
@@ -29,10 +43,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: `File type "${ext}" is not allowed.` }, { status: 400 });
   }
 
-  const maxSizeBytes = getMediaMaxFileSizeMb() * 1024 * 1024;
-
   if (file.size > maxSizeBytes) {
-    return NextResponse.json({ success: false, error: "File exceeds size limit." }, { status: 413 });
+    return NextResponse.json({ success: false, error: `File exceeds ${maxSizeMb} MB limit.`, maxFileSizeMb: maxSizeMb }, { status: 413 });
   }
 
   ensureMediaDir();
@@ -46,7 +58,7 @@ export async function POST(request: Request) {
     const writeStream = fs.createWriteStream(filepath);
     await pipeline(nodeStream, writeStream);
   } catch (error) {
-    console.error(error);
+    logError("Upload", error);
     // Clean up partial file on failure
     await fs.promises.unlink(filepath).catch(() => {});
     return NextResponse.json({ success: false, error: "Failed to save file." }, { status: 500 });

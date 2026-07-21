@@ -11,7 +11,7 @@ import { createRateLimiter, getRateLimitConfig } from "@/lib/rate-limit";
 import { isIpBanned, recordRateLimitViolation, tryAutoBan } from "@/lib/repository/ip-bans";
 import { getClientIp } from "@/lib/ip";
 import { getRequiredString } from "@/lib/form-data";
-import { RATE_LIMIT_MAX_ATTEMPTS_DEFAULT, RATE_LIMIT_WINDOW_SECONDS_DEFAULT } from "@/lib/constants";
+import { LOGIN_RATE_LIMIT_MAX_DEFAULT, LOGIN_RATE_LIMIT_WINDOW_SECONDS_DEFAULT, LOGIN_RATE_LIMIT_MAX_KEY, LOGIN_RATE_LIMIT_WINDOW_SECONDS_KEY } from "@/lib/constants";
 
 interface LoginState {
   success?: boolean;
@@ -25,7 +25,7 @@ interface LoginState {
 const rateLimiter = createRateLimiter("login");
 
 function getLoginRateLimitConfig() {
-  return getRateLimitConfig("rate_limit_max_attempts", "rate_limit_window_seconds", RATE_LIMIT_MAX_ATTEMPTS_DEFAULT, RATE_LIMIT_WINDOW_SECONDS_DEFAULT);
+  return getRateLimitConfig(LOGIN_RATE_LIMIT_MAX_KEY, LOGIN_RATE_LIMIT_WINDOW_SECONDS_KEY, LOGIN_RATE_LIMIT_MAX_DEFAULT, LOGIN_RATE_LIMIT_WINDOW_SECONDS_DEFAULT);
 }
 
 export async function login(formData: FormData): Promise<LoginState> {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { MEDIA_DIR, ALLOWED_EXTENSIONS, isWithinMediaDir, MIME_TYPES } from "@/lib/media";
+import { logError } from "@/lib/logger";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -34,7 +35,7 @@ export async function GET(
   try {
     stat = await fs.promises.stat(resolved);
   } catch (error) {
-    console.error("Failed to stat media file:", error);
+    logError("MediaServe", error);
     return NextResponse.json({ success: false, error: "Not found." }, { status: 404 });
   }
 

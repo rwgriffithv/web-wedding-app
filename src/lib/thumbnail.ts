@@ -3,12 +3,15 @@ import fs from "node:fs";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { randomUUID } from "node:crypto";
+import { logError } from "@/lib/logger";
 import { MEDIA_DIR, THUMBNAILS_DIR, IMAGE_EXTENSIONS, VIDEO_EXTENSIONS, isWithinMediaDir } from "@/lib/media";
 
 const execFileAsync = promisify(execFile);
 
 const THUMB_SIZE = 400;
 const POSTER_MAX = 1920;
+
+fs.mkdirSync(THUMBNAILS_DIR, { recursive: true });
 
 async function getVideoDimensions(inputPath: string): Promise<{ width: number; height: number }> {
   const ffmpegPath = (await import("ffmpeg-static")).default;
@@ -32,7 +35,6 @@ export async function generateImageThumbnail(
   buffer: Buffer,
   outFilename: string,
 ): Promise<string> {
-  fs.mkdirSync(THUMBNAILS_DIR, { recursive: true });
   const sharp = (await import("sharp")).default;
   const outPath = path.join(THUMBNAILS_DIR, outFilename);
   await sharp(buffer)
@@ -48,7 +50,6 @@ export async function generateVideoThumbnail(
   inputPath: string,
   outFilename: string,
 ): Promise<string> {
-  fs.mkdirSync(THUMBNAILS_DIR, { recursive: true });
   const ffmpegPath = (await import("ffmpeg-static")).default;
   if (!ffmpegPath) throw new Error("ffmpeg-static binary not found");
 
@@ -78,7 +79,6 @@ export async function generateVideoPoster(
   inputPath: string,
   outFilename: string,
 ): Promise<string> {
-  fs.mkdirSync(THUMBNAILS_DIR, { recursive: true });
   const ffmpegPath = (await import("ffmpeg-static")).default;
   if (!ffmpegPath) throw new Error("ffmpeg-static binary not found");
 
@@ -149,7 +149,7 @@ export async function ensureThumbnail(
       return await generateVideoThumbnail(resolved, thumbFilename);
     }
   } catch (error) {
-    console.error("Thumbnail generation failed:", error);
+    logError("Thumbnail", error);
     return null;
   }
 }
@@ -191,7 +191,7 @@ export async function ensureVideoPoster(
   try {
     return await generateVideoPoster(resolved, posterFilename);
   } catch (error) {
-    console.error("Video poster generation failed:", error);
+    logError("Thumbnail", error);
     return null;
   }
 }

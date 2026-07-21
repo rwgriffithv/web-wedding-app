@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { LoginForm } from "../login-form";
+import { COOKIE_HEALTH_KEY, LOGIN_LIMIT_UNTIL_KEY } from "@/lib/constants";
 
 const mockLogin = vi.fn();
 const mockLoginByPartyCode = vi.fn();
@@ -38,8 +39,8 @@ describe("LoginForm", () => {
     mockLoginByPartyCode.mockReset();
     mockRefresh.mockReset();
     mockPush.mockReset();
-    localStorage.removeItem("rl_until");
-    localStorage.removeItem("cookie_health_until");
+    localStorage.removeItem(LOGIN_LIMIT_UNTIL_KEY);
+    localStorage.removeItem(COOKIE_HEALTH_KEY);
   });
 
   it("renders party code form by default", () => {
@@ -100,7 +101,7 @@ describe("LoginForm", () => {
   });
 
   it("shows rate limit cooldown when key is present", () => {
-    localStorage.setItem("rl_until", String(Date.now() + 10_000));
+    localStorage.setItem(LOGIN_LIMIT_UNTIL_KEY, String(Date.now() + 10_000));
     render(<LoginForm />);
     expect(getSubmitButton()).toBeDisabled();
     expect(getSubmitButton().textContent).toMatch(/please wait/i);
@@ -108,7 +109,7 @@ describe("LoginForm", () => {
   });
 
   it("prevents submit when rate limited by key", () => {
-    localStorage.setItem("rl_until", String(Date.now() + 10_000));
+    localStorage.setItem(LOGIN_LIMIT_UNTIL_KEY, String(Date.now() + 10_000));
     render(<LoginForm />);
     fireEvent.change(getCodeInput(), { target: { value: "SMITH-1234" } });
     fireEvent.submit(getSubmitButton().closest("form")!);
@@ -147,7 +148,7 @@ describe("LoginForm", () => {
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith("/home");
     });
-    expect(localStorage.getItem("cookie_health_until")).toBe(String(until));
+    expect(localStorage.getItem(COOKIE_HEALTH_KEY)).toBe(String(until));
   });
 
   it("credentials success stores cookie_health_until and navigates", async () => {
@@ -161,6 +162,6 @@ describe("LoginForm", () => {
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith("/admin");
     });
-    expect(localStorage.getItem("cookie_health_until")).toBe(String(until));
+    expect(localStorage.getItem(COOKIE_HEALTH_KEY)).toBe(String(until));
   });
 });

@@ -1,3 +1,4 @@
+import { SCHEDULE_TEXT_KEY } from "@/lib/constants";
 import { getAll } from "@/lib/repository/schedule";
 import { getConfig } from "@/lib/repository/site-config";
 import { Header } from "@/components/header";
@@ -8,7 +9,7 @@ import { saveScheduleText } from "./actions";
 
 export default function AdminSchedulePage() {
   const items = getAll();
-  const scheduleText = getConfig("schedule_text");
+  const scheduleText = getConfig(SCHEDULE_TEXT_KEY);
 
   return (
     <>
@@ -16,7 +17,7 @@ export default function AdminSchedulePage() {
       <details className="admin-section" open>
         <summary>Schedule Intro Text</summary>
         <div className="admin-section-body">
-          <TabTextForm label="Schedule Tab Intro Text" fieldName="schedule_text" currentText={scheduleText} maxLength={1000} action={saveScheduleText} />
+          <TabTextForm label="Schedule Tab Intro Text" fieldName={SCHEDULE_TEXT_KEY} currentText={scheduleText} maxLength={1000} action={saveScheduleText} />
         </div>
       </details>
       <details className="admin-section" open>

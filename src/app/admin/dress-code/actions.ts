@@ -7,6 +7,8 @@ import { createImage, createImages, deleteImage as deleteImageRepo, swapSortOrde
 import { setConfig } from "@/lib/repository/site-config";
 import { ensureThumbnail } from "@/lib/thumbnail";
 import { deleteThumbnail } from "@/lib/media";
+import { DRESS_CODE_TEXT_KEY } from "@/lib/constants";
+import { logError } from "@/lib/logger";
 
 interface DressCodeState { success?: boolean; error?: string }
 
@@ -43,7 +45,7 @@ export async function addImage(prevState: DressCodeState | null, formData: FormD
     revalidatePath("/guide");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("DressCode", error);
     return { success: false, error: "Failed to add image." };
   }
 }
@@ -62,7 +64,7 @@ export async function deleteImage(prevState: DressCodeState | null, formData: Fo
     revalidatePath("/guide");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("DressCode", error);
     return { success: false, error: "Failed to delete image." };
   }
 }
@@ -80,13 +82,13 @@ export async function moveImage(prevState: DressCodeState | null, formData: Form
 
   try {
     const result = swapSortOrder(id, direction);
-    if (!result.success) return { success: false, error: result.error! };
+    if (!result.success) return { success: false, error: result.error ?? "Unknown error" };
 
     revalidatePath("/admin/dress-code");
     revalidatePath("/guide");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("DressCode", error);
     return { success: false, error: "Failed to reorder image." };
   }
 }
@@ -96,17 +98,17 @@ export async function saveDressCodeText(prevState: DressCodeState | null, formDa
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
-  const text = getRequiredString(formData, "dress_code_text");
+  const text = getRequiredString(formData, DRESS_CODE_TEXT_KEY);
   if (text && text.length > 5000) {
     return { success: false, error: "Description must be 5,000 characters or fewer." };
   }
   try {
-    setConfig("dress_code_text", text ?? "");
+    setConfig(DRESS_CODE_TEXT_KEY, text ?? "");
     revalidatePath("/admin/dress-code");
     revalidatePath("/guide");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("DressCode", error);
     return { success: false, error: "Failed to save dress code description." };
   }
 }

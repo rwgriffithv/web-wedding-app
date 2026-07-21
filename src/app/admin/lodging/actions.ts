@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { getRequiredString, getOptionalString, getInt, validateMediaUrl } from "@/lib/form-data";
+import { LODGING_TEXT_KEY } from "@/lib/constants";
+import { logError } from "@/lib/logger";
 import { create, update, getAll, swapSortOrder, deleteOption as deleteOptionRepo } from "@/lib/repository/lodging";
 import { setConfig } from "@/lib/repository/site-config";
 import { ensureThumbnail } from "@/lib/thumbnail";
@@ -36,7 +38,7 @@ export async function addOption(prevState: LodgingState | null, formData: FormDa
     revalidatePath("/guide");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Lodging", error);
     return { success: false, error: "Failed to add lodging option." };
   }
 }
@@ -77,7 +79,7 @@ export async function updateOption(prevState: LodgingState | null, formData: For
     revalidatePath("/guide");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Lodging", error);
     return { success: false, error: "Failed to update lodging option." };
   }
 }
@@ -95,13 +97,13 @@ export async function moveOption(prevState: LodgingState | null, formData: FormD
 
   try {
     const result = swapSortOrder(id, direction);
-    if (!result.success) return { success: false, error: result.error! };
+    if (!result.success) return { success: false, error: result.error ?? "Unknown error" };
 
     revalidatePath("/admin/lodging");
     revalidatePath("/guide");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Lodging", error);
     return { success: false, error: "Failed to reorder lodging option." };
   }
 }
@@ -120,7 +122,7 @@ export async function deleteOption(prevState: LodgingState | null, formData: For
     revalidatePath("/guide");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Lodging", error);
     return { success: false, error: "Failed to delete lodging option." };
   }
 }
@@ -130,19 +132,19 @@ export async function saveLodgingText(prevState: LodgingState | null, formData: 
   if (!session) return { success: false, error: "Unauthorized" };
   if (!(await validateSessionInDb(session))) return { success: false, error: "Session expired" };
 
-  const text = getRequiredString(formData, "lodging_text");
+  const text = getRequiredString(formData, LODGING_TEXT_KEY);
   if (text && text.length > 1000) {
     return { success: false, error: "Intro text must be 1,000 characters or fewer." };
   }
   try {
     // Empty string is intentional: admin can clear the intro text entirely.
     // `?? ""` ensures the config key always stores a string (never null).
-    setConfig("lodging_text", text ?? "");
+    setConfig(LODGING_TEXT_KEY, text ?? "");
     revalidatePath("/admin/lodging");
     revalidatePath("/guide");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Lodging", error);
     return { success: false, error: "Failed to save intro text." };
   }
 }

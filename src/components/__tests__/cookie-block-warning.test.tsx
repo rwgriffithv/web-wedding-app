@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { COOKIE_HEALTH_KEY } from "@/lib/constants";
 import { CookieBlockWarning } from "../cookie-block-warning";
 
 describe("CookieBlockWarning", () => {
@@ -32,7 +33,7 @@ describe("CookieBlockWarning", () => {
       writable: true,
       configurable: true,
     });
-    localStorage.setItem("cookie_health_until", String(Date.now() + 60_000));
+    localStorage.setItem(COOKIE_HEALTH_KEY, String(Date.now() + 60_000));
     render(<CookieBlockWarning />);
     expect(screen.getByRole("alert")).toBeDefined();
     expect(screen.getByText(/blocking cookies/i)).toBeDefined();
@@ -44,19 +45,19 @@ describe("CookieBlockWarning", () => {
       writable: true,
       configurable: true,
     });
-    localStorage.setItem("cookie_health_until", String(Date.now() - 1000));
+    localStorage.setItem(COOKIE_HEALTH_KEY, String(Date.now() - 1000));
     render(<CookieBlockWarning />);
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it("never shows warning on landing page even with fresh flag", () => {
-    localStorage.setItem("cookie_health_until", String(Date.now() + 60_000));
+    localStorage.setItem(COOKIE_HEALTH_KEY, String(Date.now() + 60_000));
     render(<CookieBlockWarning />);
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it("does nothing on protected page even with fresh flag", () => {
-    localStorage.setItem("cookie_health_until", String(Date.now() + 60_000));
+    localStorage.setItem(COOKIE_HEALTH_KEY, String(Date.now() + 60_000));
     Object.defineProperty(window, "location", {
       value: { pathname: "/home" },
       writable: true,

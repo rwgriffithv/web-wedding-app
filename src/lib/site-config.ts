@@ -1,27 +1,35 @@
 import { getConfig } from "@/lib/repository/site-config";
 import {
-  RATE_LIMIT_MAX_ATTEMPTS_DEFAULT,
-  RATE_LIMIT_WINDOW_SECONDS_DEFAULT,
   AUTO_BAN_THRESHOLD_DEFAULT,
   AUTO_BAN_WINDOW_DEFAULT,
   SUSPICIOUS_THRESHOLD_DEFAULT,
+  MEDIA_MAX_FILE_SIZE_MB_KEY,
   MEDIA_MAX_FILE_SIZE_MB_DEFAULT,
+  MEDIA_MAX_FILE_SIZE_TTL_MS_KEY,
+  MEDIA_MAX_FILE_SIZE_TTL_MS_DEFAULT,
+  SESSION_MAX_HOURS_KEY,
+  SESSION_MAX_HOURS_DEFAULT,
+  AUTO_BAN_LOGIN_THRESHOLD_KEY,
+  AUTO_BAN_WINDOW_SECONDS_KEY,
+  SUSPICIOUS_IP_THRESHOLD_KEY,
+  PAGE_VIEW_DEBOUNCE_MINUTES_KEY,
+  PAGE_VIEW_DEBOUNCE_MINUTES_DEFAULT,
 } from "@/lib/constants";
 
 export function getSessionMaxSeconds(): number {
-  const hours = parseFloat(getConfig("session_max_hours"));
-  const seconds = (Number.isFinite(hours) && hours > 0 ? Math.min(hours, 24) : 24) * 60 * 60;
+  const hours = parseFloat(getConfig(SESSION_MAX_HOURS_KEY));
+  const seconds = (Number.isFinite(hours) && hours > 0 ? Math.min(hours, SESSION_MAX_HOURS_DEFAULT) : SESSION_MAX_HOURS_DEFAULT) * 60 * 60;
   return Math.max(1, seconds);
 }
 
 export function getAutoBanConfig(): { threshold: number; windowSeconds: number } {
-  const threshold = parseInt(getConfig("auto_ban_login_threshold"), 10) || AUTO_BAN_THRESHOLD_DEFAULT;
-  const windowSeconds = parseInt(getConfig("auto_ban_window_seconds"), 10) || AUTO_BAN_WINDOW_DEFAULT;
+  const threshold = parseInt(getConfig(AUTO_BAN_LOGIN_THRESHOLD_KEY), 10) || AUTO_BAN_THRESHOLD_DEFAULT;
+  const windowSeconds = parseInt(getConfig(AUTO_BAN_WINDOW_SECONDS_KEY), 10) || AUTO_BAN_WINDOW_DEFAULT;
   return { threshold, windowSeconds };
 }
 
 export function getSuspiciousConfig(): { threshold: number } {
-  const threshold = parseInt(getConfig("suspicious_ip_threshold"), 10) || SUSPICIOUS_THRESHOLD_DEFAULT;
+  const threshold = parseInt(getConfig(SUSPICIOUS_IP_THRESHOLD_KEY), 10) || SUSPICIOUS_THRESHOLD_DEFAULT;
   return { threshold };
 }
 
@@ -45,11 +53,16 @@ export function getRateLimitConfig(
 }
 
 export function getPageViewDebounceMinutes(): number {
-  const minutes = parseInt(getConfig("page_view_debounce_minutes"), 10);
-  return Number.isFinite(minutes) && minutes >= 0 ? Math.min(minutes, 1440) : 15;
+  const minutes = parseInt(getConfig(PAGE_VIEW_DEBOUNCE_MINUTES_KEY), 10);
+  return Number.isFinite(minutes) && minutes >= 0 ? Math.min(minutes, 1440) : PAGE_VIEW_DEBOUNCE_MINUTES_DEFAULT;
 }
 
 export function getMediaMaxFileSizeMb(): number {
-  const mb = parseInt(getConfig("media_max_file_size_mb"), 10);
-  return Number.isFinite(mb) && mb > 0 ? mb : MEDIA_MAX_FILE_SIZE_MB_DEFAULT;
+  const mb = parseInt(getConfig(MEDIA_MAX_FILE_SIZE_MB_KEY), 10);
+  return Number.isFinite(mb) && mb >= 0 ? mb : MEDIA_MAX_FILE_SIZE_MB_DEFAULT;
+}
+
+export function getMediaMaxFileSizeTtlMs(): number {
+  const ttl = parseInt(getConfig(MEDIA_MAX_FILE_SIZE_TTL_MS_KEY), 10);
+  return Number.isFinite(ttl) && ttl >= 0 ? ttl : MEDIA_MAX_FILE_SIZE_TTL_MS_DEFAULT;
 }

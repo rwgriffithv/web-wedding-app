@@ -47,8 +47,14 @@ async function simulateLoginAttempt(
   username: string,
 ) {
   const { getConfig } = await import("@/lib/repository/site-config");
-  const maxAttempts = parseInt(getConfig("rate_limit_max_attempts"), 10) || 5;
-  const windowSeconds = parseInt(getConfig("rate_limit_window_seconds"), 10) || 60;
+  const {
+    LOGIN_RATE_LIMIT_MAX_KEY, LOGIN_RATE_LIMIT_MAX_DEFAULT,
+    LOGIN_RATE_LIMIT_WINDOW_SECONDS_KEY, LOGIN_RATE_LIMIT_WINDOW_SECONDS_DEFAULT,
+    AUTO_BAN_LOGIN_THRESHOLD_KEY, AUTO_BAN_THRESHOLD_DEFAULT,
+    AUTO_BAN_WINDOW_SECONDS_KEY, AUTO_BAN_WINDOW_DEFAULT,
+  } = await import("@/lib/constants");
+  const maxAttempts = parseInt(getConfig(LOGIN_RATE_LIMIT_MAX_KEY), 10) || LOGIN_RATE_LIMIT_MAX_DEFAULT;
+  const windowSeconds = parseInt(getConfig(LOGIN_RATE_LIMIT_WINDOW_SECONDS_KEY), 10) || LOGIN_RATE_LIMIT_WINDOW_SECONDS_DEFAULT;
 
   const { recordRateLimitViolation, getViolationCount, isIpBanned, banIp } = await import("@/lib/repository/ip-bans");
 
@@ -59,8 +65,8 @@ async function simulateLoginAttempt(
   if (blocked) {
     recordRateLimitViolation(ip);
 
-    const threshold = parseInt(getConfig("auto_ban_login_threshold"), 10) || 5;
-    const autoBanWindow = parseInt(getConfig("auto_ban_window_seconds"), 10) || 3600;
+    const threshold = parseInt(getConfig(AUTO_BAN_LOGIN_THRESHOLD_KEY), 10) || AUTO_BAN_THRESHOLD_DEFAULT;
+    const autoBanWindow = parseInt(getConfig(AUTO_BAN_WINDOW_SECONDS_KEY), 10) || AUTO_BAN_WINDOW_DEFAULT;
     const violationCount = getViolationCount(ip, autoBanWindow);
 
     if (violationCount >= threshold && !isIpBanned(ip)) {

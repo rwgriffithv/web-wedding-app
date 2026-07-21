@@ -1,19 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-
-function getRateLimitRemaining(key: string): number {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return 0;
-    const until = parseInt(raw, 10);
-    if (!Number.isFinite(until)) return 0;
-    const remaining = Math.ceil((until - Date.now()) / 1000);
-    return remaining > 0 ? remaining : 0;
-  } catch {
-    return 0;
-  }
-}
+import { getExpirationRemaining, setExpiration } from "@/lib/localstorage-cache";
 
 /**
  * Client-side rate-limit cooldown backed by localStorage.
@@ -29,7 +17,7 @@ export function useRateLimitCooldown(key: string) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    const remaining = getRateLimitRemaining(key);
+    const remaining = getExpirationRemaining(key);
     if (remaining > 0) setCooldown(remaining);
   }, [key]);
 
@@ -54,7 +42,7 @@ export function useRateLimitCooldown(key: string) {
 
   /** Check if currently rate-limited. If so, sets cooldown and returns true. */
   function checkRateLimit(): boolean {
-    const remaining = getRateLimitRemaining(key);
+    const remaining = getExpirationRemaining(key);
     if (remaining > 0) {
       setCooldown(remaining);
       return true;
@@ -69,7 +57,7 @@ export function useRateLimitCooldown(key: string) {
   function syncFromResponse(cooldownUntil: number): void {
     const remaining = Math.ceil((cooldownUntil - Date.now()) / 1000);
     if (remaining > 0) {
-      try { localStorage.setItem(key, String(cooldownUntil)); } catch { /* storage unavailable */ }
+      setExpiration(key, cooldownUntil);
       setCooldown(remaining);
     }
   }

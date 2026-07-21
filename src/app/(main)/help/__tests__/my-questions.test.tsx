@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MyQuestions } from "../my-questions";
+import { QUESTION_LIMIT_UNTIL_KEY } from "@/lib/constants";
 import type { Question } from "@/lib/db";
 
 const mockSubmit = vi.fn();
@@ -29,7 +30,7 @@ describe("MyQuestions — form state persistence", () => {
     mockSubmit.mockReset();
     mockPush.mockReset();
     vi.useRealTimers();
-    localStorage.removeItem("rl_q_until");
+    localStorage.removeItem(QUESTION_LIMIT_UNTIL_KEY);
   });
 
   it("textarea retains text after failed submit", async () => {

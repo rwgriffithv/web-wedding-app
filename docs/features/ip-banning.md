@@ -53,7 +53,7 @@ Defined in `src/lib/constants.ts`:
 
 ### Auto-Ban Config
 
-`getAutoBanConfig()` in `src/lib/repository/ip-bans.ts` reads `auto_ban_login_threshold` and `auto_ban_window_seconds` from `site_config`, falling back to the constants above. Used by:
+`getAutoBanConfig()` in `src/lib/repository/ip-bans.ts` reads `AUTO_BAN_LOGIN_THRESHOLD_KEY` and `AUTO_BAN_WINDOW_SECONDS_KEY` from `site_config`, falling back to the defaults in `constants.ts`. Used by:
 - `login/actions.ts` — auto-ban decisions
 - `admin/page.tsx` — suspicious IP count on dashboard
 - `admin/security/page.tsx` — pre-fill the auto-ban settings form
@@ -192,7 +192,7 @@ Running the app without Cloudflare (e.g. direct access to Caddy or Next.js) woul
 |---|---|
 | `src/lib/ip.ts` | `getClientIp()` — IP extraction from proxy headers |
 | `src/lib/constants.ts` | Auto-ban default values (`AUTO_BAN_THRESHOLD_DEFAULT`, `AUTO_BAN_WINDOW_DEFAULT`) |
-| `src/lib/schema.ts` | `banned_ips` + `rate_limit_violations` DDL |
+| `src/lib/db-schema.ts` | `banned_ips` + `rate_limit_violations` DDL |
 | `src/lib/types.ts` | `BannedIp` interface |
 | `src/lib/repository/ip-bans.ts` | All DB operations + `getAutoBanConfig()` + `tryAutoBan()` |
 | `src/app/login/page.tsx` | Server Component IP ban check |

@@ -2,6 +2,14 @@ import Database from "better-sqlite3";
 import path from "path";
 import { DDL } from "../src/lib/db";
 import { hashPassword } from "../src/lib/auth";
+import {
+  MEDIA_MAX_FILE_SIZE_MB_KEY, MEDIA_MAX_FILE_SIZE_MB_DEFAULT, MEDIA_MAX_FILE_SIZE_TTL_MS_KEY, MEDIA_MAX_FILE_SIZE_TTL_MS_DEFAULT,
+  LOGIN_RATE_LIMIT_MAX_KEY, AUTO_BAN_LOGIN_THRESHOLD_KEY, AUTO_BAN_WINDOW_SECONDS_KEY, LOGIN_RATE_LIMIT_WINDOW_SECONDS_KEY,
+  SUSPICIOUS_IP_THRESHOLD_KEY, SESSION_MAX_HOURS_KEY, SESSION_MAX_HOURS_DEFAULT,
+  PAGE_VIEW_DEBOUNCE_MINUTES_KEY, PAGE_VIEW_DEBOUNCE_MINUTES_DEFAULT,
+  SUSPICIOUS_THRESHOLD_DEFAULT, RSVP_RATE_LIMIT_MAX_KEY, RSVP_RATE_LIMIT_WINDOW_SECONDS_KEY, RSVP_RATE_LIMIT_MAX_DEFAULT, RSVP_RATE_LIMIT_WINDOW_SECONDS_DEFAULT,
+  LOGIN_RATE_LIMIT_MAX_DEFAULT, LOGIN_RATE_LIMIT_WINDOW_SECONDS_DEFAULT, QUESTION_RATE_LIMIT_MAX_KEY, QUESTION_RATE_LIMIT_WINDOW_SECONDS_KEY, QUESTION_RATE_LIMIT_MAX_DEFAULT, QUESTION_RATE_LIMIT_WINDOW_SECONDS_DEFAULT,
+} from "../src/lib/constants";
 
 const dbPath = process.env.DATABASE_URL?.replace(/^file:/, "") || path.join(process.cwd(), "data", "dev.db");
 
@@ -45,10 +53,10 @@ const setConfig = (key: string, value: string) => {
 // Always reset rate-limit config and clear ban/violation state.
 // This prevents E2E tests from self-banning due to parallel workers
 // exhausting the threshold during concurrent login attempts.
-setConfig("rate_limit_max_attempts", "100");
-setConfig("rate_limit_window_seconds", "60");
-setConfig("auto_ban_login_threshold", "50");
-setConfig("auto_ban_window_seconds", "3600");
+setConfig(LOGIN_RATE_LIMIT_MAX_KEY, "100");
+setConfig(LOGIN_RATE_LIMIT_WINDOW_SECONDS_KEY, "60");
+setConfig(AUTO_BAN_LOGIN_THRESHOLD_KEY, "50");
+setConfig(AUTO_BAN_WINDOW_SECONDS_KEY, "3600");
 
 db.exec("DELETE FROM banned_ips");
 db.exec("DELETE FROM rate_limit_violations");
@@ -71,16 +79,18 @@ const defaults: [string, string][] = [
   ["lodging_text", ""],
   ["gifts_text", ""],
   ["rsvp_deadline", ""],
-  ["media_max_file_size_mb", "16"],
-  ["session_max_hours", "24"],
-  ["page_view_debounce_minutes", "15"],
-  ["suspicious_ip_threshold", "10"],
-  ["rsvp_rate_limit_max", "10"],
-  ["rsvp_rate_limit_window", "60"],
-  ["question_rate_limit_max", "5"],
-  ["question_rate_limit_window", "60"],
+  [MEDIA_MAX_FILE_SIZE_MB_KEY, String(MEDIA_MAX_FILE_SIZE_MB_DEFAULT)],
+  [MEDIA_MAX_FILE_SIZE_TTL_MS_KEY, String(MEDIA_MAX_FILE_SIZE_TTL_MS_DEFAULT)],
+  [SESSION_MAX_HOURS_KEY, String(SESSION_MAX_HOURS_DEFAULT)],
+  [PAGE_VIEW_DEBOUNCE_MINUTES_KEY, String(PAGE_VIEW_DEBOUNCE_MINUTES_DEFAULT)],
+  [SUSPICIOUS_IP_THRESHOLD_KEY, String(SUSPICIOUS_THRESHOLD_DEFAULT)],
+  [RSVP_RATE_LIMIT_MAX_KEY, String(RSVP_RATE_LIMIT_MAX_DEFAULT)],
+  [RSVP_RATE_LIMIT_WINDOW_SECONDS_KEY, String(RSVP_RATE_LIMIT_WINDOW_SECONDS_DEFAULT)],
+  [QUESTION_RATE_LIMIT_MAX_KEY, String(QUESTION_RATE_LIMIT_MAX_DEFAULT)],
+  [QUESTION_RATE_LIMIT_WINDOW_SECONDS_KEY, String(QUESTION_RATE_LIMIT_WINDOW_SECONDS_DEFAULT)],
 ];
 for (const [key, value] of defaults) {
+  insertConfig.run(key, value);
   upsertIfEmpty.run(value, key);
 }
 

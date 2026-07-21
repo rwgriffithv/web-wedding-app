@@ -3,9 +3,19 @@
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { getRequiredString, getOptionalString, getInt } from "@/lib/form-data";
+import { logError } from "@/lib/logger";
 import { setConfigs } from "@/lib/repository/site-config";
 import { banIp, unbanIp, clearViolations, getBannedIpById } from "@/lib/repository/ip-bans";
 import { revokeSessionsByIpBan, unrevokeSessionsByIpBan } from "@/lib/session-revocation";
+import {
+  AUTO_BAN_LOGIN_THRESHOLD_KEY,
+  AUTO_BAN_WINDOW_SECONDS_KEY,
+  LOGIN_RATE_LIMIT_MAX_KEY,
+  LOGIN_RATE_LIMIT_WINDOW_SECONDS_KEY,
+  SUSPICIOUS_IP_THRESHOLD_KEY,
+  SESSION_MAX_HOURS_KEY,
+  PAGE_VIEW_DEBOUNCE_MINUTES_KEY,
+} from "@/lib/constants";
 
 interface SecurityState { success?: boolean; error?: string }
 
@@ -43,7 +53,7 @@ export async function banIpAction(_prevState: SecurityState | null, formData: Fo
 
     return await banIpCommon(ip, reason);
   } catch (error) {
-    console.error(error);
+    logError("Security", error);
     return { success: false, error: "Failed to ban IP." };
   }
 }
@@ -63,7 +73,7 @@ export async function unbanIpAction(_prevState: SecurityState | null, formData: 
     revalidatePath("/admin/security");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Security", error);
     return { success: false, error: "Failed to unban IP." };
   }
 }
@@ -83,7 +93,7 @@ export async function banViolationIpAction(_prevState: SecurityState | null, for
 
     return await banIpCommon(ip, "manual");
   } catch (error) {
-    console.error(error);
+    logError("Security", error);
     return { success: false, error: "Failed to ban IP." };
   }
 }
@@ -95,13 +105,13 @@ export async function saveSecuritySettings(prevState: SecurityState | null, form
 
   try {
     const fields = [
-      { key: "auto_ban_login_threshold", label: "Auto-Ban Threshold", min: 1, max: 100 },
-      { key: "auto_ban_window_seconds", label: "Auto-Ban Window", min: 60, max: 86400 },
-      { key: "rate_limit_max_attempts", label: "Rate Limit Max Attempts", min: 1, max: 1000 },
-      { key: "rate_limit_window_seconds", label: "Rate Limit Window", min: 1, max: 1000 },
-      { key: "session_max_hours", label: "Session Expiry", min: 1, max: 24 },
-      { key: "page_view_debounce_minutes", label: "Page View Debounce", min: 0, max: 1440 },
-      { key: "suspicious_ip_threshold", label: "Suspicious IP Threshold", min: 1, max: 100 },
+      { key: AUTO_BAN_LOGIN_THRESHOLD_KEY, label: "Auto-Ban Threshold", min: 1, max: 100 },
+      { key: AUTO_BAN_WINDOW_SECONDS_KEY, label: "Auto-Ban Window", min: 60, max: 86400 },
+      { key: LOGIN_RATE_LIMIT_MAX_KEY, label: "Rate Limit Max Attempts", min: 1, max: 1000 },
+      { key: LOGIN_RATE_LIMIT_WINDOW_SECONDS_KEY, label: "Rate Limit Window", min: 1, max: 1000 },
+      { key: SESSION_MAX_HOURS_KEY, label: "Session Expiry", min: 1, max: 24 },
+      { key: PAGE_VIEW_DEBOUNCE_MINUTES_KEY, label: "Page View Debounce", min: 0, max: 1440 },
+      { key: SUSPICIOUS_IP_THRESHOLD_KEY, label: "Suspicious IP Threshold", min: 1, max: 100 },
     ] as const;
 
     const parsed: Record<string, number> = {};
@@ -120,20 +130,20 @@ export async function saveSecuritySettings(prevState: SecurityState | null, form
     }
 
     setConfigs([
-      ["auto_ban_login_threshold", String(parsed.auto_ban_login_threshold)],
-      ["auto_ban_window_seconds", String(parsed.auto_ban_window_seconds)],
-      ["rate_limit_max_attempts", String(parsed.rate_limit_max_attempts)],
-      ["rate_limit_window_seconds", String(parsed.rate_limit_window_seconds)],
-      ["session_max_hours", String(parsed.session_max_hours)],
-      ["page_view_debounce_minutes", String(parsed.page_view_debounce_minutes)],
-      ["suspicious_ip_threshold", String(parsed.suspicious_ip_threshold)],
+      [AUTO_BAN_LOGIN_THRESHOLD_KEY, String(parsed[AUTO_BAN_LOGIN_THRESHOLD_KEY])],
+      [AUTO_BAN_WINDOW_SECONDS_KEY, String(parsed[AUTO_BAN_WINDOW_SECONDS_KEY])],
+      [LOGIN_RATE_LIMIT_MAX_KEY, String(parsed[LOGIN_RATE_LIMIT_MAX_KEY])],
+      [LOGIN_RATE_LIMIT_WINDOW_SECONDS_KEY, String(parsed[LOGIN_RATE_LIMIT_WINDOW_SECONDS_KEY])],
+      [SESSION_MAX_HOURS_KEY, String(parsed[SESSION_MAX_HOURS_KEY])],
+      [PAGE_VIEW_DEBOUNCE_MINUTES_KEY, String(parsed[PAGE_VIEW_DEBOUNCE_MINUTES_KEY])],
+      [SUSPICIOUS_IP_THRESHOLD_KEY, String(parsed[SUSPICIOUS_IP_THRESHOLD_KEY])],
     ]);
 
     revalidatePath("/admin/security");
     revalidatePath("/admin");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Security", error);
     return { success: false, error: "Failed to save security settings." };
   }
 }
@@ -156,7 +166,7 @@ export async function clearViolationsAction(_prevState: SecurityState | null, fo
     revalidatePath("/admin");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Security", error);
     return { success: false, error: "Failed to clear violations." };
   }
 }

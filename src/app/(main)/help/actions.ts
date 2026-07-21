@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb, destroySession } from "@/lib/auth";
 import { getRequiredString } from "@/lib/form-data";
-import { MAX_QUESTION_LENGTH, RATE_LIMIT_MAX_ATTEMPTS_DEFAULT, RATE_LIMIT_WINDOW_SECONDS_DEFAULT } from "@/lib/constants";
+import { MAX_QUESTION_LENGTH, LOGIN_RATE_LIMIT_MAX_DEFAULT, LOGIN_RATE_LIMIT_WINDOW_SECONDS_DEFAULT, QUESTION_RATE_LIMIT_MAX_KEY, QUESTION_RATE_LIMIT_WINDOW_SECONDS_KEY } from "@/lib/constants";
+import { logError } from "@/lib/logger";
 import { create } from "@/lib/repository/questions";
 import { createRateLimiter, getRateLimitConfig } from "@/lib/rate-limit";
 
@@ -12,7 +13,7 @@ interface HelpState { success?: boolean; error?: string; action?: "cooldown" | "
 const questionRateLimiter = createRateLimiter("question");
 
 function getQuestionRateLimitConfig() {
-  return getRateLimitConfig("question_rate_limit_max", "question_rate_limit_window", RATE_LIMIT_MAX_ATTEMPTS_DEFAULT, RATE_LIMIT_WINDOW_SECONDS_DEFAULT);
+  return getRateLimitConfig(QUESTION_RATE_LIMIT_MAX_KEY, QUESTION_RATE_LIMIT_WINDOW_SECONDS_KEY, LOGIN_RATE_LIMIT_MAX_DEFAULT, LOGIN_RATE_LIMIT_WINDOW_SECONDS_DEFAULT);
 }
 
 export async function submitQuestion(prevState: HelpState | null, formData: FormData): Promise<HelpState> {
@@ -43,7 +44,7 @@ export async function submitQuestion(prevState: HelpState | null, formData: Form
     revalidatePath("/help");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Help", error);
     return { success: false, error: "Failed to submit question." };
   }
 }

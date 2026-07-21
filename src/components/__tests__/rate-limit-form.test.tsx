@@ -26,8 +26,8 @@ describe("RateLimitForm", () => {
     render(
       <RateLimitForm
         config={baseConfig}
-        maxKey="rsvp_rate_limit_max"
-        windowKey="rsvp_rate_limit_window"
+        maxKey="rsvp_rate_limit_max_attempts"
+        windowKey="rsvp_rate_limit_window_seconds"
         maxDefault="10"
         windowDefault="300"
         description="Test description"
@@ -56,13 +56,13 @@ describe("RateLimitForm", () => {
 
   it("config overrides custom defaults", () => {
     const config = {
-      rsvp_rate_limit_max: "20",
+      rsvp_rate_limit_max_attempts: "20",
     };
     render(
       <RateLimitForm
         config={config}
-        maxKey="rsvp_rate_limit_max"
-        windowKey="rsvp_rate_limit_window"
+        maxKey="rsvp_rate_limit_max_attempts"
+        windowKey="rsvp_rate_limit_window_seconds"
         maxDefault="10"
         windowDefault="300"
         description="Test description"

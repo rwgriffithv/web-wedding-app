@@ -1,5 +1,12 @@
 import type Database from "better-sqlite3";
 
+const ALLOWED_TABLES = new Set([
+  "faq_items",
+  "lodging_options",
+  "schedule_items",
+  "dress_code_images",
+]);
+
 /**
  * Atomic sort-order swap for a single-column sortable list.
  *
@@ -9,7 +16,7 @@ import type Database from "better-sqlite3";
  * duplicate sort orders.
  *
  * @param db     - Database instance (from `getDb()`)
- * @param table  - Table name (must have `id` and `sort_order` columns)
+ * @param table  - Table name (must be in ALLOWED_TABLES)
  * @param id     - ID of the item to move
  * @param direction - "up" (toward lower sort_order) or "down" (toward higher)
  * @param notFoundMessage - Error message when item not found (defaults to "Swap item not found.")
@@ -22,6 +29,9 @@ export function swapSortOrder(
   direction: "up" | "down",
   notFoundMessage = "Swap item not found.",
 ): { success: boolean; error?: string } {
+  if (!ALLOWED_TABLES.has(table)) {
+    return { success: false, error: `Invalid table: ${table}` };
+  }
   let result: { success: boolean; error?: string } = { success: false, error: notFoundMessage };
   db.transaction(() => {
     const items = db.prepare(`SELECT id, sort_order FROM ${table} ORDER BY sort_order, id`).all() as Array<{ id: number; sort_order: number }>;

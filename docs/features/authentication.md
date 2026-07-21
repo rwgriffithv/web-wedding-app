@@ -61,7 +61,7 @@ There are two categories of cookies: **session cookies** (set and read by the se
 | Secure | `true` (unconditional — production uses HTTPS via Cloudflare Tunnel) |
 | SameSite | `lax` |
 | Path | `/` |
-| Max-Age | Configurable via `session_max_hours` in admin dashboard (default 24h, max 24h) |
+| Max-Age | Configurable via `SESSION_MAX_HOURS_KEY` in admin dashboard (default 24h, max 24h) |
 
 The session cookie is the **only** cookie the server sets or reads for authentication. It contains:
 
@@ -86,11 +86,11 @@ This eliminates database queries from the hot path (every page load) while still
 
 ### Rate-Limit Cooldowns (Client-Only)
 
-| Storage Key | Feature | Set by | Read by |
+| Storage Key Constant | Feature | Set by | Read by |
 |---|---|---|---|
-| `rl_until` | Login | Client | Client |
-| `rl_r_until` | RSVP | Client | Client |
-| `rl_q_until` | Questions | Client | Client |
+| `LOGIN_LIMIT_UNTIL_KEY` | Login | Client | Client |
+| `RSVP_LIMIT_UNTIL_KEY` | RSVP | Client | Client |
+| `QUESTION_LIMIT_UNTIL_KEY` | Questions | Client | Client |
 
 These are **never set or read by the server**. They exist purely for client-side UX:
 
@@ -104,7 +104,7 @@ Server action returns: { error: "...", action: "cooldown", cooldownUntil: 169000
                                        ↓
 Client receives response: syncFromResponse(cooldownUntil)
                                        ↓
-Client persists:            localStorage.setItem("rl_until", "1690000000000")
+Client persists:            localStorage.setItem(LOGIN_LIMIT_UNTIL_KEY, "1690000000000")
                                        ↓
 Client starts timer:        setCooldown(45)  →  countdown displays "Please wait 45s..."
 ```
@@ -189,14 +189,14 @@ The server maintains an in-memory fixed-window rate limiter per feature. Each li
 
 **Configurable via admin UI** (`site_config`):
 
-| Parameter | Config Keys | Defaults |
+| Parameter | Config Key Constant | Defaults |
 |---|---|---|
-| Max attempts (login) | `rate_limit_max_attempts` | 5 |
-| Window (login) | `rate_limit_window_seconds` | 60s |
-| Max attempts (RSVP) | `rsvp_rate_limit_max` | 10 |
-| Window (RSVP) | `rsvp_rate_limit_window` | 60s |
-| Max attempts (questions) | `question_rate_limit_max` | 5 |
-| Window (questions) | `question_rate_limit_window` | 60s |
+| Max attempts (login) | `LOGIN_RATE_LIMIT_MAX_KEY` | 5 |
+| Window (login) | `LOGIN_RATE_LIMIT_WINDOW_SECONDS_KEY` | 60s |
+| Max attempts (RSVP) | `RSVP_RATE_LIMIT_MAX_KEY` | 10 |
+| Window (RSVP) | `RSVP_RATE_LIMIT_WINDOW_SECONDS_KEY` | 60s |
+| Max attempts (questions) | `QUESTION_RATE_LIMIT_MAX_KEY` | 5 |
+| Window (questions) | `QUESTION_RATE_LIMIT_WINDOW_SECONDS_KEY` | 60s |
 
 Changes take effect immediately — `getRateLimitConfig()` reads from `site_config` on every request.
 
@@ -278,7 +278,7 @@ function syncFromResponse(cooldownUntil: number): void {
 }
 ```
 
-Called when the server returns `action: "cooldown"`. Persists the cooldown to localStorage from the server's timestamp and starts the countdown. The key is feature-specific (`rl_until` for login, `rl_r_until` for RSVP, `rl_q_until` for questions).
+Called when the server returns `action: "cooldown"`. Persists the cooldown to localStorage from the server's timestamp and starts the countdown. The key is feature-specific (`LOGIN_LIMIT_UNTIL_KEY` for login, `RSVP_LIMIT_UNTIL_KEY` for RSVP, `QUESTION_LIMIT_UNTIL_KEY` for questions).
 
 ---
 
@@ -456,7 +456,7 @@ User visits / or /login
        │
        User switches to "Username & Password" tab
        │
-        Client: checkRateLimit() reads rl_until localStorage entry
+        Client: checkRateLimit() reads LOGIN_LIMIT_UNTIL_KEY localStorage entry
           └─ Active cooldown? → block submit, show countdown
           └─ No cooldown? → allow submit
         │
@@ -483,7 +483,7 @@ User visits / or /login
   └─ proxy.ts: no cookie or revoked → pass through (or redirect /login)
      login/page.tsx: requireSession() → null → shows LoginForm
        │
-        Client: checkRateLimit() reads rl_until localStorage entry
+        Client: checkRateLimit() reads LOGIN_LIMIT_UNTIL_KEY localStorage entry
           └─ Active cooldown? → block submit, show countdown
           └─ No cooldown? → allow submit
         │
@@ -586,9 +586,9 @@ RSVP and Help actions use the same hot+cold auth pattern as admin actions: `requ
 | `src/lib/auth.ts` | Session create/parse/destroy, `requireSession("admin")`, `requireSession()` (API), `requireSessionOrRedirect()` (layout), `validateSessionInDb()`, `verifyToken()`, `verifyTokenInCookie()`, password hash/verify |
 | `src/lib/session-revocation.ts` | In-memory revocation maps + `isSessionRevoked(session, ip)` pure boolean check |
 | `src/lib/ip.ts` | `getClientIp()` — IP extraction from proxy headers |
-| `src/lib/config.ts` | Environment variable validation (`ADMIN_USERNAME`, `ADMIN_PASSWORD`, `SESSION_SECRET`) |
+| `src/lib/env.ts` | Environment variable validation (`ADMIN_USERNAME`, `ADMIN_PASSWORD`, `SESSION_SECRET`) |
 | `src/lib/rate-limit.ts` | `getRateLimitConfig()`, `createRateLimiter()` — in-memory rate limiter |
-| `src/lib/use-rate-limit-cooldown.ts` | Client hook — localStorage read/write, pre-submit guard, countdown timer |
+| `src/hooks/rate-limit.ts` | Client hook — localStorage read/write, pre-submit guard, countdown timer |
 | `src/lib/constants.ts` | Default rate-limit and auto-ban thresholds |
 | `src/lib/repository/ip-bans.ts` | IP ban + violation DB operations, `getAutoBanConfig()`, `tryAutoBan()` |
 | `src/app/login/page.tsx` | Login page — `requireSession()` prevents redirect loop with revoked cookies |

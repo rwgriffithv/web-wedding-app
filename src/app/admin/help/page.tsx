@@ -6,6 +6,7 @@ import { getAll as getAllFaq } from "@/lib/repository/faq";
 import { getAll as getAllQuestions, getStats } from "@/lib/repository/questions";
 import { getAllConfig } from "@/lib/repository/site-config";
 import { RateLimitForm } from "@/components/rate-limit-form";
+import { QUESTION_RATE_LIMIT_MAX_KEY, QUESTION_RATE_LIMIT_WINDOW_SECONDS_KEY } from "@/lib/constants";
 
 export default function AdminHelpPage() {
   const faqItems = getAllFaq();
@@ -21,8 +22,8 @@ export default function AdminHelpPage() {
         <div className="admin-section-body">
           <RateLimitForm
             config={config}
-            maxKey="question_rate_limit_max"
-            windowKey="question_rate_limit_window"
+            maxKey={QUESTION_RATE_LIMIT_MAX_KEY}
+            windowKey={QUESTION_RATE_LIMIT_WINDOW_SECONDS_KEY}
             description="Rate limiting for help question submissions, per party. Changes take effect on next request."
           />
         </div>

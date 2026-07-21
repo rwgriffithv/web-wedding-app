@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { RsvpForm } from "../rsvp-form";
 import { RateLimitContext } from "../rate-limit-context";
 import { useRateLimitCooldown, type CooldownProps } from "@/hooks/rate-limit";
+import { RSVP_LIMIT_UNTIL_KEY } from "@/lib/constants";
 import type { ReactNode } from "react";
 
 const mockSubmit = vi.fn();
@@ -40,7 +41,7 @@ function RenderWithCooldown({ children, cooldown }: { children: ReactNode; coold
 }
 
 function RealCooldownProvider({ children }: { children: ReactNode }) {
-  const cooldown = useRateLimitCooldown("rl_r_until");
+  const cooldown = useRateLimitCooldown(RSVP_LIMIT_UNTIL_KEY);
   const value = useMemo(() => cooldown, [cooldown.cooldown]);
   return (
     <RateLimitContext.Provider value={value}>
@@ -68,7 +69,7 @@ describe("RsvpForm — radio state persistence", () => {
   beforeEach(() => {
     mockSubmit.mockReset();
     vi.useRealTimers();
-    localStorage.removeItem("rl_r_until");
+    localStorage.removeItem(RSVP_LIMIT_UNTIL_KEY);
   });
 
   it("attending radio stays checked after successful submit", async () => {
@@ -327,7 +328,7 @@ describe("RsvpForm — shared cooldown across forms", () => {
     mockSubmit.mockReset();
     mockPush.mockReset();
     vi.useRealTimers();
-    localStorage.removeItem("rl_r_until");
+    localStorage.removeItem(RSVP_LIMIT_UNTIL_KEY);
   });
 
   it("rate limit on one form disables all sibling forms immediately", async () => {

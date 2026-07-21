@@ -3,15 +3,24 @@
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { getOptionalString } from "@/lib/form-data";
+import { logError } from "@/lib/logger";
 import { setConfigs } from "@/lib/repository/site-config";
+import {
+  LOGIN_RATE_LIMIT_MAX_KEY,
+  LOGIN_RATE_LIMIT_WINDOW_SECONDS_KEY,
+  RSVP_RATE_LIMIT_MAX_KEY,
+  RSVP_RATE_LIMIT_WINDOW_SECONDS_KEY,
+  QUESTION_RATE_LIMIT_MAX_KEY,
+  QUESTION_RATE_LIMIT_WINDOW_SECONDS_KEY,
+} from "@/lib/constants";
 
 const ALLOWED_KEYS = new Set([
-  "rate_limit_max_attempts",
-  "rate_limit_window_seconds",
-  "rsvp_rate_limit_max",
-  "rsvp_rate_limit_window",
-  "question_rate_limit_max",
-  "question_rate_limit_window",
+  LOGIN_RATE_LIMIT_MAX_KEY,
+  LOGIN_RATE_LIMIT_WINDOW_SECONDS_KEY,
+  RSVP_RATE_LIMIT_MAX_KEY,
+  RSVP_RATE_LIMIT_WINDOW_SECONDS_KEY,
+  QUESTION_RATE_LIMIT_MAX_KEY,
+  QUESTION_RATE_LIMIT_WINDOW_SECONDS_KEY,
 ]);
 
 interface RateLimitState {
@@ -55,7 +64,7 @@ export async function saveRateLimitConfig(
     revalidatePath("/admin/security");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("RateLimitForm", error);
     return { success: false, error: "Failed to save rate limit config." };
   }
 }

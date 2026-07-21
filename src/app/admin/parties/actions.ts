@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { getOptionalString, getInt } from "@/lib/form-data";
 import { updateParty as updatePartyRepo, deleteParty, getPartyById } from "@/lib/repository/party";
+import { logError } from "@/lib/logger";
 
 interface PartyState { success?: boolean; error?: string }
 
@@ -37,7 +38,7 @@ export async function updateParty(prevState: PartyState | null, formData: FormDa
     revalidatePath("/admin/guests");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Parties", error);
     return { success: false, error: "Failed to update party. Code may already exist." };
   }
 }
@@ -59,7 +60,7 @@ export async function removeParty(prevState: PartyState | null, formData: FormDa
     revalidatePath("/admin/guests");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Parties", error);
     return { success: false, error: "Failed to delete party." };
   }
 }

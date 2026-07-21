@@ -265,10 +265,10 @@ describe("site-config", () => {
       expect(getMediaMaxFileSizeMb()).toBe(16);
     });
 
-    it("returns 16 for zero", async () => {
+    it("returns 0 for zero (uploads disabled)", async () => {
       mockGetConfig.mockReturnValue("0");
       const { getMediaMaxFileSizeMb } = await import("../site-config");
-      expect(getMediaMaxFileSizeMb()).toBe(16);
+      expect(getMediaMaxFileSizeMb()).toBe(0);
     });
 
     it("returns 16 for negative", async () => {

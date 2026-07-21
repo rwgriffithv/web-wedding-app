@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth";
+import { LANDING_TITLE_KEY, LANDING_BACKGROUND_KEY } from "@/lib/constants";
 import { getConfig } from "@/lib/repository/site-config";
 import { isIpBanned } from "@/lib/repository/ip-bans";
 import { getClientIp } from "@/lib/ip";
@@ -30,8 +31,8 @@ export default async function LoginPage() {
     );
   }
 
-  const title = getConfig("landing_title");
-  const background = getConfig("landing_background");
+  const title = getConfig(LANDING_TITLE_KEY);
+  const background = getConfig(LANDING_BACKGROUND_KEY);
   const FALLBACK = "var(--color-fallback-gradient)";
   let safeBackground = FALLBACK;
   if (background) {

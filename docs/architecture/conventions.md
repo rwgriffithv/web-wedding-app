@@ -362,13 +362,13 @@ Playwright runs tests in parallel across multiple browser workers (default: CPU 
 1. 8 workers start simultaneously, each navigating to `/login`
 2. Multiple workers submit login forms within the same 60-second window
 3. Violations accumulate per-IP (not per-user) in `rate_limit_violations`
-4. When violations hit `auto_ban_login_threshold`, `::1`/`127.0.0.1` gets added to `banned_ips`
+4. When violations hit `AUTO_BAN_LOGIN_THRESHOLD_KEY`, `::1`/`127.0.0.1` gets added to `banned_ips`
 5. The login page checks `isIpBanned(ip)` server-side and renders a "IP BANNED" screen instead of the login form
 6. All subsequent tests timeout waiting for form elements that never render
 
 **How to prevent it:**
 - `scripts/db-seed.ts` always resets rate-limit config and clears `banned_ips`/`rate_limit_violations` on every run (even when demo data already exists)
-- Dev defaults are set high enough for parallel tests: `rate_limit_max_attempts=100`, `auto_ban_login_threshold=50`
+- Dev defaults are set high enough for parallel tests: `LOGIN_RATE_LIMIT_MAX_KEY=100`, `AUTO_BAN_LOGIN_THRESHOLD_KEY=50`
 - If you change these values, verify E2E tests still pass with `npm run test:e2e:parallel`
 
 **If tests are already broken:**
@@ -420,7 +420,7 @@ Serial tests (`e2e/serial/`) run sequentially in a single worker against the sam
 |---|---|---|
 | **Database** | `site_config` rows, `banned_ips`, `rate_limit_violations`, users, RSVPs | `setConfig()`, login failures, CRUD operations |
 | **In-memory** | Rate limiter entries (per-IP counters with TTL), cached config | Login attempts, server actions |
-| **Browser** | Cookies, localStorage (`pv_until`, `rl_until`, `cookie_health_until`) | Login, PageViewTracker, rate-limit cooldown |
+| **Browser** | Cookies, localStorage (`VIEW_DEBOUNCE_UNTIL_KEY`, `LOGIN_LIMIT_UNTIL_KEY`, `COOKIE_HEALTH_KEY`) | Login, PageViewTracker, rate-limit cooldown |
 
 **Rules:**
 

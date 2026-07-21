@@ -4,6 +4,7 @@ import { useRateLimitCooldown } from "@/hooks/rate-limit";
 import { RateLimitContext } from "./rate-limit-context";
 import { RsvpForm } from "./rsvp-form";
 import type { RsvpResponse } from "@/lib/types";
+import { RSVP_LIMIT_UNTIL_KEY } from "@/lib/constants";
 
 interface Member {
   id: number;
@@ -18,7 +19,7 @@ interface RsvpFormListProps {
 }
 
 export function RsvpFormList({ members, responsesByGuest, isLocked }: RsvpFormListProps) {
-  const cooldown = useRateLimitCooldown("rl_r_until");
+  const cooldown = useRateLimitCooldown(RSVP_LIMIT_UNTIL_KEY);
 
   return (
     <RateLimitContext.Provider value={cooldown}>

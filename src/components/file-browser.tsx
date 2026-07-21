@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { STATUS_UNAUTHORIZED } from "@/lib/http-status";
 
 interface FileBrowserProps {
   onSelect: (url: string) => void;
@@ -30,7 +31,8 @@ export function FileBrowser({ onSelect, onClose }: FileBrowserProps) {
     const qs = dirPath ? `?path=${encodeURIComponent(dirPath)}` : "";
     fetch(`/api/media/list${qs}`)
       .then(r => {
-        if (r.status === 401) { window.location.href = "/login"; throw new Error("Session expired"); }
+        // Session expired — redirect to login
+        if (r.status === STATUS_UNAUTHORIZED) { window.location.href = "/login"; throw new Error("Session expired"); }
         if (!r.ok) throw new Error("Failed to load files.");
         return r.json();
       })

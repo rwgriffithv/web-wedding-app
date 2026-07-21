@@ -101,12 +101,12 @@ The RSVP repository function `submitResponse()` does an `INSERT OR REPLACE` to h
 
 RSVP submissions are rate-limited per party using an in-memory sliding-window limiter (key: `party:{partyId}`). This is the same rate-limiting infrastructure used for login and questions — see [authentication.md](authentication.md#rate-limiting) for how it works.
 
-| Config Key | Default | Range |
+| Config Key Constant | Default | Range |
 |---|---|---|
-| `rsvp_rate_limit_max` | 10 | 1–1000 |
-| `rsvp_rate_limit_window` | 60 | 1–1000 seconds |
+| `RSVP_RATE_LIMIT_MAX_KEY` | 10 | 1–1000 |
+| `RSVP_RATE_LIMIT_WINDOW_KEY` | 60 | 1–1000 seconds |
 
-When the limit is exceeded, the server returns `{ error: "...", action: "cooldown", cooldownUntil }`. The client creates an `rl_r_until` cookie from the timestamp and displays a countdown timer ("Please wait Xs..."). The form is disabled during the cooldown. Config is editable via the Rate Limiting section on `/admin/rsvp`.
+When the limit is exceeded, the server returns `{ error: "...", action: "cooldown", cooldownUntil }`. The client creates an `RSVP_LIMIT_UNTIL_KEY` cookie from the timestamp and displays a countdown timer ("Please wait Xs..."). The form is disabled during the cooldown. Config is editable via the Rate Limiting section on `/admin/rsvp`.
 
 Note: RSVP rate limiting does **not** trigger IP bans — only login rate limiting does. See [ip-banning.md](ip-banning.md) for details.
 

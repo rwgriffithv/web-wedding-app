@@ -1,3 +1,4 @@
+import { DRESS_CODE_TEXT_KEY } from "@/lib/constants";
 import { getImages } from "@/lib/repository/dress-code";
 import { getConfig } from "@/lib/repository/site-config";
 import { Header } from "@/components/header";
@@ -8,7 +9,7 @@ import { saveDressCodeText } from "./actions";
 
 export default function AdminDressCodePage() {
   const images = getImages();
-  const dressCodeText = getConfig("dress_code_text");
+  const dressCodeText = getConfig(DRESS_CODE_TEXT_KEY);
 
   return (
     <>
@@ -16,7 +17,7 @@ export default function AdminDressCodePage() {
       <details className="admin-section" open>
         <summary>Dress Code Description</summary>
         <div className="admin-section-body">
-          <TabTextForm label="Dress Code Description" fieldName="dress_code_text" currentText={dressCodeText} maxLength={5000} action={saveDressCodeText} />
+          <TabTextForm label="Dress Code Description" fieldName={DRESS_CODE_TEXT_KEY} currentText={dressCodeText} maxLength={5000} action={saveDressCodeText} />
         </div>
       </details>
       <details className="admin-section" open>

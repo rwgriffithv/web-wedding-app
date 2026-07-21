@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { submitQuestion } from "./actions";
 import { CharCount } from "@/components/char-count";
-import { MAX_QUESTION_LENGTH } from "@/lib/constants";
+import { MAX_QUESTION_LENGTH, QUESTION_LIMIT_UNTIL_KEY } from "@/lib/constants";
 import { useRateLimitCooldown } from "@/hooks/rate-limit";
 import type { Question } from "@/lib/db";
 
@@ -13,7 +13,7 @@ export function MyQuestions({ questions }: { questions: Question[] }) {
   const [state, setState] = useState<{ success?: boolean; error?: string; action?: string; href?: string } | null>(null);
   const [isPending, setIsPending] = useState(false);
   const [questionText, setQuestionText] = useState("");
-  const { cooldown, isLimited, checkRateLimit, syncFromResponse } = useRateLimitCooldown("rl_q_until");
+  const { cooldown, isLimited, checkRateLimit, syncFromResponse } = useRateLimitCooldown(QUESTION_LIMIT_UNTIL_KEY);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();

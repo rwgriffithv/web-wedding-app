@@ -1,6 +1,7 @@
 import path from "node:path";
 import fs from "node:fs";
 export { ALLOWED_EXTENSIONS, IMAGE_EXTENSIONS, VIDEO_EXTENSIONS, detectMediaType, MIME_TYPES } from "@/lib/media-types";
+import { logError } from "@/lib/logger";
 
 export const MEDIA_DIR = process.env.MEDIA_DIR || path.join(/* turbopackIgnore: true */ process.cwd(), "data", "media");
 const MEDIA_DIR_SEP = MEDIA_DIR.endsWith(path.sep) ? MEDIA_DIR : MEDIA_DIR + path.sep;
@@ -21,7 +22,7 @@ export function deleteThumbnail(thumbnailUrl: string | null): void {
   try {
     fs.unlinkSync(resolved);
   } catch (err) {
-    console.warn("Failed to delete thumbnail:", err);
+    logError("Media", err);
   }
 }
 

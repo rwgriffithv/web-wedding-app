@@ -13,9 +13,8 @@ A production-ready wedding website built with Next.js 16, SQLite, and Docker. Fe
 │                     │                │              │
 │              ┌──────▼────────────────▼──────┐       │
 │              │      Authenticated Pages     │       │
-│              │  home | schedule | lodging   │       │
-│              │  dress-code | rsvp | media   │       │
-│              │  guide | help                │       │
+│              │  home | guide | rsvp | media │       │
+│              │  help                        │       │
 │              └─────────────────────────────┘       │
 └─────────────────────────────────────────────────────┘
 ┌─────────────────────────────────────────────────────┐
@@ -161,12 +160,9 @@ src/
 ├── app/                    # Next.js App Router
 │   ├── (main)/             # Authenticated public pages
 │   │   ├── home/           #   Wedding date, location, subtitle
-│   │   ├── schedule/       #   Event timeline
-│   │   ├── lodging/        #   Hotel recommendations
-│   │   ├── dress-code/     #   Mood board
+│   │   ├── guide/          #   Tabbed guide (schedule, dress-code, lodging, gifts)
 │   │   ├── rsvp/           #   Party-based RSVP
 │   │   ├── media/          #   Photo/video gallery
-│   │   ├── guide/          #   Tabbed guide
 │   │   └── help/           #   FAQ and guest questions
 │   ├── admin/              # Admin dashboard
 │   │   ├── site/           #   Site config
@@ -191,12 +187,24 @@ src/
 ├── lib/                    # Server-only utilities
 │   ├── repository/         # Data access layer (12 modules)
 │   ├── auth.ts             # Session management, password hashing
+│   ├── constants.ts        # Shared constants (cookie keys, rate limit defaults)
+│   ├── datetime.ts         # Date/time formatting helpers
 │   ├── db.ts               # Database connection, migration, seed
-│   ├── schema.ts           # DDL statements (14 tables)
-│   ├── config.ts           # Environment validation
-│   ├── rate-limit.ts       # Rate limiting logic
-│   ├── session-revocation.ts # Session revocation checks
-│   └── thumbnail.ts        # Image thumbnail generation
+│   ├── db-schema.ts        # DDL statements (14 tables)
+│   ├── env.ts              # Environment validation
+│   ├── form-data.ts        # Safe FormData extraction helpers
+│   ├── http-status.ts      # HTTP status code constants
+│   ├── ip.ts               # Client IP extraction from proxy headers
+│   ├── localstorage-cache.ts # localStorage expiration cache
+│   ├── logger.ts           # Rate-limited console wrapper
+│   ├── media.ts            # Media directory config and paths
+│   ├── media-types.ts      # MIME type detection and extension maps
+│   ├── rate-limit.ts       # In-memory rate limiter
+│   ├── session-revocation.ts # In-memory revocation maps
+│   ├── site-config.ts      # DB key-value config schema
+│   ├── thumbnail.ts        # Image/video thumbnail generation
+│   ├── types.ts            # All TypeScript interfaces
+│   └── upload-limits.ts    # Upload size limit constants
 ├── proxy.ts                # Next.js proxy (auth, caching, IP bans)
 └── globals.css             # Global styles
 ```
@@ -236,10 +244,10 @@ See [docs/architecture/deployment-pipeline.md](docs/architecture/deployment-pipe
 
 | Suite | Command | Count |
 |---|---|---|
-| Unit tests | `npm run test:unit` | 372 tests (36 files) |
-| E2E (parallel) | `npm run test:e2e:parallel` | 59 tests (13 specs) |
+| Unit tests | `npm run test:unit` | 481 tests (44 files) |
+| E2E (parallel) | `npm run test:e2e:parallel` | 65 tests (13 specs) |
 | E2E (serial) | `npm run test:e2e:serial` | 17 tests (3 specs) |
-| All | `npm test` | 448 tests |
+| All | `npm test` | 563 tests |
 
 - Unit tests cover: auth, session revocation, db init, all repositories (guests, RSVP, lodging, dress code, media, site config, users, IP bans, FAQ, questions, schedule, parties), all server actions (security, RSVP, help, media, lodging, users, schedule), components (header, navigation, RSVP form, media forms, cookie warning, char count, rate-limit cooldown), rate limiting, and more.
 - E2E tests cover: login/logout, session expiry, session indicator, admin auth, admin CRUD (lodging, guests, media), admin security (rate limits, violations, IP banning, suspicious IPs), RSVP flows (party code login, submission, plus ones, deadline locking, view-only guest, invalid code), help/FAQ, guide tabs, media sections, health check, page view tracking.

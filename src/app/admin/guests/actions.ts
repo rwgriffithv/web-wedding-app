@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { getRequiredString, getInt } from "@/lib/form-data";
+import { logError } from "@/lib/logger";
 import { getDb } from "@/lib/db";
 import { updateGuest as updateGuestRepo, createGuest, deleteGuest, getGuestById } from "@/lib/repository/guests";
 import { createParty, deleteEmptyParty } from "@/lib/repository/party";
@@ -22,7 +23,7 @@ export async function createPartyInline(prevState: GuestState | null, formData: 
     revalidatePath("/admin/guests");
     return { success: true, partyId: party.id };
   } catch (error) {
-    console.error(error);
+    logError("Guests", error);
     const msg = error instanceof Error ? error.message : "";
     return { success: false, error: msg.includes("already exists") ? msg : "Failed to create party." };
   }
@@ -71,7 +72,7 @@ export async function updateGuest(prevState: GuestState | null, formData: FormDa
     revalidatePath("/admin/guests");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Guests", error);
     return { success: false, error: "Failed to update guest." };
   }
 }
@@ -101,7 +102,7 @@ export async function addGuest(prevState: GuestState | null, formData: FormData)
     revalidatePath("/admin/guests");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Guests", error);
     return { success: false, error: "Failed to create guest." };
   }
 }
@@ -131,7 +132,7 @@ export async function removeGuest(prevState: GuestState | null, formData: FormDa
     revalidatePath("/admin/guests");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Guests", error);
     return { success: false, error: "Failed to delete guest." };
   }
 }

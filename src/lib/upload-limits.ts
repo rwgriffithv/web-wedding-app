@@ -1,16 +1,18 @@
-import { MEDIA_MAX_FILE_SIZE_MB_DEFAULT } from "@/lib/constants";
-
-const STORAGE_KEY = "media_max_file_size_mb";
+import { MEDIA_MAX_FILE_SIZE_MB_KEY } from "@/lib/constants";
+import { getCachedValue } from "@/lib/localstorage-cache";
 
 /**
- * Read the configured max upload file size from localStorage (client) or
- * fall back to the default. Returns bytes.
+ * Read the configured max upload file size from localStorage (client).
+ * Returns the value in bytes, or null if no cached value exists.
  *
- * Used by FileUpload and DressCodeMultiImageForm for client-side pre-validation
- * before uploading to the server.
+ * When null, the consumer should skip client-side pre-validation and let
+ * the server decide. The server always enforces the authoritative limit.
  */
-export function getMaxFileSizeBytes(): number {
-  if (typeof window === "undefined") return MEDIA_MAX_FILE_SIZE_MB_DEFAULT * 1024 * 1024;
-  const raw = parseInt(localStorage.getItem(STORAGE_KEY) || "", 10);
-  return (Number.isFinite(raw) && raw > 0 ? raw : MEDIA_MAX_FILE_SIZE_MB_DEFAULT) * 1024 * 1024;
+export function getMaxFileSizeBytes(): number | null {
+  if (typeof window === "undefined") return null;
+  const cached = getCachedValue<number>(MEDIA_MAX_FILE_SIZE_MB_KEY);
+  if (cached !== null && Number.isFinite(cached) && cached >= 0) {
+    return cached * 1024 * 1024;
+  }
+  return null;
 }

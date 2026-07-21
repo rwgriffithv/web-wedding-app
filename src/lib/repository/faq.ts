@@ -6,11 +6,6 @@ export function getAll(): FaqItem[] {
   return db.prepare("SELECT * FROM faq_items ORDER BY sort_order, id").all() as FaqItem[];
 }
 
-export function getById(id: number): FaqItem | undefined {
-  const db = getDb();
-  return db.prepare("SELECT * FROM faq_items WHERE id = ?").get(id) as FaqItem | undefined;
-}
-
 export function create(question: string, answer: string): FaqItem {
   const db = getDb();
   const createTransaction = db.transaction(() => {

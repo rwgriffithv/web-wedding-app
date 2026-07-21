@@ -4,10 +4,11 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { login, loginByPartyCode } from "./actions";
 import { useRateLimitCooldown, type CooldownProps } from "@/hooks/rate-limit";
-import { COOKIE_HEALTH_KEY, RATE_LIMIT_ERROR } from "@/lib/constants";
+import { COOKIE_HEALTH_KEY, LOGIN_LIMIT_UNTIL_KEY, RATE_LIMIT_ERROR } from "@/lib/constants";
+import { setExpiration } from "@/lib/localstorage-cache";
 
 function storeCookieHealth(until: number) {
-  try { localStorage.setItem(COOKIE_HEALTH_KEY, String(until)); } catch { /* localStorage unavailable */ }
+  setExpiration(COOKIE_HEALTH_KEY, until);
 }
 
 function CredentialsForm({ cooldown, isLimited, checkRateLimit, syncFromResponse }: CooldownProps) {
@@ -129,7 +130,7 @@ function PartyCodeForm({ cooldown, isLimited, checkRateLimit, syncFromResponse }
 
 export function LoginForm() {
   const [mode, setMode] = useState<"credentials" | "party">("party");
-  const cooldownProps = useRateLimitCooldown("rl_until");
+  const cooldownProps = useRateLimitCooldown(LOGIN_LIMIT_UNTIL_KEY);
 
   return (
     <div className="login-card">

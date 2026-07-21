@@ -1,13 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { logError } from "@/lib/logger";
 import { ErrorDisplay } from "../error-display";
+
+vi.mock("@/lib/logger", () => ({
+  logError: vi.fn(),
+}));
 
 describe("ErrorDisplay", () => {
   const error = new Error("test error");
   const reset = vi.fn();
 
   beforeEach(() => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.mocked(logError).mockClear();
     reset.mockClear();
   });
 
@@ -45,7 +50,7 @@ describe("ErrorDisplay", () => {
 
   it("logs error to console", () => {
     render(<ErrorDisplay error={error} reset={reset} />);
-    expect(console.error).toHaveBeenCalledWith(error);
+    expect(logError).toHaveBeenCalledWith("ErrorDisplay", error);
   });
 
   it("applies custom className", () => {

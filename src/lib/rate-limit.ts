@@ -9,10 +9,11 @@ const stores = new Map<string, Map<string, { count: number; resetAt: number }>>(
 const intervals = new Map<string, ReturnType<typeof setInterval>>();
 
 export function createRateLimiter(name: string) {
-  if (!stores.has(name)) {
-    stores.set(name, new Map());
+  let store = stores.get(name);
+  if (!store) {
+    store = new Map();
+    stores.set(name, store);
   }
-  const store = stores.get(name)!;
 
   if (!intervals.has(name)) {
     const interval = setInterval(() => {

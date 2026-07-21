@@ -3,7 +3,8 @@
 import { useRef, useState, useActionState, useEffect } from "react";
 import { addImage } from "./actions";
 import { FileBrowser } from "@/components/file-browser";
-import { getMaxFileSizeBytes } from "@/lib/upload-limits";
+import { useMediaMaxFileSize } from "@/hooks/media-max-file-size";
+import { STATUS_UNAUTHORIZED, STATUS_PAYLOAD_TOO_LARGE } from "@/lib/http-status";
 
 const initialState: { success?: boolean; error?: string } | null = null;
 
@@ -30,6 +31,7 @@ export function DressCodeMultiImageForm() {
   const [uploadErrors, setUploadErrors] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const { maxBytes, refreshMaxBytes } = useMediaMaxFileSize();
 
   useEffect(() => {
     if (state?.success) setQueue([]);
@@ -40,12 +42,11 @@ export function DressCodeMultiImageForm() {
     setUploading(true);
     setUploadErrors([]);
 
-    const maxBytes = getMaxFileSizeBytes();
-
     const failures: string[] = [];
     for (const file of Array.from(files)) {
-      if (file.size > maxBytes) {
-        failures.push(file.name);
+      if (maxBytes !== null && file.size > maxBytes) {
+        const maxMb = Math.round(maxBytes / (1024 * 1024));
+        failures.push(`${file.name} (exceeds ${maxMb} MB limit)`);
         continue;
       }
       try {
@@ -53,7 +54,18 @@ export function DressCodeMultiImageForm() {
         formData.append("file", file);
 
         const res = await fetch("/api/upload", { method: "POST", body: formData });
-        if (res.status === 401) { window.location.href = "/login"; return; }
+        // Session expired — redirect to login
+        if (res.status === STATUS_UNAUTHORIZED) { window.location.href = "/login"; return; }
+        // Server rejected the file as too large — our cached limit is stale
+        // refreshMaxBytes won't affect the current batch (the loop runs synchronously
+        // with a stale closure over maxBytes), but it updates the cache for the next
+        // upload attempt after React re-renders.
+        if (res.status === STATUS_PAYLOAD_TOO_LARGE) {
+          void refreshMaxBytes();
+          const detail = await res.json().catch(() => ({ error: "" }));
+          failures.push(detail.error ? `${file.name} (${detail.error})` : file.name);
+          continue;
+        }
         if (!res.ok) { failures.push(file.name); continue; }
 
         let data: { data?: { url?: string } };
@@ -64,8 +76,9 @@ export function DressCodeMultiImageForm() {
           continue;
         }
 
-        if (data.data?.url) {
-          setQueue(prev => [...prev, data.data!.url!]);
+        const uploadedUrl = data.data?.url;
+        if (uploadedUrl) {
+          setQueue(prev => [...prev, uploadedUrl]);
         } else {
           failures.push(file.name);
         }

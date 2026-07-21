@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { logError } from "@/lib/logger";
 
 interface ErrorDisplayProps {
   error: Error & { digest?: string };
@@ -10,7 +11,7 @@ interface ErrorDisplayProps {
 }
 
 export function ErrorDisplay({ error, reset, message = "An unexpected error occurred. Please try again.", className = "page-content" }: ErrorDisplayProps) {
-  useEffect(() => { console.error(error); }, [error]);
+  useEffect(() => { logError("ErrorDisplay", error); }, [error]);
   return (
     <div className={`${className} text-center pt-16`}>
       <h1>Something went wrong</h1>

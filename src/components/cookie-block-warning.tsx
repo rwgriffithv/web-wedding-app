@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { COOKIE_HEALTH_KEY } from "@/lib/constants";
+import { isExpired } from "@/lib/localstorage-cache";
 
 export function CookieBlockWarning() {
   const [warning, setWarning] = useState(false);
@@ -10,9 +11,7 @@ export function CookieBlockWarning() {
   useEffect(() => {
     try {
       if (window.location.pathname !== "/login") return;
-
-      const raw = localStorage.getItem(COOKIE_HEALTH_KEY);
-      if (raw && Number(raw) > Date.now()) {
+      if (!isExpired(COOKIE_HEALTH_KEY)) {
         setWarning(true);
       }
     } catch {

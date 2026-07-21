@@ -36,3 +36,5 @@ test("admin can add and remove media items", async ({ page }) => {
   await mediaRow.getByRole("button", { name: "Delete" }).click();
   await expect(page.getByText("E2E Test Photo")).not.toBeVisible();
 });
+
+

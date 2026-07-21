@@ -4,8 +4,9 @@ import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { getRequiredString, getOptionalString, getInt } from "@/lib/form-data";
 import { MAX_QUESTION_LENGTH, MAX_ANSWER_LENGTH } from "@/lib/constants";
+import { logError } from "@/lib/logger";
 import * as faqRepo from "@/lib/repository/faq";
-import * as questionsRepo from "@/lib/repository/questions";
+import { answer as answerQuestionRepo } from "@/lib/repository/questions";
 
 interface HelpState { success?: boolean; error?: string }
 
@@ -39,7 +40,7 @@ export async function addFaq(prevState: HelpState | null, formData: FormData): P
     revalidatePath("/help");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Help", error);
     return { success: false, error: "Failed to add FAQ item." };
   }
 }
@@ -61,7 +62,7 @@ export async function updateFaq(prevState: HelpState | null, formData: FormData)
     revalidatePath("/help");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Help", error);
     return { success: false, error: "Failed to update FAQ item." };
   }
 }
@@ -80,7 +81,7 @@ export async function deleteFaq(prevState: HelpState | null, formData: FormData)
     revalidatePath("/help");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Help", error);
     return { success: false, error: "Failed to delete FAQ item." };
   }
 }
@@ -98,13 +99,13 @@ export async function moveFaq(prevState: HelpState | null, formData: FormData): 
 
   try {
     const result = faqRepo.swapSortOrder(id, direction);
-    if (!result.success) return { success: false, error: result.error! };
+    if (!result.success) return { success: false, error: result.error ?? "Unknown error" };
 
     revalidatePath("/admin/help");
     revalidatePath("/help");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Help", error);
     return { success: false, error: "Failed to reorder FAQ item." };
   }
 }
@@ -124,12 +125,12 @@ export async function answerQuestion(prevState: HelpState | null, formData: Form
   }
 
   try {
-    questionsRepo.answer(id, answer);
+    answerQuestionRepo(id, answer);
     revalidatePath("/admin/help");
     revalidatePath("/help");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Help", error);
     return { success: false, error: "Failed to answer question." };
   }
 }

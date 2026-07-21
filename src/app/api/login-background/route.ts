@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getConfig } from "@/lib/repository/site-config";
+import { LANDING_BACKGROUND_KEY } from "@/lib/constants";
 import { MEDIA_DIR, IMAGE_EXTENSIONS, isWithinMediaDir, MIME_TYPES } from "@/lib/media";
 import fs from "node:fs";
 import path from "node:path";
@@ -7,7 +8,7 @@ import path from "node:path";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const background = getConfig("landing_background");
+  const background = getConfig(LANDING_BACKGROUND_KEY);
   if (!background || !background.startsWith("/api/media/")) {
     return NextResponse.json({ success: false, error: "Not found." }, { status: 404 });
   }

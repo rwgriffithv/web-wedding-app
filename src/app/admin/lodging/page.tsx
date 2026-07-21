@@ -1,3 +1,4 @@
+import { LODGING_TEXT_KEY } from "@/lib/constants";
 import { getAll } from "@/lib/repository/lodging";
 import { getConfig } from "@/lib/repository/site-config";
 import { Header } from "@/components/header";
@@ -8,7 +9,7 @@ import { saveLodgingText } from "./actions";
 
 export default function AdminLodgingPage() {
   const options = getAll();
-  const lodgingText = getConfig("lodging_text");
+  const lodgingText = getConfig(LODGING_TEXT_KEY);
 
   return (
     <>
@@ -16,7 +17,7 @@ export default function AdminLodgingPage() {
       <details className="admin-section" open>
         <summary>Lodging Intro Text</summary>
         <div className="admin-section-body">
-          <TabTextForm label="Lodging Tab Intro Text" fieldName="lodging_text" currentText={lodgingText} maxLength={1000} action={saveLodgingText} />
+          <TabTextForm label="Lodging Tab Intro Text" fieldName={LODGING_TEXT_KEY} currentText={lodgingText} maxLength={1000} action={saveLodgingText} />
         </div>
       </details>
       <details className="admin-section" open>

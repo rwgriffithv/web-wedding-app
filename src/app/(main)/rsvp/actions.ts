@@ -8,7 +8,8 @@ import { getPartyById } from "@/lib/repository/party";
 import { submitResponse } from "@/lib/repository/rsvp";
 import { createRateLimiter, getRateLimitConfig } from "@/lib/rate-limit";
 import { getRequiredString } from "@/lib/form-data";
-import { RATE_LIMIT_WINDOW_SECONDS_DEFAULT } from "@/lib/constants";
+import { logError } from "@/lib/logger";
+import { RSVP_RATE_LIMIT_MAX_DEFAULT, RSVP_RATE_LIMIT_MAX_KEY, RSVP_RATE_LIMIT_WINDOW_SECONDS_KEY, LOGIN_RATE_LIMIT_WINDOW_SECONDS_DEFAULT, RSVP_DEADLINE_KEY } from "@/lib/constants";
 
 export interface RsvpState {
   success?: boolean;
@@ -21,7 +22,7 @@ export interface RsvpState {
 const rsvpRateLimiter = createRateLimiter("rsvp");
 
 function getRsvpRateLimitConfig() {
-  return getRateLimitConfig("rsvp_rate_limit_max", "rsvp_rate_limit_window", 10, RATE_LIMIT_WINDOW_SECONDS_DEFAULT);
+  return getRateLimitConfig(RSVP_RATE_LIMIT_MAX_KEY, RSVP_RATE_LIMIT_WINDOW_SECONDS_KEY, RSVP_RATE_LIMIT_MAX_DEFAULT, LOGIN_RATE_LIMIT_WINDOW_SECONDS_DEFAULT);
 }
 
 export async function submitRsvp(_prevState: RsvpState | null, formData: FormData): Promise<RsvpState> {
@@ -40,7 +41,7 @@ export async function submitRsvp(_prevState: RsvpState | null, formData: FormDat
     return { success: false, error: "RSVP is not available for user logins. Please use your Party Code to RSVP." };
   }
 
-  const deadlineStr = getConfig("rsvp_deadline");
+  const deadlineStr = getConfig(RSVP_DEADLINE_KEY);
   if (deadlineStr) {
     const deadline = new Date(deadlineStr);
     if (new Date() > deadline) {
@@ -98,7 +99,7 @@ async function rsvpMember(memberId: number, name: string, attending: string, for
     revalidatePath("/admin/rsvp");
     return { success: true };
   } catch (error) {
-    console.error(error);
+    logError("Rsvp", error);
     return { success: false, error: "Failed to submit RSVP. Please try again." };
   }
 }
