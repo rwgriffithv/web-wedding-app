@@ -32,6 +32,9 @@ export function AdminSidebar() {
 
   useEffect(() => {
     close();
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [pathname, close]);
 
   const links = [
