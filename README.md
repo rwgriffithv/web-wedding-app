@@ -244,14 +244,14 @@ See [docs/architecture/deployment-pipeline.md](docs/architecture/deployment-pipe
 
 | Suite | Command | Count |
 |---|---|---|
-| Unit tests | `npm run test:unit` | 481 tests (44 files) |
-| E2E (parallel) | `npm run test:e2e:parallel` | 65 tests (13 specs) |
-| E2E (serial) | `npm run test:e2e:serial` | 17 tests (3 specs) |
-| All | `npm test` | 563 tests |
+| Unit tests | `npm run test:unit` | 511 tests (46 files) |
+| E2E (parallel) | `npm run test:e2e:parallel` | 49 tests (15 specs) |
+| E2E (serial) | `npm run test:e2e:serial` | 41 tests (7 specs) |
+| All | `npm test` | 601 tests |
 
-- Unit tests cover: auth, session revocation, db init, all repositories (guests, RSVP, lodging, dress code, media, site config, users, IP bans, FAQ, questions, schedule, parties), all server actions (security, RSVP, help, media, lodging, users, schedule), components (header, navigation, RSVP form, media forms, cookie warning, char count, rate-limit cooldown), rate limiting, and more.
-- E2E tests cover: login/logout, session expiry, session indicator, admin auth, admin CRUD (lodging, guests, media), admin security (rate limits, violations, IP banning, suspicious IPs), RSVP flows (party code login, submission, plus ones, deadline locking, view-only guest, invalid code), help/FAQ, guide tabs, media sections, health check, page view tracking.
-- Serial E2E tests (rate limiting, session revocation, page view tracking) run separately with a fresh server to avoid interfering with parallel tests.
+- Unit tests cover: auth, session revocation, db init, all repositories (guests, RSVP, lodging, dress code, media, site config, users, IP bans, FAQ, questions, schedule, parties), all server actions (security, RSVP, help, media, lodging, users, schedule), components (header, navigation, RSVP form, media forms, cookie warning, char count, rate-limit form), rate limiting, and more.
+- E2E tests cover: login/logout, session expiry, session indicator, admin auth, admin CRUD (lodging, guests, media), admin security (rate limits, violations, IP banning, suspicious IPs), RSVP flows (party code login, submission, plus ones, deadline locking, view-only guest, invalid code), admin media rate limiting, admin RSVP rate limiting, admin help rate limiting, help/FAQ, guide tabs, media sections, health check, page view tracking.
+- Serial E2E tests (rate limiting, session revocation, page view tracking, media/RSVP/help rate limit config) run separately with a fresh server to avoid interfering with parallel tests.
 
 ---
 

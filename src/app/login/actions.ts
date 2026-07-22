@@ -42,13 +42,14 @@ export async function login(formData: FormData): Promise<LoginState> {
   }
 
   const rlConfig = getLoginRateLimitConfig();
-  if (!rateLimiter.check(`${ip}:login`, rlConfig)) {
+  const rlResult = rateLimiter.check(`${ip}:login`, rlConfig);
+  if (!rlResult.allowed) {
     recordRateLimitViolation(ip);
     tryAutoBan(ip);
     if (isIpBanned(ip)) {
       return { error: "IP banned", action: "refresh" };
     }
-    return { error: "Too many attempts. Please wait before trying again.", action: "cooldown", cooldownUntil: Date.now() + rlConfig.windowMs };
+    return { error: "Too many attempts. Please wait before trying again.", action: "cooldown", cooldownUntil: Date.now() + rlResult.retryAfterMs };
   }
 
   const user = getUserWithPassword(username);
@@ -100,13 +101,14 @@ export async function loginByPartyCode(formData: FormData): Promise<LoginState> 
   }
 
   const rlConfig = getLoginRateLimitConfig();
-  if (!rateLimiter.check(`${ip}:login`, rlConfig)) {
+  const rlResult = rateLimiter.check(`${ip}:login`, rlConfig);
+  if (!rlResult.allowed) {
     recordRateLimitViolation(ip);
     tryAutoBan(ip);
     if (isIpBanned(ip)) {
       return { error: "IP banned", action: "refresh" };
     }
-    return { error: "Too many attempts. Please wait before trying again.", action: "cooldown", cooldownUntil: Date.now() + rlConfig.windowMs };
+    return { error: "Too many attempts. Please wait before trying again.", action: "cooldown", cooldownUntil: Date.now() + rlResult.retryAfterMs };
   }
 
   const party = getPartyByCode(trimmedCode);

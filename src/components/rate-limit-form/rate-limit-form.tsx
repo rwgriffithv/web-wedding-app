@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { saveRateLimitConfig } from "./actions";
+import { saveRateLimitConfig, type RateLimitState } from "./actions";
 import { LOGIN_RATE_LIMIT_MAX_DEFAULT, LOGIN_RATE_LIMIT_WINDOW_SECONDS_DEFAULT } from "@/lib/constants";
 
 interface RateLimitFormProps {
@@ -11,9 +11,10 @@ interface RateLimitFormProps {
   description: string;
   maxDefault?: string;
   windowDefault?: string;
+  revalidatePaths?: string[];
 }
 
-const initialState: { success?: boolean; error?: string } | null = null;
+const initialState: RateLimitState | null = null;
 
 export function RateLimitForm({
   config,
@@ -22,9 +23,11 @@ export function RateLimitForm({
   description,
   maxDefault = String(LOGIN_RATE_LIMIT_MAX_DEFAULT),
   windowDefault = String(LOGIN_RATE_LIMIT_WINDOW_SECONDS_DEFAULT),
+  revalidatePaths = ["/admin"],
 }: RateLimitFormProps) {
   const [state, dispatch, isPending] = useActionState(
-    saveRateLimitConfig,
+    (prev: RateLimitState | null, formData: FormData) =>
+      saveRateLimitConfig(prev, formData, revalidatePaths),
     initialState,
   );
 
@@ -39,7 +42,6 @@ export function RateLimitForm({
             name={maxKey}
             type="number"
             min="1"
-            max="1000"
             defaultValue={config[maxKey] || maxDefault}
           />
         </div>
@@ -50,7 +52,6 @@ export function RateLimitForm({
             name={windowKey}
             type="number"
             min="1"
-            max="1000"
             defaultValue={config[windowKey] || windowDefault}
           />
         </div>

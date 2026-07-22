@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { RateLimitResult } from "@/lib/rate-limit";
 import { submitQuestion } from "../actions";
 
 const { mockCheck } = vi.hoisted(() => ({
@@ -65,7 +66,7 @@ describe("submitQuestion — session validation", () => {
 
 describe("submitQuestion — form validation", () => {
   beforeEach(() => {
-    mockCheck.mockReturnValue(true);
+    mockCheck.mockReturnValue({ allowed: true, retryAfterMs: 0 } satisfies RateLimitResult);
   });
 
   it("returns error when question is empty", async () => {
@@ -91,7 +92,7 @@ describe("submitQuestion — form validation", () => {
 
 describe("submitQuestion — successful submission", () => {
   it("returns success on valid question", async () => {
-    mockCheck.mockReturnValue(true);
+    mockCheck.mockReturnValue({ allowed: true, retryAfterMs: 0 } satisfies RateLimitResult);
 
     const formData = new FormData();
     formData.set("question", "What time is the ceremony?");
@@ -107,7 +108,7 @@ describe("submitQuestion — error handling", () => {
   it("returns error when create throws", async () => {
     const { create } = await import("@/lib/repository/questions");
     vi.mocked(create).mockImplementationOnce(() => { throw new Error("db failure"); });
-    mockCheck.mockReturnValue(true);
+    mockCheck.mockReturnValue({ allowed: true, retryAfterMs: 0 } satisfies RateLimitResult);
 
     const formData = new FormData();
     formData.set("question", "What time is the ceremony?");
@@ -125,7 +126,7 @@ describe("submitQuestion — rate-limit response", () => {
   });
 
   it("returns cooldownUntil when rate limited", async () => {
-    mockCheck.mockReturnValue(false);
+    mockCheck.mockReturnValue({ allowed: false, retryAfterMs: 60_000 } satisfies RateLimitResult);
 
     const formData = new FormData();
     formData.set("question", "What time is the ceremony?");
@@ -140,7 +141,7 @@ describe("submitQuestion — rate-limit response", () => {
   });
 
   it("does NOT return cooldownUntil when not rate limited", async () => {
-    mockCheck.mockReturnValue(true);
+    mockCheck.mockReturnValue({ allowed: true, retryAfterMs: 0 } satisfies RateLimitResult);
 
     const formData = new FormData();
     formData.set("question", "What time is the ceremony?");

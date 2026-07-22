@@ -3,7 +3,7 @@ import { requireSession, validateSessionInDb } from "@/lib/auth";
 import { MEDIA_DIR, ensureMediaDir, ALLOWED_EXTENSIONS, IMAGE_EXTENSIONS } from "@/lib/media";
 import { logError } from "@/lib/logger";
 import { getMediaMaxFileSizeMb } from "@/lib/site-config";
-import { STATUS_UNAUTHORIZED } from "@/lib/http-status";
+import { STATUS_UNAUTHORIZED, STATUS_PAYLOAD_TOO_LARGE } from "@/lib/http-status";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import { Readable } from "node:stream";
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
   // generous enough to never miscategorize a valid request.
   const contentLength = parseInt(request.headers.get("content-length") || "0", 10);
   if (contentLength > maxSizeBytes + 4096) {
-    return NextResponse.json({ success: false, error: `File exceeds ${maxSizeMb} MB limit.`, maxFileSizeMb: maxSizeMb }, { status: 413 });
+    return NextResponse.json({ success: false, error: `File exceeds ${maxSizeMb} MB limit.`, maxFileSizeMb: maxSizeMb }, { status: STATUS_PAYLOAD_TOO_LARGE });
   }
 
   const formData = await request.formData();
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
   }
 
   if (file.size > maxSizeBytes) {
-    return NextResponse.json({ success: false, error: `File exceeds ${maxSizeMb} MB limit.`, maxFileSizeMb: maxSizeMb }, { status: 413 });
+    return NextResponse.json({ success: false, error: `File exceeds ${maxSizeMb} MB limit.`, maxFileSizeMb: maxSizeMb }, { status: STATUS_PAYLOAD_TOO_LARGE });
   }
 
   ensureMediaDir();

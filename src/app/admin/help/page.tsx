@@ -6,7 +6,7 @@ import { getAll as getAllFaq } from "@/lib/repository/faq";
 import { getAll as getAllQuestions, getStats } from "@/lib/repository/questions";
 import { getAllConfig } from "@/lib/repository/site-config";
 import { RateLimitForm } from "@/components/rate-limit-form";
-import { QUESTION_RATE_LIMIT_MAX_KEY, QUESTION_RATE_LIMIT_WINDOW_SECONDS_KEY } from "@/lib/constants";
+import { QUESTION_RATE_LIMIT_MAX_KEY, QUESTION_RATE_LIMIT_WINDOW_SECONDS_KEY, QUESTION_RATE_LIMIT_MAX_DEFAULT, QUESTION_RATE_LIMIT_WINDOW_SECONDS_DEFAULT } from "@/lib/constants";
 
 export default function AdminHelpPage() {
   const faqItems = getAllFaq();
@@ -24,7 +24,10 @@ export default function AdminHelpPage() {
             config={config}
             maxKey={QUESTION_RATE_LIMIT_MAX_KEY}
             windowKey={QUESTION_RATE_LIMIT_WINDOW_SECONDS_KEY}
+            maxDefault={String(QUESTION_RATE_LIMIT_MAX_DEFAULT)}
+            windowDefault={String(QUESTION_RATE_LIMIT_WINDOW_SECONDS_DEFAULT)}
             description="Rate limiting for help question submissions, per party. Changes take effect on next request."
+            revalidatePaths={["/admin/help"]}
           />
         </div>
       </details>

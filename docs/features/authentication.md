@@ -197,8 +197,12 @@ The server maintains an in-memory fixed-window rate limiter per feature. Each li
 | Window (RSVP) | `RSVP_RATE_LIMIT_WINDOW_SECONDS_KEY` | 60s |
 | Max attempts (questions) | `QUESTION_RATE_LIMIT_MAX_KEY` | 5 |
 | Window (questions) | `QUESTION_RATE_LIMIT_WINDOW_SECONDS_KEY` | 60s |
+| Max attempts (media files) | `MEDIA_RATE_LIMIT_MAX_KEY` | 500 |
+| Window (media files) | `MEDIA_RATE_LIMIT_WINDOW_SECONDS_KEY` | 3600s (1 hour) |
 
 Changes take effect immediately — `getRateLimitConfig()` reads from `site_config` on every request.
+
+**Media rate limiting is a special case:** Media file requests (`GET /api/media/[...path]`) and list requests (`GET /api/media/list`) are rate-limited per IP, but normal browsing almost never hits the limit. The server sets `Cache-Control: private, max-age=86400, immutable` on media responses, so browsers serve images from their local HTTP cache for 24 hours. Rate limiting only fires when the browser actually contacts the server — which happens at most once per 24 hours per file per client under normal conditions. See [media.md](media.md#rate-limiting-on-media-requests) for details.
 
 **How it works:**
 

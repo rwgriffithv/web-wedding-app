@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { loginAsAdmin } from "../utils/helpers";
+import { setConfig } from "../utils/rate-limit-helpers";
+import {
+  MEDIA_RATE_LIMIT_MAX_KEY,
+  MEDIA_RATE_LIMIT_WINDOW_SECONDS_KEY,
+} from "../../src/lib/constants";
 
 test("media settings pre-populates localStorage from DB on page load", async ({ page }) => {
   await loginAsAdmin(page);
@@ -133,4 +138,106 @@ test("setting max file size to 0 blocks uploads", async ({ page }) => {
   await page.locator("input#media_max_file_size_mb").fill("16");
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Saved.")).toBeVisible({ timeout: 5000 });
+});
+
+test.describe("media rate limiting", () => {
+  test("rate limiting section is visible and has default values", async ({ page }) => {
+    // Set known defaults in DB
+    setConfig(MEDIA_RATE_LIMIT_MAX_KEY, "500");
+    setConfig(MEDIA_RATE_LIMIT_WINDOW_SECONDS_KEY, "3600");
+
+    await loginAsAdmin(page);
+    await page.goto("/admin/media");
+    await expect(page).toHaveURL(/\/admin\/media/);
+
+    // Open the Rate Limiting section
+    await page.locator("summary").filter({ hasText: "Rate Limiting" }).click();
+
+    // Verify the form is visible with default values
+    const maxInput = page.locator(`input#media_rate_limit_max_attempts`);
+    const windowInput = page.locator(`input#media_rate_limit_window_seconds`);
+
+    await expect(maxInput).toBeVisible();
+    await expect(windowInput).toBeVisible();
+    await expect(maxInput).toHaveValue("500");
+    await expect(windowInput).toHaveValue("3600");
+  });
+
+  test("media rate limit config persists after save", async ({ page }) => {
+    setConfig(MEDIA_RATE_LIMIT_MAX_KEY, "500");
+    setConfig(MEDIA_RATE_LIMIT_WINDOW_SECONDS_KEY, "3600");
+
+    await loginAsAdmin(page);
+    await page.goto("/admin/media");
+    await expect(page).toHaveURL(/\/admin\/media/);
+
+    // Open Rate Limiting section
+    await page.locator("summary").filter({ hasText: "Rate Limiting" }).click();
+
+    // Change values
+    await page.locator("input#media_rate_limit_max_attempts").fill("250");
+    await page.locator("input#media_rate_limit_window_seconds").fill("1800");
+
+    // Save
+    await page.getByRole("button", { name: "Save Rate Limit" }).click();
+    await expect(page.getByRole("status")).toBeVisible({ timeout: 5000 });
+
+    // Reload and verify persistence
+    await page.reload();
+    await page.locator("summary").filter({ hasText: "Rate Limiting" }).click();
+    await expect(page.locator("input#media_rate_limit_max_attempts")).toHaveValue("250");
+    await expect(page.locator("input#media_rate_limit_window_seconds")).toHaveValue("1800");
+
+    // Restore defaults
+    await page.locator("input#media_rate_limit_max_attempts").fill("500");
+    await page.locator("input#media_rate_limit_window_seconds").fill("3600");
+    await page.getByRole("button", { name: "Save Rate Limit" }).click();
+    await expect(page.getByRole("status")).toBeVisible({ timeout: 5000 });
+  });
+
+  test("rate limit description mentions cached images are not affected", async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto("/admin/media");
+    await expect(page).toHaveURL(/\/admin\/media/);
+
+    // Open Rate Limiting section
+    await page.locator("summary").filter({ hasText: "Rate Limiting" }).click();
+
+    // Verify description mentions cached images
+    await expect(page.getByText("Cached images are not affected")).toBeVisible();
+  });
+
+  test("media endpoint returns Cache-Control: immutable so browsers cache and bypass rate limiter", async ({ page }) => {
+    setConfig(MEDIA_RATE_LIMIT_MAX_KEY, "1");
+    setConfig(MEDIA_RATE_LIMIT_WINDOW_SECONDS_KEY, "60");
+
+    await loginAsAdmin(page);
+
+    // First request: should succeed and return immutable cache header
+    const r1 = await page.evaluate(async () => {
+      const res = await fetch("/api/media/pcc.jpg");
+      return {
+        status: res.status,
+        cacheControl: res.headers.get("Cache-Control"),
+      };
+    });
+    expect(r1.status).toBe(200);
+    expect(r1.cacheControl).toBe("private, max-age=86400, immutable");
+
+    // Second request via fetch with default cache: browser may serve from
+    // memory/disk cache, bypassing the server entirely.  If it does hit
+    // the server, it will get 429 (limit is 1).  Either outcome is valid
+    // — we just verify the first response had the right headers.
+    const r2 = await page.evaluate(async () => {
+      const res = await fetch("/api/media/pcc.jpg");
+      return { status: res.status };
+    });
+    // 200 = served from cache (ideal), 429 = cache missed (still proves
+    // the rate limiter is wired up correctly for non-cached requests)
+    expect([200, 429]).toContain(r2.status);
+
+    // Restore defaults
+    setConfig(MEDIA_RATE_LIMIT_MAX_KEY, "500");
+    setConfig(MEDIA_RATE_LIMIT_WINDOW_SECONDS_KEY, "3600");
+  });
 });

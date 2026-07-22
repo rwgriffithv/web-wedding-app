@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { RateLimitResult } from "@/lib/rate-limit";
 import { submitRsvp } from "../actions";
 
 const { mockCheck } = vi.hoisted(() => ({
@@ -128,7 +129,7 @@ describe("submitRsvp — party membership", () => {
   it("returns error when guest belongs to another party", async () => {
     const { getGuestById } = await import("@/lib/repository/guests");
     vi.mocked(getGuestById).mockReturnValueOnce({ id: 1, party_id: 99, display_name: "Other", can_bring_plus_one: 0, unexpected: 0, created_at: "2025-01-01" });
-    mockCheck.mockReturnValue(true);
+    mockCheck.mockReturnValue({ allowed: true, retryAfterMs: 0 } satisfies RateLimitResult);
 
     const formData = new FormData();
     formData.set("member_id", "1");
@@ -143,7 +144,7 @@ describe("submitRsvp — party membership", () => {
 
 describe("submitRsvp — successful submission", () => {
   it("returns success on valid RSVP", async () => {
-    mockCheck.mockReturnValue(true);
+    mockCheck.mockReturnValue({ allowed: true, retryAfterMs: 0 } satisfies RateLimitResult);
 
     const formData = new FormData();
     formData.set("member_id", "1");
@@ -156,7 +157,7 @@ describe("submitRsvp — successful submission", () => {
   });
 
   it("returns success when declining attendance", async () => {
-    mockCheck.mockReturnValue(true);
+    mockCheck.mockReturnValue({ allowed: true, retryAfterMs: 0 } satisfies RateLimitResult);
 
     const formData = new FormData();
     formData.set("member_id", "1");
@@ -172,7 +173,7 @@ describe("submitRsvp — error handling", () => {
   it("returns error when submitResponse throws", async () => {
     const { submitResponse } = await import("@/lib/repository/rsvp");
     vi.mocked(submitResponse).mockImplementationOnce(() => { throw new Error("db failure"); });
-    mockCheck.mockReturnValue(true);
+    mockCheck.mockReturnValue({ allowed: true, retryAfterMs: 0 } satisfies RateLimitResult);
 
     const formData = new FormData();
     formData.set("member_id", "1");
@@ -191,7 +192,7 @@ describe("submitRsvp — rate-limit response", () => {
   });
 
   it("returns cooldownUntil when rate limited", async () => {
-    mockCheck.mockReturnValue(false);
+    mockCheck.mockReturnValue({ allowed: false, retryAfterMs: 60_000 } satisfies RateLimitResult);
 
     const formData = new FormData();
     formData.set("member_id", "1");
@@ -207,7 +208,7 @@ describe("submitRsvp — rate-limit response", () => {
   });
 
   it("does NOT return cooldownUntil when not rate limited", async () => {
-    mockCheck.mockReturnValue(true);
+    mockCheck.mockReturnValue({ allowed: true, retryAfterMs: 0 } satisfies RateLimitResult);
 
     const formData = new FormData();
     formData.set("member_id", "1");

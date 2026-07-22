@@ -60,7 +60,8 @@ async function simulateLoginAttempt(
 
   const rlConfig = { maxAttempts, windowMs: windowSeconds * 1000 };
   const key = `${ip}:login`;
-  const blocked = !limiter.check(key, rlConfig);
+  const { allowed: isAllowed } = limiter.check(key, rlConfig);
+  const blocked = !isAllowed;
 
   if (blocked) {
     recordRateLimitViolation(ip);

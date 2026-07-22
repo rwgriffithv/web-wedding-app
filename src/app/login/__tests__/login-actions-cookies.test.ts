@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { RateLimitResult } from "@/lib/rate-limit";
 import { login, loginByPartyCode } from "../actions";
 
 const { mockCheck, mockIsIpBanned } = vi.hoisted(() => ({
@@ -66,7 +67,7 @@ describe("login actions — rate-limit response", () => {
   });
 
   it("login returns cooldownUntil when rate limited", async () => {
-    mockCheck.mockReturnValue(false);
+    mockCheck.mockReturnValue({ allowed: false, retryAfterMs: 60_000 } satisfies RateLimitResult);
 
     const formData = new FormData();
     formData.set("username", "admin");
@@ -82,7 +83,7 @@ describe("login actions — rate-limit response", () => {
   });
 
   it("login does NOT return cooldownUntil when not rate limited", async () => {
-    mockCheck.mockReturnValue(true);
+    mockCheck.mockReturnValue({ allowed: true, retryAfterMs: 0 } satisfies RateLimitResult);
 
     const formData = new FormData();
     formData.set("username", "admin");
@@ -94,7 +95,7 @@ describe("login actions — rate-limit response", () => {
   });
 
   it("loginByPartyCode returns cooldownUntil when rate limited", async () => {
-    mockCheck.mockReturnValue(false);
+    mockCheck.mockReturnValue({ allowed: false, retryAfterMs: 60_000 } satisfies RateLimitResult);
 
     const formData = new FormData();
     formData.set("code", "SMITH-1234");
@@ -109,7 +110,7 @@ describe("login actions — rate-limit response", () => {
   });
 
   it("login returns banned error when auto-ban triggers on rate limit", async () => {
-    mockCheck.mockReturnValue(false);
+    mockCheck.mockReturnValue({ allowed: false, retryAfterMs: 60_000 } satisfies RateLimitResult);
     mockIsIpBanned.mockReturnValueOnce(false).mockReturnValueOnce(true);
 
     const formData = new FormData();
@@ -124,7 +125,7 @@ describe("login actions — rate-limit response", () => {
   });
 
   it("loginByPartyCode returns banned error when auto-ban triggers on rate limit", async () => {
-    mockCheck.mockReturnValue(false);
+    mockCheck.mockReturnValue({ allowed: false, retryAfterMs: 60_000 } satisfies RateLimitResult);
     mockIsIpBanned.mockReturnValueOnce(false).mockReturnValueOnce(true);
 
     const formData = new FormData();

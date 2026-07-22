@@ -3,6 +3,14 @@ import type { RateLimitConfig } from "./site-config";
 export { getRateLimitConfig } from "./site-config";
 export type { RateLimitConfig } from "./site-config";
 
+/** Result of a rate-limit check. */
+export interface RateLimitResult {
+  /** Whether the request is allowed. */
+  allowed: boolean;
+  /** Milliseconds until the rate-limit window resets. 0 when allowed. */
+  retryAfterMs: number;
+}
+
 const MAX_STORE_SIZE = 10_000;
 
 const stores = new Map<string, Map<string, { count: number; resetAt: number }>>();
@@ -30,7 +38,7 @@ export function createRateLimiter(name: string) {
   }
 
   return {
-    check(key: string, config: RateLimitConfig): boolean {
+    check(key: string, config: RateLimitConfig): RateLimitResult {
       const now = Date.now();
       const entry = store.get(key);
       if (!entry || now > entry.resetAt) {
@@ -46,11 +54,13 @@ export function createRateLimiter(name: string) {
           if (oldestKey !== undefined) store.delete(oldestKey);
         }
         store.set(key, { count: 1, resetAt: now + config.windowMs });
-        return true;
+        return { allowed: true, retryAfterMs: 0 };
       }
-      if (entry.count >= config.maxAttempts) return false;
+      if (entry.count >= config.maxAttempts) {
+        return { allowed: false, retryAfterMs: Math.ceil((entry.resetAt - now) / 1000) * 1000 };
+      }
       entry.count++;
-      return true;
+      return { allowed: true, retryAfterMs: 0 };
     },
     reset(): void {
       store.clear();

@@ -110,4 +110,95 @@ describe("RateLimitForm", () => {
     );
     expect(screen.getByRole("button", { name: "Save Rate Limit" })).toBeDefined();
   });
+
+  it("uses media rate limit defaults (500 / 3600)", () => {
+    render(
+      <RateLimitForm
+        config={baseConfig}
+        maxKey="media_rate_limit_max_attempts"
+        windowKey="media_rate_limit_window_seconds"
+        maxDefault="500"
+        windowDefault="3600"
+        description="Media rate limiting"
+      />,
+    );
+    expect(screen.getByLabelText("Max Attempts (per window)")).toHaveValue(500);
+    expect(screen.getByLabelText("Window (seconds)")).toHaveValue(3600);
+  });
+
+  it("media rate limit config overrides defaults", () => {
+    const config = {
+      media_rate_limit_max_attempts: "250",
+      media_rate_limit_window_seconds: "1800",
+    };
+    render(
+      <RateLimitForm
+        config={config}
+        maxKey="media_rate_limit_max_attempts"
+        windowKey="media_rate_limit_window_seconds"
+        maxDefault="500"
+        windowDefault="3600"
+        description="Media rate limiting"
+      />,
+    );
+    expect(screen.getByLabelText("Max Attempts (per window)")).toHaveValue(250);
+    expect(screen.getByLabelText("Window (seconds)")).toHaveValue(1800);
+  });
+
+  it("media description text is displayed", () => {
+    render(
+      <RateLimitForm
+        config={baseConfig}
+        maxKey="media_rate_limit_max_attempts"
+        windowKey="media_rate_limit_window_seconds"
+        maxDefault="500"
+        windowDefault="3600"
+        description="Rate limiting for media file and list requests per IP. Cached images are not affected."
+      />,
+    );
+    expect(screen.getByText("Rate limiting for media file and list requests per IP. Cached images are not affected.")).toBeDefined();
+  });
+
+  it("uses question rate limit defaults (5 / 60)", () => {
+    render(
+      <RateLimitForm
+        config={baseConfig}
+        maxKey="question_rate_limit_max_attempts"
+        windowKey="question_rate_limit_window_seconds"
+        description="Rate limiting for help question submissions"
+      />,
+    );
+    expect(screen.getByLabelText("Max Attempts (per window)")).toHaveValue(5);
+    expect(screen.getByLabelText("Window (seconds)")).toHaveValue(60);
+  });
+
+  it("question rate limit config overrides defaults", () => {
+    const config = {
+      question_rate_limit_max_attempts: "3",
+      question_rate_limit_window_seconds: "120",
+    };
+    render(
+      <RateLimitForm
+        config={config}
+        maxKey="question_rate_limit_max_attempts"
+        windowKey="question_rate_limit_window_seconds"
+        description="Rate limiting for help question submissions"
+      />,
+    );
+    expect(screen.getByLabelText("Max Attempts (per window)")).toHaveValue(3);
+    expect(screen.getByLabelText("Window (seconds)")).toHaveValue(120);
+  });
+
+  it("revalidatePaths prop is accepted", () => {
+    render(
+      <RateLimitForm
+        config={baseConfig}
+        maxKey="media_rate_limit_max_attempts"
+        windowKey="media_rate_limit_window_seconds"
+        description="Test"
+        revalidatePaths={["/admin/media"]}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Save Rate Limit" })).toBeDefined();
+  });
 });

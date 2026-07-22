@@ -14,6 +14,9 @@ export const RSVP_RATE_LIMIT_WINDOW_SECONDS_DEFAULT = 60;
 export const QUESTION_RATE_LIMIT_MAX_DEFAULT = 5;
 export const QUESTION_RATE_LIMIT_WINDOW_SECONDS_DEFAULT = 60;
 
+export const MEDIA_RATE_LIMIT_MAX_DEFAULT = 500;
+export const MEDIA_RATE_LIMIT_WINDOW_SECONDS_DEFAULT = 3600;
+
 // ── Rate Limit DB Keys ─────────────────────────────────────
 
 export const LOGIN_RATE_LIMIT_MAX_KEY = "rate_limit_max_attempts";
@@ -24,6 +27,9 @@ export const RSVP_RATE_LIMIT_WINDOW_SECONDS_KEY = "rsvp_rate_limit_window_second
 
 export const QUESTION_RATE_LIMIT_MAX_KEY = "question_rate_limit_max_attempts";
 export const QUESTION_RATE_LIMIT_WINDOW_SECONDS_KEY = "question_rate_limit_window_seconds";
+
+export const MEDIA_RATE_LIMIT_MAX_KEY = "media_rate_limit_max_attempts";
+export const MEDIA_RATE_LIMIT_WINDOW_SECONDS_KEY = "media_rate_limit_window_seconds";
 
 // ── Auto-ban / Security Defaults ────────────────────────────
 

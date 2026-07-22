@@ -18,8 +18,8 @@ This is an ordered list of features to implement along with a simple sub-bullet 
 * Sometimes when I click on a page (/guide or maybe one of the tabs, or just at random) on mobile the scrolling is locked out and I have to refresh the page. Do you know what could cause that? Is it some kind of race condition or weird timing thing or known issue with nextjs? Is it actually a but in the application code? Please help figure this out! I think it most reliably happens when I'm logged in as an admin and on the admin dashboard pages and then go "back to site" and click the Guide and go to the dress code page or lodging page with enough items to need to scroll.
   * status: done
 
-* Add rate limiting to media serving endpoints (`GET /api/media/[...path]` and `GET /api/media/list`). Must be configurable like existing rate limiting (see `src/lib/rate-limit.ts`, `src/lib/rate-limit-form/`). Follow the same patterns as login/RSVP rate limiting: in-memory limiter for enforcement, client cookies for UX cooldown display, `getRateLimitConfig()` for DB-stored settings. Add unit + E2E tests. Reference the existing rate limiting architecture in `docs/architecture/overview.md` and `docs/features/ip-banning.md`.
-  * status: not done
+* Add rate limiting to media serving endpoints (`GET /api/media/[...path]` and `GET /api/media/list`). Must be configurable like existing rate limiting (see `src/lib/rate-limit.ts`, `src/lib/rate-limit-form/`). Make sure this does not apply to cached images! Rate limiting is meant to apply to server calls that. Follow the same patterns as login/RSVP rate limiting: in-memory limiter for enforcement, client cookies for UX cooldown display, `getRateLimitConfig()` for DB-stored settings. Add unit + E2E tests. Reference the existing rate limiting architecture in `docs/architecture/overview.md` and `docs/features/ip-banning.md`.
+  * status: done
 
 * Please make adjusments to the "invited" state tracking for Guests. If a guest from a party has RSVP'd, that party should automatically be marked as "invited". This covers the case where the admin has forgot to manually mark a party as invited after they send the invite.
   * status: not done

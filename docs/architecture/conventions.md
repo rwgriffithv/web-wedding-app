@@ -293,7 +293,7 @@ Admin pages use `<details className="admin-section">` for collapsible cards. The
 
 Consistent examples across the codebase:
 
-- **Schedule, Lodging, Dress Code, Media pages**: all sections open (forms + lists)
+- **Schedule, Lodging, Dress Code, Media pages**: Settings and Rate Limiting collapsed, forms + lists open
 - **RSVP page**: Settings and Rate Limiting collapsed, Status table open
 - **Help page**: Rate Limiting collapsed, Add FAQ / FAQ Items / Questions open
 - **Security page**: Auto-Ban / Login Rate Limiting / Session & Tracking collapsed, Violations and Banned IPs open, Ban IP collapsed
@@ -420,7 +420,7 @@ Serial tests (`e2e/serial/`) run sequentially in a single worker against the sam
 |---|---|---|
 | **Database** | `site_config` rows, `banned_ips`, `rate_limit_violations`, users, RSVPs | `setConfig()`, login failures, CRUD operations |
 | **In-memory** | Rate limiter entries (per-IP counters with TTL), cached config | Login attempts, server actions |
-| **Browser** | Cookies, localStorage (`VIEW_DEBOUNCE_UNTIL_KEY`, `LOGIN_LIMIT_UNTIL_KEY`, `COOKIE_HEALTH_KEY`) | Login, PageViewTracker, rate-limit cooldown |
+| **Browser** | Cookies, localStorage (`VIEW_DEBOUNCE_UNTIL_KEY`, `LOGIN_LIMIT_UNTIL_KEY`, `RSVP_LIMIT_UNTIL_KEY`, `QUESTION_LIMIT_UNTIL_KEY`, `COOKIE_HEALTH_KEY`) | Login, PageViewTracker, rate-limit cooldown |
 
 **Rules:**
 

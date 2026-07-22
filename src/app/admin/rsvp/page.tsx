@@ -4,7 +4,7 @@ import { Header } from "@/components/header";
 import { RsvpStatusTable } from "./rsvp-status-table";
 import { RateLimitForm } from "@/components/rate-limit-form";
 import { RsvpDeadlineForm } from "./rsvp-deadline-form";
-import { RSVP_RATE_LIMIT_MAX_KEY, RSVP_RATE_LIMIT_WINDOW_SECONDS_KEY, RSVP_RATE_LIMIT_MAX_DEFAULT } from "@/lib/constants";
+import { RSVP_RATE_LIMIT_MAX_KEY, RSVP_RATE_LIMIT_WINDOW_SECONDS_KEY, RSVP_RATE_LIMIT_MAX_DEFAULT, RSVP_RATE_LIMIT_WINDOW_SECONDS_DEFAULT } from "@/lib/constants";
 
 export default function AdminRsvpPage() {
   const guests = getAllGuestsRsvpStatus();
@@ -27,7 +27,9 @@ export default function AdminRsvpPage() {
             maxKey={RSVP_RATE_LIMIT_MAX_KEY}
             windowKey={RSVP_RATE_LIMIT_WINDOW_SECONDS_KEY}
             maxDefault={String(RSVP_RATE_LIMIT_MAX_DEFAULT)}
+            windowDefault={String(RSVP_RATE_LIMIT_WINDOW_SECONDS_DEFAULT)}
             description="Rate limiting for RSVP submissions, per party. Changes take effect on next request."
+            revalidatePaths={["/admin/rsvp"]}
           />
         </div>
       </details>

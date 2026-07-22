@@ -29,8 +29,9 @@ export async function submitQuestion(prevState: HelpState | null, formData: Form
   }
 
   const rlConfig = getQuestionRateLimitConfig();
-  if (!questionRateLimiter.check(`party:${session.partyId}`, rlConfig)) {
-    return { success: false, error: "Your party has made too many requests. Please wait before trying again.", action: "cooldown", cooldownUntil: Date.now() + rlConfig.windowMs };
+  const rlResult = questionRateLimiter.check(`party:${session.partyId}`, rlConfig);
+  if (!rlResult.allowed) {
+    return { success: false, error: "Your party has made too many requests. Please wait before trying again.", action: "cooldown", cooldownUntil: Date.now() + rlResult.retryAfterMs };
   }
 
   const question = getRequiredString(formData, "question")?.trim();

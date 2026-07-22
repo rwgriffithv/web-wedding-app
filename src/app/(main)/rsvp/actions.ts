@@ -64,8 +64,9 @@ export async function submitRsvp(_prevState: RsvpState | null, formData: FormDat
     if (!party) return { success: false, error: "Party not found." };
 
     const rlConfig = getRsvpRateLimitConfig();
-    if (!rsvpRateLimiter.check(`party:${session.partyId}`, rlConfig)) {
-      return { success: false, error: "Your party has made too many submissions. Please wait before trying again.", action: "cooldown", cooldownUntil: Date.now() + rlConfig.windowMs };
+    const rlResult = rsvpRateLimiter.check(`party:${session.partyId}`, rlConfig);
+    if (!rlResult.allowed) {
+      return { success: false, error: "Your party has made too many submissions. Please wait before trying again.", action: "cooldown", cooldownUntil: Date.now() + rlResult.retryAfterMs };
     }
 
     const member = getGuestById(memberId);
