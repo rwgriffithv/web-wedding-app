@@ -519,6 +519,8 @@ When a Server Action mutates data in SQLite, every page that reads that data mus
 
 **Layout invalidation:** `revalidatePath("/home", "layout")` revalidates `(main)/layout.tsx` and every page nested under it (`/home`, `/guide`, `/help`, `/media`, `/rsvp`). Use this when the layout reads a changed config key — it is more efficient than listing each child page individually.
 
+**Why `revalidatePath` with `no-store`?** With `Cache-Control: no-store` on every page response, the browser never stores pages to disk and every navigation hits the server fresh. This means `revalidatePath` is **doubly redundant** in the current architecture — the server always re-renders from SQLite regardless. However, `revalidatePath` is still called as a **best practice** for principled cache invalidation: if the `no-store` policy were ever relaxed (e.g., adding ISR or CDN caching for performance), the `revalidatePath` calls would already be in place to ensure correctness. It is defense-in-depth against stale data, not a functional requirement today.
+
 ---
 
 ## 401 Redirect Convention (Client Components)

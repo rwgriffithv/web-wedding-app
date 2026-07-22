@@ -233,6 +233,7 @@ src/
 | Decision | Choice | Rationale |
 |---|---|---|
 | Data fetching | Server Components | No client-server waterfall, smaller bundles |
+| Data access | Direct SQLite via repository functions | Synchronous, zero-overhead reads from `better-sqlite3`. Not using `fetch()` caching — see [Data Access Pattern](#data-access-pattern) below. |
 | Mutations | Server Actions | Type-safe, colocated, no API boilerplate |
 | Database | SQLite | Zero-config, file-based, no server process needed |
 | Auth | HMAC-signed JSON cookie + four-tier validation | Simple, secure (signed). Proxy: crypto + revocation + cookie clear. Fast path: crypto-only for page loads (0 DB queries). Revocation: in-memory maps for immediate invalidation. Mutation path: validates `pwChangedAt` against DB on writes only. |
@@ -250,6 +251,24 @@ src/
 | RSVP deadline | Server-timezone comparison | `datetime-local` input parsed as server time (Pacific). Works because admin and server share timezone. |
 | Logger | Rate-limited `console.error` wrapper | Prevents log flooding from rapid server-action errors while preserving error visibility. |
 | Rate-limit hook | `src/hooks/rate-limit.ts` | Client-side cooldown hook with localStorage persistence — replaced previous inline patterns. |
+
+## Data Access Pattern
+
+Pages read data via **direct synchronous SQLite calls** through repository functions (`src/lib/repository/*.ts`), not through `fetch()`. This is a deliberate architectural choice.
+
+**Why not `fetch()` caching?** Next.js's recommended pattern for caching is to wrap data reads in `fetch()` with `next: { revalidate: N, tags: [...] }` options, then invalidate via `revalidateTag()`. This gives you a persistent Data Cache and pre-rendered Full Route Cache. However:
+
+1. **The audience is small.** A wedding site serves hundreds of concurrent users at peak. SQLite in WAL mode handles this trivially — there is no performance bottleneck to cache away.
+
+2. **Data changes frequently during the event.** Guests RSVP, admins tweak settings, schedules shift. Every page load should reflect the current state, not a cached snapshot.
+
+3. **`no-store` already prevents browser disk caching.** Every navigation hits the server fresh. Adding `fetch()` caching would require removing `no-store` and re-architecting the cache policy — significant complexity for a wedding site that doesn't need it.
+
+4. **`fetch()` caching adds overhead, not removes it.** A `fetch()` call to an internal API route adds HTTP serialization/deserialization and JSON parsing on top of the SQLite read. For synchronous `better-sqlite3` calls, this is pure overhead with no benefit.
+
+**What this means for cache invalidation:** `revalidatePath` and `revalidateTag` operate on Next.js's Data Cache and Full Route Cache. Since we don't use `fetch()`, `revalidateTag` has no effect, and `revalidatePath` is doubly redundant with `no-store`. Both are still called as **best practice** — if the caching policy ever changes (e.g., adding ISR for public pages), the invalidation calls are already in place.
+
+**When to revisit:** If the site needs to handle significantly more traffic (thousands of concurrent users), or if latency becomes a concern, the path forward is: add `revalidate` timers to public pages, wrap repository reads in `fetch()` with tags, and use `revalidateTag()` in mutations. This would be a targeted change in the pages that need it — not a wholesale rewrite.
 
 ## Database Migrations
 
