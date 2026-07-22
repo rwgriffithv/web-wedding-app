@@ -497,6 +497,28 @@ The React Server Component (RSC) cache is a Next.js mechanism that stores serial
 
 **For new features:** Any page navigation that must verify the session (e.g., checking if an IP is banned) should use a full page navigation or form submission, not rely on client-side routing.
 
+### Cache Invalidation Principle
+
+When a Server Action mutates data in SQLite, every page that reads that data must be revalidated via `revalidatePath`. The rule:
+
+1. **The admin page** that displays/edits the data — always.
+2. **Every public page** that reads the changed config key — check `getConfig()` or `getAllConfig()` calls on the page.
+3. **The parent layout** if a layout reads the changed data — use `revalidatePath("/path", "layout")` to invalidate both the layout and all nested pages beneath it.
+4. **Not `/`** unless it renders content — the root page (`src/app/page.tsx`) only redirects to `/home` and reads no data.
+
+**Examples:**
+
+| Action | Changed config | Pages to revalidate |
+|---|---|---|
+| `saveSiteConfig` | Home content, banner, landing | `/admin/site`, `/home` (layout), `/login` |
+| `saveRsvpDeadline` | RSVP deadline | `/admin/rsvp`, `/rsvp`, `/admin/site` |
+| `saveScheduleText` | Schedule display text | `/admin/schedule`, `/guide` |
+| `addImage` (dress code) | Dress code image list | `/admin/dress-code`, `/guide` |
+
+**Why not tags?** Next.js supports tag-based revalidation (`revalidateTag`) for more precise invalidation when multiple pages share a `fetch()` call with the same tag. This project does not use `fetch()` for DB reads — it calls repository functions directly, so tags have no effect. `revalidatePath` is the correct mechanism here.
+
+**Layout invalidation:** `revalidatePath("/home", "layout")` revalidates `(main)/layout.tsx` and every page nested under it (`/home`, `/guide`, `/help`, `/media`, `/rsvp`). Use this when the layout reads a changed config key — it is more efficient than listing each child page individually.
+
 ---
 
 ## 401 Redirect Convention (Client Components)

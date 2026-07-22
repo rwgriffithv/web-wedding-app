@@ -89,8 +89,8 @@ export async function saveSiteConfig(prevState: SiteConfigState | null, formData
     }
 
     revalidatePath("/admin/site");
-    revalidatePath("/");
-    revalidatePath("/home");
+    revalidatePath("/home", "layout");
+    revalidatePath("/login");
     return { success: true };
   } catch (error) {
     logError("Site", error);

@@ -32,6 +32,7 @@ export async function saveRsvpDeadline(
     setConfig(RSVP_DEADLINE_KEY, value);
     revalidatePath("/admin/rsvp");
     revalidatePath("/admin/site");
+    revalidatePath("/rsvp");
     return { success: true };
   } catch (error) {
     logError("RsvpAdmin", error);

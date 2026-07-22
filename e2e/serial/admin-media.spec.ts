@@ -63,9 +63,9 @@ test("media settings shows cache duration field with default value", async ({ pa
   // Open the Settings section
   await page.getByText("Settings").click();
 
-  const input = page.locator("input#media_max_file_size_ttl_ms");
+  const input = page.locator("input#media_max_file_size_ttl_seconds");
   await expect(input).toBeVisible();
-  await expect(input).toHaveValue("60000");
+  await expect(input).toHaveValue("60");
 });
 
 test("media settings ttl update persists to localStorage after save", async ({ page }) => {
@@ -76,14 +76,14 @@ test("media settings ttl update persists to localStorage after save", async ({ p
   // Open the Settings section
   await page.getByText("Settings").click();
 
-  // Change TTL to 120000 and save
-  const ttlInput = page.locator("input#media_max_file_size_ttl_ms");
-  await ttlInput.fill("120000");
+  // Change TTL to 120 and save
+  const ttlInput = page.locator("input#media_max_file_size_ttl_seconds");
+  await ttlInput.fill("120");
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Saved.")).toBeVisible({ timeout: 5000 });
 
   // Restore original value
-  await ttlInput.fill("60000");
+  await ttlInput.fill("60");
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Saved.")).toBeVisible({ timeout: 5000 });
 });

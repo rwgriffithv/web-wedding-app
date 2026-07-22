@@ -13,9 +13,9 @@ This is an ordered list of features to implement along with a simple sub-bullet 
   * status: done
 
 * Please standardize how `revalidatePath` is used in the codebase and make sure there is a proper principled approach to how cache is invalidated alongside our auth, rate limiting, etc. features that all use a [client, proxy, hot-server, cold-server] hierarchy. Assess the current state of cache assumptions in the code and docs makes sense or if it needs to be updated to be more principled and consistent. Be thorough! Use internet research for appropriate standards and principles if needed.
-  * status: not done
+  * status: done
 
-* Sometimes (rarely!) when I click on a page (/guide or maybe one of the tabs, or just at random) on mobile the scrolling is locked out and I have to refresh the page. Do you know what could cause that? Is it some kind of race condition or weird timing thing or known issue with nextjs? Is it actually a but in the application code? Please help figure this out! I think it most reliably happens when I'm logged in as an admin and on the admin dashboard pages and then go "back to site" and click the Guide and go to the dress code page or lodging page with enough items to need to scroll.
+* Sometimes (rarely!) when I click on a page (/guide or maybe one of the tabs, or just at random) on mobile the scrolling is locked out and I have to refresh the page. Do you know what could cause that? Is it some kind of race condition or weird timing thing or known issue with nextjs? Is it actually a but in the application code? Please help figure this out! I think it most reliably happens when I'm logged in as an admin and on the admin dashboard pages and then go "back to site" and click the Guide and go to the dress code page or lodging page with enough items to need to
   * status: not done
 
 * Add rate limiting to media serving endpoints (`GET /api/media/[...path]` and `GET /api/media/list`). Must be configurable like existing rate limiting (see `src/lib/rate-limit.ts`, `src/lib/rate-limit-form/`). Follow the same patterns as login/RSVP rate limiting: in-memory limiter for enforcement, client cookies for UX cooldown display, `getRateLimitConfig()` for DB-stored settings. Add unit + E2E tests. Reference the existing rate limiting architecture in `docs/architecture/overview.md` and `docs/features/ip-banning.md`.
@@ -25,4 +25,7 @@ This is an ordered list of features to implement along with a simple sub-bullet 
   * status: not done
 
 * On the guests table of the guests page of the admin dashboard, please make the "+1" and "unexpected" columns both filterable and sortable. Reference the implementation of the RSVP table in the RSVP page of the admin dashboard for consistent styling and code reuse (if possible) as well as e2e and unit tests. Also, since it is a similar request and code change, make The parties table of the Parties page of the admin dashboard filterable by the invited column. Thank you!
+  * status: not done
+
+* When clearing an IP of its violations in the admin dashboard security page, I notice i I login again with that IP I get rate-limited and forbidden from logging in (for a window) even if logging in with a correct password. Is the IP clearing functionality of the admin dashboard secuirty page handling all that it needs to in order to clear violation history for an IP? It seems like it isn't. On the client I am clearing browsing history and cookies and localstorage. And I see the IP show up again with a violation count of "1" immediataely after I try to login (with a good party code).
   * status: not done
