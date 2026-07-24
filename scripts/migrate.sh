@@ -195,14 +195,30 @@ for (const { from, to } of SITE_CONFIG_RENAMES) {
 
 // ── Migration 14: media_max_file_size_ttl_ms → media_max_file_size_ttl_seconds ──
 // Rename key and convert existing values from ms to seconds.
-const ttlRow = db.prepare(\"SELECT value FROM site_config WHERE key = 'media_max_file_size_ttl_ms'\").get();
+const ttlRow = db.prepare("SELECT value FROM site_config WHERE key = 'media_max_file_size_ttl_ms'").get();
 if (ttlRow) {
   const existingSec = Math.round(parseInt(ttlRow.value, 10) / 1000) || 60;
-  db.prepare(\"INSERT OR REPLACE INTO site_config (key, value) VALUES ('media_max_file_size_ttl_seconds', ?)\").run(String(existingSec));
-  db.prepare(\"DELETE FROM site_config WHERE key = 'media_max_file_size_ttl_ms'\").run();
+  db.prepare("INSERT OR REPLACE INTO site_config (key, value) VALUES ('media_max_file_size_ttl_seconds', ?)").run(String(existingSec));
+  db.prepare("DELETE FROM site_config WHERE key = 'media_max_file_size_ttl_ms'").run();
   console.log('  ✓ media_max_file_size_ttl_ms → media_max_file_size_ttl_seconds (' + existingSec + 's)');
 } else {
   console.log('  - media_max_file_size_ttl_ms not found, skipping.');
+}
+
+// ── Migration 15: auto-mark parties as invited if any guest has RSVP'd ──
+// Backfills invited=1 for parties that were never manually marked invited
+// but have at least one guest with an RSVP response.
+const autoInvited = db.prepare(\`
+  UPDATE parties SET invited = 1 WHERE invited = 0 AND id IN (
+    SELECT g.party_id FROM guests g
+    WHERE g.party_id IS NOT NULL
+      AND EXISTS (SELECT 1 FROM rsvp_responses r WHERE r.guest_id = g.id)
+  )
+\`).run();
+if (autoInvited.changes > 0) {
+  console.log('  ✓ Auto-marked ' + autoInvited.changes + ' party(ies) as invited (have RSVP responses).');
+} else {
+  console.log('  - No parties need auto-invite backfill.');
 }
 
 db.close();

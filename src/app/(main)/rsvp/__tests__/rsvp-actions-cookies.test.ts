@@ -25,8 +25,13 @@ vi.mock("@/lib/rate-limit", () => ({
   getRateLimitConfig: vi.fn(() => ({ maxAttempts: 10, windowMs: 60_000 })),
 }));
 
+const { mockUpdateParty } = vi.hoisted(() => ({
+  mockUpdateParty: vi.fn(),
+}));
+
 vi.mock("@/lib/repository/party", () => ({
-  getPartyById: vi.fn(() => ({ id: 1 })),
+  getPartyById: vi.fn(() => ({ id: 1, invited: 0 })),
+  updateParty: mockUpdateParty,
 }));
 
 vi.mock("@/lib/repository/guests", () => ({
@@ -217,5 +222,73 @@ describe("submitRsvp — rate-limit response", () => {
     const result = await submitRsvp(null, formData);
 
     expect(result.cooldownUntil).toBeUndefined();
+  });
+});
+
+describe("submitRsvp — auto-invite on RSVP", () => {
+  beforeEach(() => {
+    mockUpdateParty.mockClear();
+  });
+
+  it("marks party as invited on successful RSVP when not already invited", async () => {
+    const { getPartyById } = await import("@/lib/repository/party");
+    vi.mocked(getPartyById).mockReturnValueOnce({ id: 1, name: "Smith", code: "SM-123456", invited: 0, created_at: "2025-01-01" });
+    mockCheck.mockReturnValue({ allowed: true, retryAfterMs: 0 } satisfies RateLimitResult);
+
+    const formData = new FormData();
+    formData.set("member_id", "1");
+    formData.set("attending_1", "yes");
+
+    const result = await submitRsvp(null, formData);
+
+    expect(result.success).toBe(true);
+    expect(mockUpdateParty).toHaveBeenCalledWith(1, { invited: 1 });
+  });
+
+  it("does NOT mark party as invited when already invited", async () => {
+    const { getPartyById } = await import("@/lib/repository/party");
+    vi.mocked(getPartyById).mockReturnValueOnce({ id: 1, name: "Smith", code: "SM-123456", invited: 1, created_at: "2025-01-01" });
+    mockCheck.mockReturnValue({ allowed: true, retryAfterMs: 0 } satisfies RateLimitResult);
+
+    const formData = new FormData();
+    formData.set("member_id", "1");
+    formData.set("attending_1", "yes");
+
+    const result = await submitRsvp(null, formData);
+
+    expect(result.success).toBe(true);
+    expect(mockUpdateParty).not.toHaveBeenCalled();
+  });
+
+  it("does NOT mark party as invited when RSVP fails", async () => {
+    const { submitResponse } = await import("@/lib/repository/rsvp");
+    vi.mocked(submitResponse).mockImplementationOnce(() => { throw new Error("db failure"); });
+    mockCheck.mockReturnValue({ allowed: true, retryAfterMs: 0 } satisfies RateLimitResult);
+
+    const formData = new FormData();
+    formData.set("member_id", "1");
+    formData.set("attending_1", "yes");
+
+    const result = await submitRsvp(null, formData);
+
+    expect(result.success).toBe(false);
+    expect(mockUpdateParty).not.toHaveBeenCalled();
+  });
+
+  it("returns success even when updateParty throws", async () => {
+    const { getPartyById } = await import("@/lib/repository/party");
+    vi.mocked(getPartyById).mockReturnValueOnce({ id: 1, name: "Smith", code: "SM-123456", invited: 0, created_at: "2025-01-01" });
+    mockCheck.mockReturnValue({ allowed: true, retryAfterMs: 0 } satisfies RateLimitResult);
+    mockUpdateParty.mockImplementationOnce(() => { throw new Error("update failed"); });
+
+    const formData = new FormData();
+    formData.set("member_id", "1");
+    formData.set("attending_1", "yes");
+
+    const result = await submitRsvp(null, formData);
+
+    expect(result.success).toBe(true);
+    expect(result.error).toBeUndefined();
+    expect(mockUpdateParty).toHaveBeenCalledWith(1, { invited: 1 });
   });
 });

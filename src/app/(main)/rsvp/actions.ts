@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireSession, validateSessionInDb, destroySession } from "@/lib/auth";
 import { getConfig } from "@/lib/repository/site-config";
 import { getGuestById } from "@/lib/repository/guests";
-import { getPartyById } from "@/lib/repository/party";
+import { getPartyById, updateParty } from "@/lib/repository/party";
 import { submitResponse } from "@/lib/repository/rsvp";
 import { createRateLimiter, getRateLimitConfig } from "@/lib/rate-limit";
 import { getRequiredString } from "@/lib/form-data";
@@ -73,7 +73,16 @@ export async function submitRsvp(_prevState: RsvpState | null, formData: FormDat
     if (!member || member.party_id !== session.partyId) {
       return { success: false, error: "You can only RSVP for members of your party." };
     }
-    return rsvpMember(memberId, member.display_name, attending, formData);
+    const result = await rsvpMember(memberId, member.display_name, attending, formData);
+    if (result.success && !party.invited) {
+      try {
+        updateParty(session.partyId, { invited: 1 });
+        revalidatePath("/admin/parties");
+      } catch (err) {
+        logError("Rsvp:auto-invite", err);
+      }
+    }
+    return result;
   }
 
   return { success: false, error: "Unknown session type." };

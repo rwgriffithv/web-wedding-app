@@ -135,4 +135,44 @@ describe("party repository", () => {
     const p2 = createParty("New Family", "REUSE-123456");
     expect(p2.code).toBe("REUSE-123456");
   });
+
+  it("updateParty does not touch password_changed_at when only invited changes", async () => {
+    const { createParty, updateParty, getPartyById } = await import("@/lib/repository/party");
+    const party = createParty("Session Family");
+
+    const userBefore = db.prepare("SELECT password_changed_at FROM users WHERE party_id = ?").get(party.id) as { password_changed_at: string | null };
+    expect(userBefore.password_changed_at).toBeNull();
+
+    updateParty(party.id, { invited: 1 });
+
+    const userAfter = db.prepare("SELECT password_changed_at FROM users WHERE party_id = ?").get(party.id) as { password_changed_at: string | null };
+    expect(userAfter.password_changed_at).toBeNull();
+    expect(getPartyById(party.id)!.invited).toBe(1);
+  });
+
+  it("updateParty updates password_changed_at when name changes", async () => {
+    const { createParty, updateParty } = await import("@/lib/repository/party");
+    const party = createParty("Name Change Family");
+
+    const userBefore = db.prepare("SELECT password_changed_at FROM users WHERE party_id = ?").get(party.id) as { password_changed_at: string | null };
+    expect(userBefore.password_changed_at).toBeNull();
+
+    updateParty(party.id, { name: "Renamed Family" });
+
+    const userAfter = db.prepare("SELECT password_changed_at FROM users WHERE party_id = ?").get(party.id) as { password_changed_at: string | null };
+    expect(userAfter.password_changed_at).not.toBeNull();
+  });
+
+  it("updateParty updates password_changed_at when code changes", async () => {
+    const { createParty, updateParty } = await import("@/lib/repository/party");
+    const party = createParty("Code Change Family");
+
+    const userBefore = db.prepare("SELECT password_changed_at FROM users WHERE party_id = ?").get(party.id) as { password_changed_at: string | null };
+    expect(userBefore.password_changed_at).toBeNull();
+
+    updateParty(party.id, { code: "NEW-CODE123" });
+
+    const userAfter = db.prepare("SELECT password_changed_at FROM users WHERE party_id = ?").get(party.id) as { password_changed_at: string | null };
+    expect(userAfter.password_changed_at).not.toBeNull();
+  });
 });

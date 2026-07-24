@@ -22,7 +22,7 @@ This is an ordered list of features to implement along with a simple sub-bullet 
   * status: done
 
 * Please make adjusments to the "invited" state tracking for Guests. If a guest from a party has RSVP'd, that party should automatically be marked as "invited". This covers the case where the admin has forgot to manually mark a party as invited after they send the invite.
-  * status: not done
+  * status: done
 
 * On the guests table of the guests page of the admin dashboard, please make the "+1" and "unexpected" columns both filterable and sortable. Reference the implementation of the RSVP table in the RSVP page of the admin dashboard for consistent styling and code reuse (if possible) as well as e2e and unit tests. Also, since it is a similar request and code change, make The parties table of the Parties page of the admin dashboard filterable by the invited column. Thank you!
   * status: not done

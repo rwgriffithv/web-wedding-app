@@ -20,6 +20,31 @@ test.describe.serial("RSVP flows", () => {
     await expect(page.getByText(/response submitted/i).or(page.getByText(/response updated/i))).toBeVisible();
   });
 
+  test("session remains valid after RSVP submission (no password_changed_at regression)", async ({ page }) => {
+    await loginAsParty(page);
+    await page.goto("/rsvp");
+
+    const yesRadio = page.locator("input[type=radio][value=yes]").first();
+    await expect(yesRadio).toBeEnabled({ timeout: 5000 });
+    await yesRadio.check();
+    await page.locator("button[type=submit]").first().click();
+    await expect(page.getByText(/response submitted/i).or(page.getByText(/response updated/i))).toBeVisible();
+
+    await page.goto("/rsvp");
+    await expect(page.getByRole("heading", { name: "RSVP" })).toBeVisible();
+    await expect(page).not.toHaveURL(/\/login/);
+  });
+
+  // Depends on "party can submit RSVP" submitting for Demo Family
+  test("admin parties page shows party as invited after RSVP", async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto("/admin/parties");
+
+    const partyRow = page.locator("tr").filter({ hasText: "Demo Family" });
+    await expect(partyRow).toBeVisible();
+    await expect(partyRow.getByText("Yes")).toBeVisible();
+  });
+
   test("radio state persists after submission without page reload", async ({ page }) => {
     await loginAsParty(page);
     await page.goto("/rsvp");

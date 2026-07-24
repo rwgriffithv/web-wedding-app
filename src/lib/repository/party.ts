@@ -82,9 +82,14 @@ export function updateParty(id: number, data: { name?: string; code?: string; in
 
     db.prepare("UPDATE parties SET name = ?, code = ?, invited = ? WHERE id = ?").run(newName, newCode, newInvited, id);
 
-    const partyUser = getPartyUserWithPassword(id);
-    if (partyUser) {
-      updateUser(partyUser.id, { username: newCode, password: newCode, display_name: newName });
+    const nameChanged = data.name !== undefined && data.name.trim() !== existing.name;
+    const codeChanged = data.code !== undefined && data.code.trim().toUpperCase() !== existing.code;
+
+    if (nameChanged || codeChanged) {
+      const partyUser = getPartyUserWithPassword(id);
+      if (partyUser) {
+        updateUser(partyUser.id, { username: newCode, password: newCode, display_name: newName });
+      }
     }
   })();
 }
