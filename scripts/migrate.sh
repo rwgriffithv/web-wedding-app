@@ -195,11 +195,11 @@ for (const { from, to } of SITE_CONFIG_RENAMES) {
 
 // ── Migration 14: media_max_file_size_ttl_ms → media_max_file_size_ttl_seconds ──
 // Rename key and convert existing values from ms to seconds.
-const ttlRow = db.prepare("SELECT value FROM site_config WHERE key = 'media_max_file_size_ttl_ms'").get();
+const ttlRow = db.prepare(\"SELECT value FROM site_config WHERE key = 'media_max_file_size_ttl_ms'\").get();
 if (ttlRow) {
   const existingSec = Math.round(parseInt(ttlRow.value, 10) / 1000) || 60;
-  db.prepare("INSERT OR REPLACE INTO site_config (key, value) VALUES ('media_max_file_size_ttl_seconds', ?)").run(String(existingSec));
-  db.prepare("DELETE FROM site_config WHERE key = 'media_max_file_size_ttl_ms'").run();
+  db.prepare(\"INSERT OR REPLACE INTO site_config (key, value) VALUES ('media_max_file_size_ttl_seconds', ?)\").run(String(existingSec));
+  db.prepare(\"DELETE FROM site_config WHERE key = 'media_max_file_size_ttl_ms'\").run();
   console.log('  ✓ media_max_file_size_ttl_ms → media_max_file_size_ttl_seconds (' + existingSec + 's)');
 } else {
   console.log('  - media_max_file_size_ttl_ms not found, skipping.');
